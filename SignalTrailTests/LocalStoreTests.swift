@@ -28,9 +28,10 @@ final class LocalStoreTests: XCTestCase {
   }
 
   func testSessionRoundTrip() throws {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
     let session = ScanSession(
       id: UUID(),
-      startedAt: Date(),
+      startedAt: now,
       endedAt: nil,
       mode: .recording,
       name: "Test session",
@@ -45,7 +46,7 @@ final class LocalStoreTests: XCTestCase {
       peripheralIdentifier: UUID(),
       displayName: "Sensor",
       rssi: -70,
-      timestamp: Date(),
+      timestamp: now,
       latitude: -27.47,
       longitude: 153.02,
       horizontalAccuracy: 5,

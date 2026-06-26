@@ -46,6 +46,9 @@ final class BluetoothCompanyPickerViewController: UITableViewController, UISearc
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     tableView.deselectRow(at: indexPath, animated: true)
     let company = filteredCompanies[indexPath.row]
+    if searchController.isActive {
+      searchController.isActive = false
+    }
     onSelect?(company.0, company.1)
     navigationController?.popViewController(animated: true)
   }
@@ -56,7 +59,9 @@ final class BluetoothCompanyPickerViewController: UITableViewController, UISearc
 
     guard !query.isEmpty else {
       filteredCompanies = companies
-      tableView.reloadData()
+      if view.window != nil {
+        tableView.reloadData()
+      }
       return
     }
 
@@ -67,6 +72,15 @@ final class BluetoothCompanyPickerViewController: UITableViewController, UISearc
         || hex.localizedLowercase.contains(normalizedQuery)
         || "0x\(hex)".localizedLowercase.contains(normalizedQuery)
     }
-    tableView.reloadData()
+    if view.window != nil {
+      tableView.reloadData()
+    }
+  }
+
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    if searchController.isActive {
+      searchController.isActive = false
+    }
   }
 }

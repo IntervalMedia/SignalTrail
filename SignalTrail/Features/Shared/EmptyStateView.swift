@@ -29,11 +29,17 @@ final class EmptyStateView: UIView {
         stack.spacing = 10
         addSubview(stack)
         stack.translatesAutoresizingMaskIntoConstraints = false
+        let leading = stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 28)
+        leading.priority = .defaultHigh
+
+        let trailing = stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -28)
+        trailing.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             imageView.widthAnchor.constraint(equalToConstant: 54),
             imageView.heightAnchor.constraint(equalToConstant: 54),
-            stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 28),
-            stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -28),
+            leading,
+            trailing,
             stack.centerXAnchor.constraint(equalTo: centerXAnchor),
             stack.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])

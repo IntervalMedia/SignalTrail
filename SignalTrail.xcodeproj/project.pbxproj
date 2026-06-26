@@ -10,6 +10,7 @@
 		0AE9E1423E10DC422B096FDC /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B90024DE9123A79F2FB2A /* SettingsStore.swift */; };
 		0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */; };
 		0C063BD30F921412E2513D79 /* AlertRuleEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */; };
+		0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */; };
 		0D2B0A6A9B0B4A1A8D7E0C11 /* BluetoothCompanyPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */; };
 		0EAD4DB1BECD88B1A1257E05 /* System/Library/Frameworks/Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CAE8BC91301AA5EC27043000 /* System/Library/Frameworks/Foundation.framework */; };
 		0FE713D0BF072037E451901E /* AlertRulesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */; };
@@ -73,6 +74,7 @@
 /* Begin PBXFileReference section */
 		0110D71A7A9346455AC01154 /* ServiceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewController.swift; sourceTree = "<group>"; };
 		04598C1B29B648B91A5710D2 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinatorTests.swift; sourceTree = "<group>"; };
 		0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertRulesViewController.swift; sourceTree = "<group>"; };
 		0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCompanyPickerViewController.swift; sourceTree = "<group>"; };
 		1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertRuleEditorViewController.swift; sourceTree = "<group>"; };
@@ -254,6 +256,7 @@
 			children = (
 				B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */,
 				FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */,
+				04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */,
 			);
 			path = SignalTrailTests;
 			sourceTree = "<group>";
@@ -476,6 +479,7 @@
 			files = (
 				9C46EEE2E4ED4F6EBF834446 /* AlertMatcherTests.swift in Sources */,
 				0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */,
+				0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

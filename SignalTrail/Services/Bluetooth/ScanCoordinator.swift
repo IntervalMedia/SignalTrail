@@ -10,6 +10,9 @@ protocol ScanCoordinatorDelegate: AnyObject {
 }
 
 final class ScanCoordinator {
+  private static let liveDeviceMaximumAge: TimeInterval = 90
+  private static let liveDeviceMaximumCount = 400
+
   enum State: Equatable {
     case idle
     case waitingForBluetooth(ScanMode)
@@ -197,6 +200,7 @@ final class ScanCoordinator {
   func clearResults() {
     guard !state.isRunning else { return }
     snapshots.removeAll()
+    scanner.clearCachedPeripherals()
     delegate?.scanCoordinator(self, didUpdate: [])
   }
 
@@ -243,7 +247,37 @@ final class ScanCoordinator {
     notificationHistory.removeAll()
     notifiedRulesForSession.removeAll()
     alertRules = store.loadAlertRules()
+    scanner.clearCachedPeripherals()
     delegate?.scanCoordinator(self, didUpdate: [])
+  }
+
+  static func pruneSnapshots(
+    _ snapshots: [UUID: BLEDeviceSnapshot],
+    now: Date,
+    maximumAge: TimeInterval = liveDeviceMaximumAge,
+    maximumCount: Int = liveDeviceMaximumCount
+  ) -> [UUID: BLEDeviceSnapshot] {
+    guard maximumAge >= 0, maximumCount > 0 else { return [:] }
+
+    let cutoff = now.addingTimeInterval(-maximumAge)
+    var retained = snapshots.values.filter { $0.lastSeen >= cutoff }
+
+    retained.sort {
+      if $0.lastSeen == $1.lastSeen {
+        if $0.latestRSSI == $1.latestRSSI {
+          return $0.displayName.localizedCaseInsensitiveCompare($1.displayName)
+            == .orderedAscending
+        }
+        return $0.latestRSSI > $1.latestRSSI
+      }
+      return $0.lastSeen > $1.lastSeen
+    }
+
+    if retained.count > maximumCount {
+      retained.removeSubrange(maximumCount...)
+    }
+
+    return Dictionary(uniqueKeysWithValues: retained.map { ($0.peripheralIdentifier, $0) })
   }
 
   private func processAlerts(for device: BLEDeviceSnapshot) {
@@ -323,6 +357,8 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     snapshot.sightingCount += 1
     snapshot.advertisement = advertisement
     snapshots[peripheral.identifier] = snapshot
+    snapshots = Self.pruneSnapshots(snapshots, now: timestamp)
+    scanner.trimCachedPeripherals(to: Set(snapshots.keys))
     delegate?.scanCoordinator(self, didUpdate: devices)
     processAlerts(for: snapshot)
 

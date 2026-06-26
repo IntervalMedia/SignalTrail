@@ -1,6 +1,14 @@
 import Foundation
 
 final class LocalStore {
+  private static let fractionalSecondsDateFormatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
+  }()
+
+  private static let legacyDateFormatter = ISO8601DateFormatter()
+
   private static let defaultAlertRuleID = UUID(uuidString: "1EBFD2F7-7C89-4635-B7C2-5337B859D6AB")!
   private static let defaultAlertSeedVersion = "2026-06-26-axon-taser"
   private static let defaultAlertRules = [
@@ -47,6 +55,7 @@ final class LocalStore {
   private let alertRulesURL: URL
   private let alertRuleSeedVersionURL: URL
   private let encoder: JSONEncoder
+  private let lineEncoder: JSONEncoder
   private let decoder: JSONDecoder
   private let lock = NSRecursiveLock()
 
@@ -73,9 +82,12 @@ final class LocalStore {
 
     encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-    encoder.dateEncodingStrategy = .iso8601
+    encoder.dateEncodingStrategy = Self.dateEncodingStrategy
+    lineEncoder = JSONEncoder()
+    lineEncoder.outputFormatting = [.sortedKeys]
+    lineEncoder.dateEncodingStrategy = Self.dateEncodingStrategy
     decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
+    decoder.dateDecodingStrategy = Self.dateDecodingStrategy
 
     try createDirectories()
     try applyDefaultAlertSeedIfNeeded()
@@ -100,7 +112,7 @@ final class LocalStore {
     if !fileManager.fileExists(atPath: url.path) {
       _ = fileManager.createFile(atPath: url.path, contents: nil)
     }
-    var data = try encoder.encode(detection)
+    var data = try lineEncoder.encode(detection)
     data.append(0x0A)
     let handle = try FileHandle(forWritingTo: url)
     defer { try? handle.close() }
@@ -246,5 +258,30 @@ final class LocalStore {
 
   private func read<T: Decodable>(_ type: T.Type, from url: URL) throws -> T {
     try decoder.decode(type, from: Data(contentsOf: url))
+  }
+
+  private static var dateEncodingStrategy: JSONEncoder.DateEncodingStrategy {
+    .custom { date, encoder in
+      var container = encoder.singleValueContainer()
+      try container.encode(fractionalSecondsDateFormatter.string(from: date))
+    }
+  }
+
+  private static var dateDecodingStrategy: JSONDecoder.DateDecodingStrategy {
+    .custom { decoder in
+      let container = try decoder.singleValueContainer()
+      let value = try container.decode(String.self)
+
+      if let date = fractionalSecondsDateFormatter.date(from: value)
+        ?? legacyDateFormatter.date(from: value)
+      {
+        return date
+      }
+
+      throw DecodingError.dataCorruptedError(
+        in: container,
+        debugDescription: "Invalid ISO-8601 date: \(value)"
+      )
+    }
   }
 }

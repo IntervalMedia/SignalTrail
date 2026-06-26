@@ -43,6 +43,13 @@ final class ScanViewController: UIViewController {
     viewModel.refreshKnownDevices()
   }
 
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    if searchController.isActive {
+      searchController.isActive = false
+    }
+  }
+
   private func configureNavigation() {
     navigationItem.searchController = searchController
     navigationItem.hidesSearchBarWhenScrolling = true
@@ -72,10 +79,23 @@ final class ScanViewController: UIViewController {
     statusCard.modeControl.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
     statusCard.actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
 
-    let container = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 300))
+    let initialWidth = max(view.bounds.width, UIScreen.main.bounds.width, 320)
+    let container = UIView(frame: CGRect(x: 0, y: 0, width: initialWidth, height: 300))
     container.addSubview(statusCard)
-    statusCard.pinEdges(
-      to: container, insets: UIEdgeInsets(top: 10, left: 16, bottom: 14, right: 16))
+    statusCard.translatesAutoresizingMaskIntoConstraints = false
+    let leading = statusCard.leadingAnchor.constraint(
+      greaterThanOrEqualTo: container.leadingAnchor, constant: 16)
+    leading.priority = .defaultHigh
+    let trailing = statusCard.trailingAnchor.constraint(
+      lessThanOrEqualTo: container.trailingAnchor, constant: -16)
+    trailing.priority = .defaultHigh
+    NSLayoutConstraint.activate([
+      leading,
+      trailing,
+      statusCard.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+      statusCard.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14),
+      statusCard.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+    ])
     tableView.tableHeaderView = container
   }
 

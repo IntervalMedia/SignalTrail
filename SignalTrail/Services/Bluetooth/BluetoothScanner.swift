@@ -56,6 +56,15 @@ final class BluetoothScanner: NSObject {
         peripherals[identifier]
     }
 
+    func trimCachedPeripherals(to identifiers: Set<UUID>) {
+        guard !peripherals.isEmpty else { return }
+        peripherals = peripherals.filter { identifiers.contains($0.key) }
+    }
+
+    func clearCachedPeripherals() {
+        peripherals.removeAll()
+    }
+
     func connect(_ peripheral: CBPeripheral, delegate: PeripheralConnectionDelegate) {
         connectionDelegates[peripheral.identifier] = WeakConnectionDelegate(delegate)
         centralManager.connect(peripheral, options: nil)

@@ -51,7 +51,18 @@ final class ScanStatusCard: CardView {
     stack.axis = .vertical
     stack.spacing = 14
     addSubview(stack)
-    stack.pinEdges(to: self, insets: UIEdgeInsets(top: 18, left: 18, bottom: 18, right: 18))
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    let leading = stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 18)
+    leading.priority = .defaultHigh
+    let trailing = stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -18)
+    trailing.priority = .defaultHigh
+    NSLayoutConstraint.activate([
+      leading,
+      trailing,
+      stack.topAnchor.constraint(equalTo: topAnchor, constant: 18),
+      stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -18),
+      stack.centerXAnchor.constraint(equalTo: centerXAnchor),
+    ])
 
     updateMetrics(devices: 0, observations: 0)
   }
@@ -103,7 +114,18 @@ final class ScanStatusCard: CardView {
     container.backgroundColor = UIColor.tertiarySystemGroupedBackground
     container.layer.cornerRadius = 12
     container.addSubview(stack)
-    stack.pinEdges(to: container, insets: UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12))
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    let leading = stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: 12)
+    leading.priority = .defaultHigh
+    let trailing = stack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -12)
+    trailing.priority = .defaultHigh
+    NSLayoutConstraint.activate([
+      leading,
+      trailing,
+      stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+      stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
+      stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+    ])
     return container
   }
 }
