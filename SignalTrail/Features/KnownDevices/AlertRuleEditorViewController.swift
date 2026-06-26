@@ -38,7 +38,7 @@ final class AlertRuleEditorViewController: UITableViewController {
 
   override func numberOfSections(in tableView: UITableView) -> Int { 3 }
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    if section == 1 { return rule.matchType == .companyIdentifier ? 3 : 2 }
+    if section == 1 { return usesCompanyPicker ? 3 : 2 }
     return section == 0 ? 1 : 2
   }
 
@@ -50,19 +50,31 @@ final class AlertRuleEditorViewController: UITableViewController {
   override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String?
   {
     if section == 1 {
+      let description: String
       switch rule.matchType {
       case .peripheralIdentifier:
-        return "Use the app-scoped UUID shown by iOS. Hardware BLE MAC addresses are unavailable."
+        description = "Use the app-scoped UUID shown by iOS. Hardware BLE MAC addresses are unavailable."
       case .companyIdentifier:
-        return
+        description =
           "Enter a Bluetooth SIG company identifier in hexadecimal, for example 004C for Apple. Manufacturer data must be advertised."
+      case .companyName:
+        description =
+          "Exact case-insensitive match against the Bluetooth SIG company name derived from manufacturer data."
       case .localNameContains:
-        return "Case-insensitive partial match against the advertised or peripheral name."
+        description = "Case-insensitive partial match against the advertised or peripheral name."
       case .manufacturerPrefix:
-        return
+        description =
           "Hexadecimal prefix match against manufacturer data, including the company identifier bytes."
-      case .serviceUUID: return "Exact case-insensitive advertised service UUID match."
+      case .memberServiceName:
+        description =
+          "Exact case-insensitive match against derived Bluetooth SIG 16-bit member UUID names in the advertisement."
+      case .serviceUUID:
+        description = "Exact case-insensitive advertised service UUID match."
       }
+
+      guard !rule.additionalMatches.isEmpty else { return description }
+      let noun = rule.additionalMatches.count == 1 ? "condition" : "conditions"
+      return "\(description)\n\nThis alert also includes \(rule.additionalMatches.count) additional match \(noun)."
     }
     return nil
   }
@@ -115,8 +127,8 @@ final class AlertRuleEditorViewController: UITableViewController {
     guard indexPath.section == 1 else { return }
     if indexPath.row == 0 {
       presentMatchTypePicker(from: indexPath)
-    } else if indexPath.row == 2, rule.matchType == .companyIdentifier {
-      presentCompanyPicker(from: indexPath)
+    } else if indexPath.row == 2, usesCompanyPicker {
+      presentCompanyPicker()
     }
   }
 
@@ -133,23 +145,21 @@ final class AlertRuleEditorViewController: UITableViewController {
     present(alert, animated: true)
   }
 
-  private func presentCompanyPicker(from indexPath: IndexPath) {
-    let alert = UIAlertController(
-      title: "Common companies",
-      message:
-        "The device must advertise manufacturer data containing this Bluetooth SIG company identifier.",
-      preferredStyle: .actionSheet
-    )
-    BluetoothCompanyLookup.commonCompanies.forEach { company in
-      let (identifier, name) = company
-      let value = String(format: "%04X", identifier)
-      alert.addAction(
-        UIAlertAction(title: "\(name) — 0x\(value)", style: .default) { [weak self] _ in
-          self?.valueField.text = value
-        })
+  private func presentCompanyPicker() {
+    let picker = BluetoothCompanyPickerViewController(style: .insetGrouped)
+    picker.onSelect = { [weak self] identifier, _ in
+      guard let self else { return }
+      if self.rule.matchType == .companyIdentifier {
+        self.valueField.text = String(format: "%04X", identifier)
+      } else {
+        self.valueField.text = BluetoothCompanyLookup.name(for: identifier)
+      }
     }
-    anchor(alert, to: indexPath)
-    present(alert, animated: true)
+    navigationController?.pushViewController(picker, animated: true)
+  }
+
+  private var usesCompanyPicker: Bool {
+    rule.matchType == .companyIdentifier || rule.matchType == .companyName
   }
 
   private func anchor(_ alert: UIAlertController, to indexPath: IndexPath) {

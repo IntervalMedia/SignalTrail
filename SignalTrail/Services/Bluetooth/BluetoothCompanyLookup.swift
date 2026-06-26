@@ -3,6 +3,7 @@ import Foundation
 ///  BluetoothCompanyLookup is created from the data file 'company_identifiers.yaml' availble from: https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/company_identifiers/company_identifiers.yaml
 enum BluetoothCompanyLookup {
   private static let names = loadNames()
+  private static let sortedCompanies = names.map { ($0.key, $0.value) }.sorted { $0.1 < $1.1 }
 
   private final class BundleToken {}
 
@@ -70,6 +71,6 @@ enum BluetoothCompanyLookup {
   }
 
   static var commonCompanies: [(UInt16, String)] {
-    names.map { ($0.key, $0.value) }.sorted { $0.1 < $1.1 }
+    sortedCompanies
   }
 }

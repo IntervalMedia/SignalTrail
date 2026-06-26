@@ -26,7 +26,6 @@ struct BLEAdvertisement: Codable, Hashable {
     var localName: String?
     var manufacturerDataHex: String?
     var companyIdentifier: UInt16?
-    /// 16-bit Bluetooth SIG member UUIDs detected in advertised service UUIDs (for example, FC81).
     var memberServiceUUIDs: [String] = []
     var serviceUUIDs: [String]
     var solicitedServiceUUIDs: [String]
@@ -139,19 +138,28 @@ struct KnownDevice: Codable, Hashable, Identifiable {
 enum AlertMatchType: String, Codable, CaseIterable {
     case peripheralIdentifier
     case companyIdentifier
+    case companyName
     case localNameContains
     case manufacturerPrefix
+    case memberServiceName
     case serviceUUID
 
     var title: String {
         switch self {
         case .peripheralIdentifier: return "Device identifier"
         case .companyIdentifier: return "Company identifier"
+        case .companyName: return "Company name"
         case .localNameContains: return "Name contains"
         case .manufacturerPrefix: return "Manufacturer prefix"
+        case .memberServiceName: return "Member UUID name"
         case .serviceUUID: return "Service UUID"
         }
     }
+}
+
+struct AlertRuleMatch: Codable, Hashable {
+    var matchType: AlertMatchType
+    var matchValue: String
 }
 
 struct AlertRule: Codable, Hashable, Identifiable {
@@ -159,9 +167,64 @@ struct AlertRule: Codable, Hashable, Identifiable {
     var name: String
     var matchType: AlertMatchType
     var matchValue: String
+    var additionalMatches: [AlertRuleMatch] = []
     var isEnabled: Bool
     var notifyOncePerSession: Bool
     var cooldownSeconds: TimeInterval
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case matchType
+        case matchValue
+        case additionalMatches
+        case isEnabled
+        case notifyOncePerSession
+        case cooldownSeconds
+    }
+
+    init(
+        id: UUID,
+        name: String,
+        matchType: AlertMatchType,
+        matchValue: String,
+        additionalMatches: [AlertRuleMatch] = [],
+        isEnabled: Bool,
+        notifyOncePerSession: Bool,
+        cooldownSeconds: TimeInterval
+    ) {
+        self.id = id
+        self.name = name
+        self.matchType = matchType
+        self.matchValue = matchValue
+        self.additionalMatches = additionalMatches
+        self.isEnabled = isEnabled
+        self.notifyOncePerSession = notifyOncePerSession
+        self.cooldownSeconds = cooldownSeconds
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        matchType = try container.decode(AlertMatchType.self, forKey: .matchType)
+        matchValue = try container.decode(String.self, forKey: .matchValue)
+        additionalMatches = try container.decodeIfPresent([AlertRuleMatch].self, forKey: .additionalMatches) ?? []
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        notifyOncePerSession = try container.decode(Bool.self, forKey: .notifyOncePerSession)
+        cooldownSeconds = try container.decode(TimeInterval.self, forKey: .cooldownSeconds)
+    }
+
+    var allMatches: [AlertRuleMatch] {
+        [AlertRuleMatch(matchType: matchType, matchValue: matchValue)] + additionalMatches
+    }
+
+    var matchSummary: String {
+        let primary = "\(matchType.title): \(matchValue)"
+        guard !additionalMatches.isEmpty else { return primary }
+        let noun = additionalMatches.count == 1 ? "alternate match" : "alternate matches"
+        return "\(primary) (+\(additionalMatches.count) \(noun))"
+    }
 }
 
 struct AppSettings: Codable, Equatable {

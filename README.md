@@ -37,9 +37,13 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
 - Local alerts matching:
   - iOS peripheral identifier
   - Bluetooth SIG company identifier
+  - Bluetooth SIG company name
   - advertised name substring
   - manufacturer-data prefix
   - advertised service UUID
+  - derived Bluetooth member UUID name
+- Saved-alert on/off toggles directly in the alert list
+- A seeded default alert for Axon/TASER identifiers and names
 - Session list, map, clustered observation markers, phone observation route, timeline scrubbing, and playback
 - JSON and CSV session export
 - Local-only persistence
@@ -51,7 +55,7 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
 - A map marker is the **phone location where an advertisement was observed**. It is not the BLE device's verified location.
 - “Record” mode is application-level burst scanning. It is not raw RF sniffing, and iOS controls the underlying radio scan intervals.
 - The MVP deliberately stops scanning when the app enters the background. This avoids implying reliable continuous monitoring that iOS does not guarantee for an unrestricted device scan.
-- Company alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
+- Company identifier and company-name alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
 
 ## Data storage
 
@@ -95,4 +99,4 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for responsibilities, data flow, extens
 
 ## Contributing
 
-Keep changes narrowly scoped and commit with short imperative subjects, for example `Add session export validation`. Run `xcodebuild -project SignalTrail.xcodeproj -scheme SignalTrail -destination 'platform=iOS Simulator,name=iPhone 15' test` when changing testable logic, and note any required on-device BLE verification in your pull request.
+Keep changes narrowly scoped and commit with short imperative subjects, for example `Add session export validation`. Run `xcodebuild -project SignalTrail.xcodeproj -scheme SignalTrail -destination 'platform=iOS Simulator,name=<installed simulator>' test` when changing testable logic, and note any required on-device BLE verification in your pull request.

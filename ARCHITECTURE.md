@@ -61,7 +61,7 @@ Manages one connected peripheral and converts GATT services and characteristics 
 
 ### `LocalStore`
 
-Provides repository-like methods for sessions, detections, known devices, and rules. Detection files use JSONL append writes. A future `GRDBStore` can implement the same public operations without changing view controllers.
+Provides repository-like methods for sessions, detections, known devices, and rules. Detection files use JSONL append writes, and alert-rule storage also handles one-time seed migrations such as the default Axon/TASER rule. A future `GRDBStore` can implement the same public operations without changing view controllers.
 
 ### Feature modules
 
@@ -75,7 +75,7 @@ Provides repository-like methods for sessions, detections, known devices, and ru
 
 - `BluetoothCompanyLookup` loads the bundled Bluetooth SIG `company_identifiers.yaml` file once and caches it in memory.
 - `BluetoothMemberUUIDLookup` is a generated Swift lookup table derived from Bluetooth SIG `member_uuids.yaml`.
-- These lookups are presentation helpers; matching still uses the raw advertised values.
+- These lookups drive both presentation and higher-level alert matching for company-name and member-UUID-name rules. Raw-value matching remains available for identifiers, names, prefixes, and UUID strings.
 
 ## Extension points
 
@@ -99,4 +99,5 @@ CoreBluetooth, `ScanCoordinator`, and UIKit updates run on the main queue. `Loca
 - Settings are stored as one Codable object in `UserDefaults`; schema migration should be introduced before settings become complex.
 - Session metadata updates every 25 detections and at normal stop. An abrupt process termination can leave a session open or its count slightly stale; a recovery pass should infer final metadata from JSONL on the next launch.
 - Alerts are loaded at scan start for efficiency. Changes made while a scan is already running apply to the next scan.
+- Default alert seeds are migration-driven. Changes to bundled defaults should advance the seed version rather than rewriting user-managed rules in place.
 - Device-detail inspection depends on the peripheral still being retained by the live scanner; replayed sessions cannot reconnect unless the device is observed again in realtime.

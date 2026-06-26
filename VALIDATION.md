@@ -11,6 +11,7 @@ This document tracks what should be verified for the current SignalTrail impleme
 - Bluetooth assigned numbers:
   - company identifiers loaded at runtime from bundled `company_identifiers.yaml`
   - 16-bit member UUID names generated into `BluetoothMemberUUIDLookup.swift`
+- Alert defaults: one seeded `Axon / TASER detected` rule with manufacturer-prefix, company-name, and member-UUID-name matches
 - Background behavior: any running scan stops when the app scene enters the background
 - External dependencies: none
 
@@ -24,7 +25,9 @@ This document tracks what should be verified for the current SignalTrail impleme
    - record mode requests location permission when needed
    - recorded sessions appear in the Sessions tab
    - known devices can be saved from device detail
-   - detection alerts can be created and persisted
+   - detection alerts can be created, toggled on/off in the list, and persisted
+   - a fresh install shows the seeded `Axon / TASER detected` alert exactly once
+   - company-name and member-UUID-name rules match the same devices as their advertised lookup names
    - JSON and CSV export both succeed from session detail
 5. Confirm app limits remain accurate:
    - no BLE MAC address is exposed
@@ -36,7 +39,8 @@ This document tracks what should be verified for the current SignalTrail impleme
 - `plutil -lint SignalTrail/Info.plist`
 - `plutil -lint SignalTrail.xcodeproj/project.pbxproj`
 - `swiftc -module-cache-path /tmp/swift-module-cache -typecheck SignalTrail/Services/Bluetooth/BluetoothCompanyLookup.swift`
+- `xcodebuild -project SignalTrail.xcodeproj -scheme SignalTrail -destination 'generic/platform=iOS' build`
 
 ## Review date
 
-Reviewed against the current source layout and implementation on **2026-06-25**.
+Reviewed against the current source layout and implementation on **2026-06-26**.

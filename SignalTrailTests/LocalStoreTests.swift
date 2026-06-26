@@ -16,6 +16,16 @@ final class LocalStoreTests: XCTestCase {
     try? FileManager.default.removeItem(at: directory)
   }
 
+  func testDefaultAlertRulesAreSeededWhenFileIsMissing() {
+    let rules = store.loadAlertRules()
+
+    XCTAssertEqual(rules.count, 1)
+    XCTAssertEqual(rules.first?.name, "Axon / TASER detected")
+    XCTAssertEqual(rules.first?.matchType, .manufacturerPrefix)
+    XCTAssertEqual(rules.first?.matchValue, "0025DF")
+    XCTAssertEqual(rules.first?.additionalMatches.count, 3)
+  }
+
   func testSessionRoundTrip() throws {
     let session = ScanSession(
       id: UUID(),

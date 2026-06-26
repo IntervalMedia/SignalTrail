@@ -1,6 +1,34 @@
 import Foundation
 
 final class LocalStore {
+  private static let defaultAlertRuleID = UUID(uuidString: "1EBFD2F7-7C89-4635-B7C2-5337B859D6AB")!
+  private static let defaultAlertSeedVersion = "2026-06-26-axon-taser"
+  private static let defaultAlertRules = [
+    AlertRule(
+      id: defaultAlertRuleID,
+      name: "Axon / TASER detected",
+      matchType: .manufacturerPrefix,
+      matchValue: "0025DF",
+      additionalMatches: [
+        AlertRuleMatch(
+          matchType: .companyName,
+          matchValue: "TASER International, Inc."
+        ),
+        AlertRuleMatch(
+          matchType: .memberServiceName,
+          matchValue: "TASER International, Inc."
+        ),
+        AlertRuleMatch(
+          matchType: .memberServiceName,
+          matchValue: "Axon Enterprise, Inc."
+        ),
+      ],
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    )
+  ]
+
   enum StoreError: LocalizedError {
     case unableToCreateDirectory
 
@@ -16,6 +44,7 @@ final class LocalStore {
   private let sessionsURL: URL
   private let knownDevicesURL: URL
   private let alertRulesURL: URL
+  private let alertRuleSeedVersionURL: URL
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
   private let lock = NSRecursiveLock()
@@ -39,6 +68,7 @@ final class LocalStore {
     sessionsURL = rootURL.appendingPathComponent("sessions", isDirectory: true)
     knownDevicesURL = rootURL.appendingPathComponent("known-devices.json")
     alertRulesURL = rootURL.appendingPathComponent("alert-rules.json")
+    alertRuleSeedVersionURL = rootURL.appendingPathComponent("alert-rules-seed-version.txt")
 
     encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -47,6 +77,7 @@ final class LocalStore {
     decoder.dateDecodingStrategy = .iso8601
 
     try createDirectories()
+    try applyDefaultAlertSeedIfNeeded()
   }
 
   // MARK: Sessions
@@ -184,6 +215,19 @@ final class LocalStore {
     } catch {
       throw StoreError.unableToCreateDirectory
     }
+  }
+
+  private func applyDefaultAlertSeedIfNeeded() throws {
+    let currentSeedVersion = try? String(contentsOf: alertRuleSeedVersionURL, encoding: .utf8)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    guard currentSeedVersion != Self.defaultAlertSeedVersion else { return }
+
+    var rules = loadAlertRules()
+    let existingRuleIDs = Set(rules.map(\.id))
+    rules.append(contentsOf: Self.defaultAlertRules.filter { !existingRuleIDs.contains($0.id) })
+
+    try write(rules, to: alertRulesURL)
+    try Self.defaultAlertSeedVersion.write(to: alertRuleSeedVersionURL, atomically: true, encoding: .utf8)
   }
 
   private func metadataURL(for id: UUID) -> URL {

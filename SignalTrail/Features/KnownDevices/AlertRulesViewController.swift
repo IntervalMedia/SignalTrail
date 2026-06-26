@@ -1,6 +1,8 @@
 import UIKit
 
 final class AlertRulesViewController: UITableViewController {
+    private static let cellReuseIdentifier = "AlertRuleCell"
+
     private let environment: AppEnvironment
     private var rules: [AlertRule] = []
     private let emptyState = EmptyStateView(
@@ -21,7 +23,7 @@ final class AlertRulesViewController: UITableViewController {
         super.viewDidLoad()
         title = "Detection Alerts"
         navigationItem.largeTitleDisplayMode = .never
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        tableView.register(AlertRuleCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
     }
 
@@ -40,15 +42,17 @@ final class AlertRulesViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let rule = rules[indexPath.row]
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
-        var content = cell.defaultContentConfiguration()
-        content.text = rule.name
-        content.secondaryText = "\(rule.matchType.title): \(rule.matchValue)"
-        content.secondaryTextProperties.numberOfLines = 2
-        content.image = UIImage(systemName: rule.isEnabled ? "bell.fill" : "bell.slash")
-        content.imageProperties.tintColor = rule.isEnabled ? .systemOrange : .secondaryLabel
-        cell.contentConfiguration = content
-        cell.accessoryType = .disclosureIndicator
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: Self.cellReuseIdentifier,
+            for: indexPath
+        ) as? AlertRuleCell else {
+            return UITableViewCell()
+        }
+
+        cell.configure(with: rule)
+        cell.onToggleChanged = { [weak self, weak cell] isEnabled in
+            self?.setRuleEnabled(ruleID: rule.id, isEnabled: isEnabled, cell: cell)
+        }
         return cell
     }
 
@@ -76,11 +80,65 @@ final class AlertRulesViewController: UITableViewController {
             id: UUID(),
             name: "Police Device detected",
             matchType: .companyIdentifier,
-            matchValue: "004C",
+            matchValue: "FC81",
             isEnabled: true,
             notifyOncePerSession: true,
             cooldownSeconds: 300
         )
         navigationController?.pushViewController(AlertRuleEditorViewController(rule: rule, environment: environment), animated: true)
+    }
+
+    private func setRuleEnabled(ruleID: UUID, isEnabled: Bool, cell: AlertRuleCell?) {
+        guard let index = rules.firstIndex(where: { $0.id == ruleID }) else { return }
+
+        let originalRule = rules[index]
+        rules[index].isEnabled = isEnabled
+
+        do {
+            try environment.store.upsertAlertRule(rules[index])
+            tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+        } catch {
+            rules[index] = originalRule
+            cell?.setToggle(isOn: originalRule.isEnabled)
+            presentError(error.localizedDescription)
+        }
+    }
+}
+
+private final class AlertRuleCell: UITableViewCell {
+    var onToggleChanged: ((Bool) -> Void)?
+
+    private let enabledSwitch = UISwitch()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        accessoryView = enabledSwitch
+        enabledSwitch.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.onToggleChanged?(self.enabledSwitch.isOn)
+        }, for: .valueChanged)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        onToggleChanged = nil
+    }
+
+    func configure(with rule: AlertRule) {
+        var content = defaultContentConfiguration()
+        content.text = rule.name
+        content.secondaryText = rule.matchSummary
+        content.secondaryTextProperties.numberOfLines = 2
+        content.image = UIImage(systemName: rule.isEnabled ? "bell.fill" : "bell.slash")
+        content.imageProperties.tintColor = rule.isEnabled ? .systemOrange : .secondaryLabel
+        contentConfiguration = content
+        setToggle(isOn: rule.isEnabled)
+    }
+
+    func setToggle(isOn: Bool) {
+        enabledSwitch.setOn(isOn, animated: false)
     }
 }

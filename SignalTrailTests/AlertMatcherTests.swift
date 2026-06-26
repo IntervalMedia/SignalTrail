@@ -46,6 +46,98 @@ final class AlertMatcherTests: XCTestCase {
     XCTAssertFalse(AlertMatcher.matches(rule: rule, device: device))
   }
 
+  func testCompanyNameMatch() {
+    let taserDevice = BLEDeviceSnapshot(
+      peripheralIdentifier: UUID(),
+      displayName: "Camera",
+      latestRSSI: -60,
+      strongestRSSI: -55,
+      firstSeen: Date(),
+      lastSeen: Date(),
+      sightingCount: 1,
+      advertisement: BLEAdvertisement(
+        localName: nil,
+        manufacturerDataHex: "4D03AABBCCDD",
+        companyIdentifier: 0x034D,
+        serviceUUIDs: [],
+        solicitedServiceUUIDs: [],
+        serviceData: [:],
+        overflowServiceUUIDs: [],
+        txPower: nil,
+        isConnectable: true
+      )
+    )
+
+    let rule = makeRule(type: .companyName, value: "TASER International, Inc.")
+    XCTAssertTrue(AlertMatcher.matches(rule: rule, device: taserDevice))
+  }
+
+  func testMemberServiceNameMatch() {
+    let taserDevice = BLEDeviceSnapshot(
+      peripheralIdentifier: UUID(),
+      displayName: "Axon Sensor",
+      latestRSSI: -60,
+      strongestRSSI: -55,
+      firstSeen: Date(),
+      lastSeen: Date(),
+      sightingCount: 1,
+      advertisement: BLEAdvertisement(
+        localName: nil,
+        manufacturerDataHex: nil,
+        companyIdentifier: nil,
+        memberServiceUUIDs: ["0xFE6B"],
+        serviceUUIDs: ["FE6B"],
+        solicitedServiceUUIDs: [],
+        serviceData: [:],
+        overflowServiceUUIDs: [],
+        txPower: nil,
+        isConnectable: true
+      )
+    )
+
+    let rule = makeRule(type: .memberServiceName, value: "TASER International, Inc.")
+    XCTAssertTrue(AlertMatcher.matches(rule: rule, device: taserDevice))
+  }
+
+  func testAdditionalMatchesAllowSingleRuleToMatchAnyConfiguredIdentifier() {
+    let axonDevice = BLEDeviceSnapshot(
+      peripheralIdentifier: UUID(),
+      displayName: "Axon Camera",
+      latestRSSI: -58,
+      strongestRSSI: -58,
+      firstSeen: Date(),
+      lastSeen: Date(),
+      sightingCount: 1,
+      advertisement: BLEAdvertisement(
+        localName: nil,
+        manufacturerDataHex: nil,
+        companyIdentifier: nil,
+        memberServiceUUIDs: ["0xFC81"],
+        serviceUUIDs: ["FC81"],
+        solicitedServiceUUIDs: [],
+        serviceData: [:],
+        overflowServiceUUIDs: [],
+        txPower: nil,
+        isConnectable: true
+      )
+    )
+
+    let rule = AlertRule(
+      id: UUID(),
+      name: "Axon / TASER detected",
+      matchType: .manufacturerPrefix,
+      matchValue: "0025DF",
+      additionalMatches: [
+        AlertRuleMatch(matchType: .memberServiceName, matchValue: "Axon Enterprise, Inc.")
+      ],
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    )
+
+    XCTAssertTrue(AlertMatcher.matches(rule: rule, device: axonDevice))
+  }
+
   private func makeRule(type: AlertMatchType, value: String) -> AlertRule {
     AlertRule(
       id: UUID(),
