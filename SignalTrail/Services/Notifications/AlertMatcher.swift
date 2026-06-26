@@ -3,8 +3,18 @@ import Foundation
 struct AlertMatcher {
     static func matches(rule: AlertRule, device: BLEDeviceSnapshot) -> Bool {
         guard rule.isEnabled else { return false }
-        return rule.allMatches.contains { match in
-            matches(match: match, device: device)
+        let criteria = rule.criteria
+        guard !criteria.isEmpty else { return false }
+
+        switch rule.matchMode {
+        case .any:
+            return criteria.contains { match in
+                matches(match: match, device: device)
+            }
+        case .all:
+            return criteria.allSatisfy { match in
+                matches(match: match, device: device)
+            }
         }
     }
 

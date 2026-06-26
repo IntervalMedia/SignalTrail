@@ -24,6 +24,7 @@ final class LocalStoreTests: XCTestCase {
     XCTAssertEqual(rules.first?.matchType, .manufacturerPrefix)
     XCTAssertEqual(rules.first?.matchValue, "0025DF")
     XCTAssertEqual(rules.first?.additionalMatches.count, 3)
+    XCTAssertEqual(rules.first?.matchMode, .any)
   }
 
   func testSessionRoundTrip() throws {

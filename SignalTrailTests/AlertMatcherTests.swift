@@ -130,12 +130,49 @@ final class AlertMatcherTests: XCTestCase {
       additionalMatches: [
         AlertRuleMatch(matchType: .memberServiceName, matchValue: "Axon Enterprise, Inc.")
       ],
+      matchMode: .any,
       isEnabled: true,
       notifyOncePerSession: true,
       cooldownSeconds: 300
     )
 
     XCTAssertTrue(AlertMatcher.matches(rule: rule, device: axonDevice))
+  }
+
+  func testMatchAllRequiresEveryCriterionToMatch() {
+    let rule = AlertRule(
+      id: UUID(),
+      name: "Apple accessories",
+      matchType: .localNameContains,
+      matchValue: "demo",
+      additionalMatches: [
+        AlertRuleMatch(matchType: .companyIdentifier, matchValue: "004C")
+      ],
+      matchMode: .all,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    )
+
+    XCTAssertTrue(AlertMatcher.matches(rule: rule, device: device))
+  }
+
+  func testMatchAllFailsWhenOneCriterionDoesNotMatch() {
+    let rule = AlertRule(
+      id: UUID(),
+      name: "Apple accessories",
+      matchType: .localNameContains,
+      matchValue: "demo",
+      additionalMatches: [
+        AlertRuleMatch(matchType: .memberServiceName, matchValue: "Apple, Inc.")
+      ],
+      matchMode: .all,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    )
+
+    XCTAssertFalse(AlertMatcher.matches(rule: rule, device: device))
   }
 
   private func makeRule(type: AlertMatchType, value: String) -> AlertRule {

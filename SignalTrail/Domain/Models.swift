@@ -155,11 +155,78 @@ enum AlertMatchType: String, Codable, CaseIterable {
         case .serviceUUID: return "Service UUID"
         }
     }
+
+    var guidance: String {
+        switch self {
+        case .peripheralIdentifier:
+            return "Use the app-scoped UUID shown by iOS. Hardware BLE MAC addresses are unavailable."
+        case .companyIdentifier:
+            return "Enter a Bluetooth SIG company identifier in hexadecimal, for example 004C for Apple. Manufacturer data must be advertised."
+        case .companyName:
+            return "Exact case-insensitive match against the Bluetooth SIG company name derived from manufacturer data."
+        case .localNameContains:
+            return "Case-insensitive partial match against the advertised or peripheral name."
+        case .manufacturerPrefix:
+            return "Hexadecimal prefix match against manufacturer data, including the company identifier bytes."
+        case .memberServiceName:
+            return "Exact case-insensitive match against derived Bluetooth SIG 16-bit member UUID names in the advertisement."
+        case .serviceUUID:
+            return "Exact case-insensitive advertised service UUID match."
+        }
+    }
+
+    var exampleValue: String {
+        switch self {
+        case .peripheralIdentifier:
+            return "11111111-2222-3333-4444-555555555555"
+        case .companyIdentifier:
+            return "004C"
+        case .companyName:
+            return "Apple, Inc."
+        case .localNameContains:
+            return "apple"
+        case .manufacturerPrefix:
+            return "4C000215"
+        case .memberServiceName:
+            return "Apple, Inc."
+        case .serviceUUID:
+            return "180F"
+        }
+    }
+
+    var usesCompanyPicker: Bool {
+        self == .companyIdentifier || self == .companyName
+    }
 }
 
 struct AlertRuleMatch: Codable, Hashable {
     var matchType: AlertMatchType
     var matchValue: String
+
+    var summary: String {
+        let value = matchValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return "\(matchType.title): No value" }
+        return "\(matchType.title): \(value)"
+    }
+}
+
+enum AlertRuleMatchMode: String, Codable, CaseIterable {
+    case any
+    case all
+
+    var title: String {
+        switch self {
+        case .any: return "Match Any"
+        case .all: return "Match All"
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .any: return "Any"
+        case .all: return "All"
+        }
+    }
 }
 
 struct AlertRule: Codable, Hashable, Identifiable {
@@ -168,6 +235,7 @@ struct AlertRule: Codable, Hashable, Identifiable {
     var matchType: AlertMatchType
     var matchValue: String
     var additionalMatches: [AlertRuleMatch] = []
+    var matchMode: AlertRuleMatchMode = .any
     var isEnabled: Bool
     var notifyOncePerSession: Bool
     var cooldownSeconds: TimeInterval
@@ -178,6 +246,7 @@ struct AlertRule: Codable, Hashable, Identifiable {
         case matchType
         case matchValue
         case additionalMatches
+        case matchMode
         case isEnabled
         case notifyOncePerSession
         case cooldownSeconds
@@ -189,6 +258,7 @@ struct AlertRule: Codable, Hashable, Identifiable {
         matchType: AlertMatchType,
         matchValue: String,
         additionalMatches: [AlertRuleMatch] = [],
+        matchMode: AlertRuleMatchMode = .any,
         isEnabled: Bool,
         notifyOncePerSession: Bool,
         cooldownSeconds: TimeInterval
@@ -198,6 +268,7 @@ struct AlertRule: Codable, Hashable, Identifiable {
         self.matchType = matchType
         self.matchValue = matchValue
         self.additionalMatches = additionalMatches
+        self.matchMode = matchMode
         self.isEnabled = isEnabled
         self.notifyOncePerSession = notifyOncePerSession
         self.cooldownSeconds = cooldownSeconds
@@ -210,20 +281,29 @@ struct AlertRule: Codable, Hashable, Identifiable {
         matchType = try container.decode(AlertMatchType.self, forKey: .matchType)
         matchValue = try container.decode(String.self, forKey: .matchValue)
         additionalMatches = try container.decodeIfPresent([AlertRuleMatch].self, forKey: .additionalMatches) ?? []
+        matchMode = try container.decodeIfPresent(AlertRuleMatchMode.self, forKey: .matchMode) ?? .any
         isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
         notifyOncePerSession = try container.decode(Bool.self, forKey: .notifyOncePerSession)
         cooldownSeconds = try container.decode(TimeInterval.self, forKey: .cooldownSeconds)
     }
 
-    var allMatches: [AlertRuleMatch] {
+    var criteria: [AlertRuleMatch] {
         [AlertRuleMatch(matchType: matchType, matchValue: matchValue)] + additionalMatches
     }
 
+    mutating func replaceCriteria(with criteria: [AlertRuleMatch]) {
+        guard let first = criteria.first else { return }
+        matchType = first.matchType
+        matchValue = first.matchValue
+        additionalMatches = Array(criteria.dropFirst())
+    }
+
     var matchSummary: String {
-        let primary = "\(matchType.title): \(matchValue)"
-        guard !additionalMatches.isEmpty else { return primary }
-        let noun = additionalMatches.count == 1 ? "alternate match" : "alternate matches"
-        return "\(primary) (+\(additionalMatches.count) \(noun))"
+        let criteria = self.criteria
+        guard let primary = criteria.first else { return "No criteria" }
+        guard criteria.count > 1 else { return primary.summary }
+        let noun = criteria.count == 2 ? "criterion" : "criteria"
+        return "\(matchMode.shortTitle) of \(criteria.count) \(noun): \(primary.summary)"
     }
 }
 

@@ -23,6 +23,7 @@ final class LocalStore {
           matchValue: "Axon Enterprise, Inc."
         ),
       ],
+      matchMode: .any,
       isEnabled: true,
       notifyOncePerSession: true,
       cooldownSeconds: 300

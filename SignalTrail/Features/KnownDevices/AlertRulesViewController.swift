@@ -8,7 +8,7 @@ final class AlertRulesViewController: UITableViewController {
     private let emptyState = EmptyStateView(
         symbol: "bell",
         title: "No alerts",
-        message: "Create a rule to be notified when an advertisement matches a company, identifier, name, manufacturer prefix, or service UUID."
+        message: "Create a rule with one or more criteria to match identifiers, names, manufacturer prefixes, company names, or service UUIDs."
     )
 
     init(environment: AppEnvironment) {
@@ -78,9 +78,9 @@ final class AlertRulesViewController: UITableViewController {
     @objc private func addTapped() {
         let rule = AlertRule(
             id: UUID(),
-            name: "Police Device detected",
-            matchType: .companyIdentifier,
-            matchValue: "FC81",
+            name: "",
+            matchType: .localNameContains,
+            matchValue: "",
             isEnabled: true,
             notifyOncePerSession: true,
             cooldownSeconds: 300
@@ -131,7 +131,7 @@ private final class AlertRuleCell: UITableViewCell {
         var content = defaultContentConfiguration()
         content.text = rule.name
         content.secondaryText = rule.matchSummary
-        content.secondaryTextProperties.numberOfLines = 2
+        content.secondaryTextProperties.numberOfLines = 3
         content.image = UIImage(systemName: rule.isEnabled ? "bell.fill" : "bell.slash")
         content.imageProperties.tintColor = rule.isEnabled ? .systemOrange : .secondaryLabel
         contentConfiguration = content
