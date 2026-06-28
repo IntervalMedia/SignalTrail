@@ -98,7 +98,12 @@ final class KnownDeviceEditorViewController: UITableViewController {
             notifyOncePerSession: true,
             cooldownSeconds: 300
         )
-        navigationController?.pushViewController(AlertRuleEditorViewController(rule: rule, environment: environment), animated: true)
+        let controller = AlertRuleEditorViewController(
+            rule: rule,
+            environment: environment,
+            isNewRule: true
+        )
+        navigationController?.pushViewController(controller, animated: true)
     }
 
     @objc private func saveTapped() {

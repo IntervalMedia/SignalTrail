@@ -5,7 +5,6 @@ final class AlertRulesViewController: UITableViewController {
 
     private let environment: AppEnvironment
     private var rules: [AlertRule] = []
-    private var needsReload = false
     private let emptyState = EmptyStateView(
         symbol: "bell",
         title: "No alerts",
@@ -26,24 +25,13 @@ final class AlertRulesViewController: UITableViewController {
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(AlertRuleCell.self, forCellReuseIdentifier: Self.cellReuseIdentifier)
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        needsReload = true
-        reloadIfNeeded()
+        reload()
     }
 
     private func reload() {
         rules = environment.store.loadAlertRules()
         tableView.backgroundView = rules.isEmpty ? emptyState : nil
         tableView.reloadData()
-    }
-
-    private func reloadIfNeeded() {
-        guard needsReload, isViewLoaded, view.window != nil else { return }
-        needsReload = false
-        reload()
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rules.count }
@@ -66,7 +54,15 @@ final class AlertRulesViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        navigationController?.pushViewController(AlertRuleEditorViewController(rule: rules[indexPath.row], environment: environment), animated: true)
+        let controller = AlertRuleEditorViewController(
+            rule: rules[indexPath.row],
+            environment: environment,
+            isNewRule: false
+        )
+        controller.onSave = { [weak self] _ in
+            self?.reload()
+        }
+        navigationController?.pushViewController(controller, animated: true)
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
@@ -93,7 +89,15 @@ final class AlertRulesViewController: UITableViewController {
             notifyOncePerSession: true,
             cooldownSeconds: 300
         )
-        navigationController?.pushViewController(AlertRuleEditorViewController(rule: rule, environment: environment), animated: true)
+        let controller = AlertRuleEditorViewController(
+            rule: rule,
+            environment: environment,
+            isNewRule: true
+        )
+        controller.onSave = { [weak self] _ in
+            self?.reload()
+        }
+        navigationController?.pushViewController(controller, animated: true)
     }
 
     private func setRuleEnabled(ruleID: UUID, isEnabled: Bool, cell: AlertRuleCell?) {

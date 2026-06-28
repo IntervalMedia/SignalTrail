@@ -17,14 +17,17 @@ final class AlertRuleEditorViewController: UITableViewController {
 
     private var rule: AlertRule
     private let environment: AppEnvironment
+    private let isNewRule: Bool
     private let nameField = UITextField()
     private let enabledSwitch = UISwitch()
     private let onceSwitch = UISwitch()
     private let modeControl = UISegmentedControl(items: AlertRuleMatchMode.allCases.map(\.shortTitle))
+    var onSave: ((AlertRule) -> Void)?
 
-    init(rule: AlertRule, environment: AppEnvironment) {
+    init(rule: AlertRule, environment: AppEnvironment, isNewRule: Bool) {
         self.rule = rule
         self.environment = environment
+        self.isNewRule = isNewRule
         super.init(style: .insetGrouped)
     }
 
@@ -206,6 +209,7 @@ final class AlertRuleEditorViewController: UITableViewController {
     }
 
     @objc private func saveTapped() {
+        navigationItem.rightBarButtonItem?.isEnabled = false
         view.endEditing(true)
         let name = nameField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let criteria = rule.criteria.map {
@@ -216,11 +220,13 @@ final class AlertRuleEditorViewController: UITableViewController {
         }
 
         guard !name.isEmpty else {
+            navigationItem.rightBarButtonItem?.isEnabled = true
             presentError("Enter an alert name.")
             return
         }
 
         guard !criteria.isEmpty, criteria.allSatisfy({ !$0.matchValue.isEmpty }) else {
+            navigationItem.rightBarButtonItem?.isEnabled = true
             presentError("Add at least one complete criterion before saving.")
             return
         }
@@ -233,11 +239,35 @@ final class AlertRuleEditorViewController: UITableViewController {
 
         do {
             try environment.store.upsertAlertRule(rule)
-            if environment.settingsStore.settings.requestNotificationPermissionOnRuleCreation {
-                environment.notificationService.requestAuthorization()
+            let shouldRequestPermission = isNewRule
+                && environment.settingsStore.settings.requestNotificationPermissionOnRuleCreation
+
+            guard let navigationController else {
+                onSave?(rule)
+                if shouldRequestPermission {
+                    environment.notificationService.requestAuthorization()
+                }
+                return
             }
-            navigationController?.popViewController(animated: true)
+
+            let savedRule = rule
+            navigationController.popViewController(animated: true)
+            guard let transitionCoordinator = navigationController.transitionCoordinator else {
+                onSave?(savedRule)
+                if shouldRequestPermission {
+                    environment.notificationService.requestAuthorization()
+                }
+                return
+            }
+
+            transitionCoordinator.animate(alongsideTransition: nil) { [weak self] _ in
+                self?.onSave?(savedRule)
+                if shouldRequestPermission {
+                    self?.environment.notificationService.requestAuthorization()
+                }
+            }
         } catch {
+            navigationItem.rightBarButtonItem?.isEnabled = true
             presentError(error.localizedDescription)
         }
     }
