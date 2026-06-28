@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`SignalTrail/` contains the iOS app target. Keep app wiring in `App/`, shared models and formatting in `Domain/`, feature UI flows in `Features/`, and platform/service code in `Services/` (`Bluetooth`, `Location`, `Notifications`, `Persistence`, `Export`). Assets and `Info.plist` live under `Resources/`. Unit tests are in `SignalTrailTests/`. Read [README.md](/Volumes/Elements/SignalTrail/README.md) for runtime constraints and [ARCHITECTURE.md](/Volumes/Elements/SignalTrail/ARCHITECTURE.md) before changing service boundaries.
+`SignalTrail/` contains the iOS app target. Keep app wiring in `App/`, shared models and formatting in `Domain/`, feature UI flows in `Features/`, and platform/service code in `Services/` (`Bluetooth`, `Location`, `Notifications`, `Persistence`, `Export`). Assets and `Info.plist` live under `Resources/`. Unit tests are in `SignalTrailTests/`. Read [README.md](README.md) for runtime constraints and [ARCHITECTURE.md](ARCHITECTURE.md) before changing service boundaries.
 
 ## Build, Test, and Development Commands
 Open `SignalTrail.xcodeproj` in Xcode 14+ for day-to-day work. Useful CLI commands:
