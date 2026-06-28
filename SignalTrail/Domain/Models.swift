@@ -46,6 +46,27 @@ struct BLEAdvertisement: Codable, Hashable {
         txPower: nil,
         isConnectable: false
     )
+
+    var metadataTag: String {
+        let companyComponent = companyIdentifier.map { String(format: "%04X", $0) } ?? ""
+        let serviceDataComponents = serviceData.keys.sorted().map { key in
+            "\(key)=\(serviceData[key] ?? "")"
+        }
+        let components = [
+            localName ?? "",
+            manufacturerDataHex ?? "",
+            companyComponent,
+            memberServiceUUIDs.sorted().joined(separator: ","),
+            serviceUUIDs.sorted().joined(separator: ","),
+            solicitedServiceUUIDs.sorted().joined(separator: ","),
+            serviceDataComponents.joined(separator: ","),
+            overflowServiceUUIDs.sorted().joined(separator: ","),
+            txPower.map { String($0) } ?? "",
+            isConnectable ? "1" : "0",
+        ]
+
+        return components.joined(separator: "|")
+    }
 }
 
 struct BLEDeviceSnapshot: Hashable {
@@ -55,6 +76,7 @@ struct BLEDeviceSnapshot: Hashable {
     var strongestRSSI: Int
     var firstSeen: Date
     var lastSeen: Date
+    var lastSeenMetadataTag: String = ""
     var sightingCount: Int
     var advertisement: BLEAdvertisement
 
@@ -309,8 +331,8 @@ struct AlertRule: Codable, Hashable, Identifiable {
 
 struct AppSettings: Codable, Equatable {
     var activeScanDuration: TimeInterval = 120
-    var recordingBurstDuration: TimeInterval = 8
-    var recordingPauseDuration: TimeInterval = 12
+    var recordingBurstDuration: TimeInterval = 1
+    var recordingPauseDuration: TimeInterval = 5
     var minimumRSSI: Int = -100
     var keepScreenAwakeDuringRecording = true
     var requestNotificationPermissionOnRuleCreation = true

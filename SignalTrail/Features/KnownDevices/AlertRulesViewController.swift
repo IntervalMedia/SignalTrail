@@ -5,6 +5,7 @@ final class AlertRulesViewController: UITableViewController {
 
     private let environment: AppEnvironment
     private var rules: [AlertRule] = []
+    private var needsReload = false
     private let emptyState = EmptyStateView(
         symbol: "bell",
         title: "No alerts",
@@ -27,15 +28,22 @@ final class AlertRulesViewController: UITableViewController {
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        reload()
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        needsReload = true
+        reloadIfNeeded()
     }
 
     private func reload() {
         rules = environment.store.loadAlertRules()
         tableView.backgroundView = rules.isEmpty ? emptyState : nil
         tableView.reloadData()
+    }
+
+    private func reloadIfNeeded() {
+        guard needsReload, isViewLoaded, view.window != nil else { return }
+        needsReload = false
+        reload()
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rules.count }

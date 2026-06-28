@@ -219,6 +219,7 @@ final class SessionDetailViewController: UIViewController {
       strongestRSSI: strongestRSSI,
       firstSeen: observations.first!.timestamp,
       lastSeen: latest.timestamp,
+      lastSeenMetadataTag: latest.advertisement.metadataTag,
       sightingCount: observations.count,
       advertisement: latest.advertisement
     )

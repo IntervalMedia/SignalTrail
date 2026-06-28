@@ -10,9 +10,9 @@
 		0AE9E1423E10DC422B096FDC /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B90024DE9123A79F2FB2A /* SettingsStore.swift */; };
 		0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */; };
 		0C063BD30F921412E2513D79 /* AlertRuleEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */; };
-		0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */; };
 		0D2B0A6A9B0B4A1A8D7E0C11 /* BluetoothCompanyPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */; };
 		0EAD4DB1BECD88B1A1257E05 /* System/Library/Frameworks/Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CAE8BC91301AA5EC27043000 /* System/Library/Frameworks/Foundation.framework */; };
+		0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */; };
 		0FE713D0BF072037E451901E /* AlertRulesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */; };
 		1B2173EE9FA2E17D96FF353B /* KnownDevicesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46922F384A71DFF31C02BF9 /* KnownDevicesViewController.swift */; };
 		24CA0870F247C57730345120 /* CharacteristicViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B73A64E133060BC1BD4254 /* CharacteristicViewController.swift */; };
@@ -651,10 +651,14 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jonnycoates.SignalTrailTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SignalTrail.app/SignalTrail";
@@ -720,10 +724,14 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jonnycoates.SignalTrailTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SignalTrail.app/SignalTrail";
@@ -740,7 +748,7 @@
 				1D8C0C6B1D22EA8C7669B263 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		70878706071CBCCBE5138403 /* Build configuration list for PBXNativeTarget "SignalTrailTests" */ = {
 			isa = XCConfigurationList;
@@ -749,7 +757,7 @@
 				EE6A2E9A9B1D3B003A794EA3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		E74637B165740ECB46DC56F6 /* Build configuration list for PBXNativeTarget "SignalTrail" */ = {
 			isa = XCConfigurationList;
@@ -758,7 +766,7 @@
 				066776A1C212750E8BE506A2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

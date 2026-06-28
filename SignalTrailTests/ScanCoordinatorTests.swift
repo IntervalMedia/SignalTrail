@@ -3,6 +3,115 @@ import XCTest
 @testable import SignalTrail
 
 final class ScanCoordinatorTests: XCTestCase {
+  func testMergeSnapshotIgnoresMinorRSSIChangesUntilThresholdIsExceeded() {
+    let identifier = UUID()
+    let now = Date()
+    let firstAdvertisement = BLEAdvertisement(
+      localName: "Tracker",
+      manufacturerDataHex: "4C0001",
+      companyIdentifier: 0x004C,
+      serviceUUIDs: [],
+      solicitedServiceUUIDs: [],
+      serviceData: [:],
+      overflowServiceUUIDs: [],
+      txPower: nil,
+      isConnectable: true
+    )
+    let initialResult = ScanCoordinator.mergeSnapshot(
+      existing: nil,
+      identifier: identifier,
+      name: "Tracker",
+      advertisement: firstAdvertisement,
+      rssi: -60,
+      timestamp: now
+    )
+
+    let minorChangeResult = ScanCoordinator.mergeSnapshot(
+      existing: initialResult.snapshot,
+      identifier: identifier,
+      name: "Tracker",
+      advertisement: firstAdvertisement,
+      rssi: -62,
+      timestamp: now.addingTimeInterval(0.5)
+    )
+
+    XCTAssertFalse(minorChangeResult.meaningfulRSSIChange)
+    XCTAssertEqual(minorChangeResult.snapshot.latestRSSI, -60)
+    XCTAssertEqual(minorChangeResult.snapshot.sightingCount, 2)
+    XCTAssertEqual(
+      minorChangeResult.snapshot.lastSeenMetadataTag,
+      firstAdvertisement.metadataTag
+    )
+
+    let updatedAdvertisement = BLEAdvertisement(
+      localName: "Tracker v2",
+      manufacturerDataHex: "4C0002",
+      companyIdentifier: 0x004C,
+      serviceUUIDs: [],
+      solicitedServiceUUIDs: [],
+      serviceData: [:],
+      overflowServiceUUIDs: [],
+      txPower: nil,
+      isConnectable: true
+    )
+    let significantChangeResult = ScanCoordinator.mergeSnapshot(
+      existing: minorChangeResult.snapshot,
+      identifier: identifier,
+      name: "Tracker v2",
+      advertisement: updatedAdvertisement,
+      rssi: -54,
+      timestamp: now.addingTimeInterval(1)
+    )
+
+    XCTAssertTrue(significantChangeResult.metadataChanged)
+    XCTAssertTrue(significantChangeResult.meaningfulRSSIChange)
+    XCTAssertEqual(significantChangeResult.snapshot.displayName, "Tracker v2")
+    XCTAssertEqual(significantChangeResult.snapshot.latestRSSI, -54)
+    XCTAssertEqual(
+      significantChangeResult.snapshot.lastSeenMetadataTag,
+      updatedAdvertisement.metadataTag
+    )
+  }
+
+  func testShouldRecordObservationCoalescesRepeatedSightings() {
+    let now = Date()
+    let previous = ScanCoordinator.RecordedObservationState(
+      recordedAt: now,
+      metadataTag: "alpha",
+      rssi: -60
+    )
+
+    XCTAssertFalse(
+      ScanCoordinator.shouldRecordObservation(
+        previous: previous,
+        currentTimestamp: now.addingTimeInterval(2),
+        metadataTag: "alpha",
+        rssi: -62,
+        minimumInterval: 5
+      )
+    )
+
+    XCTAssertTrue(
+      ScanCoordinator.shouldRecordObservation(
+        previous: previous,
+        currentTimestamp: now.addingTimeInterval(2),
+        metadataTag: "beta",
+        rssi: -62,
+        minimumInterval: 5
+      )
+    )
+
+    XCTAssertTrue(
+      ScanCoordinator.shouldRecordObservation(
+        previous: previous,
+        currentTimestamp: now.addingTimeInterval(6),
+        metadataTag: "alpha",
+        rssi: -62,
+        minimumInterval: 5
+      )
+    )
+  }
+
   func testPruneSnapshotsDropsDevicesOutsideRetentionWindow() {
     let now = Date()
     let recent = makeSnapshot(name: "Recent", lastSeen: now.addingTimeInterval(-10), rssi: -55)
@@ -54,6 +163,7 @@ final class ScanCoordinatorTests: XCTestCase {
       strongestRSSI: rssi,
       firstSeen: lastSeen,
       lastSeen: lastSeen,
+      lastSeenMetadataTag: BLEAdvertisement.empty.metadataTag,
       sightingCount: 1,
       advertisement: .empty
     )

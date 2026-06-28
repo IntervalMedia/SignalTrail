@@ -45,7 +45,7 @@ final class SettingsViewController: UITableViewController {
       return "The active scan continuously listens for advertisements until this timer expires."
     case 1:
       return
-        "Record mode alternates scan bursts and pauses. iOS controls the underlying BLE scan window."
+        "Record mode alternates short scan bursts and pauses to reduce CPU, battery, and storage use."
     case 2: return "Weaker RSSI values are more negative. Filtering can reduce noisy observations."
     case 4:
       return
@@ -140,12 +140,12 @@ final class SettingsViewController: UITableViewController {
     case (1, 0):
       showDurationPicker(
         title: "Scan burst", current: settings.recordingBurstDuration,
-        options: [3, 5, 8, 10, 15, 20]
+        options: [1, 2, 3, 5, 8, 10, 15]
       ) { self.settings.recordingBurstDuration = $0 }
     case (1, 1):
       showDurationPicker(
         title: "Pause", current: settings.recordingPauseDuration,
-        options: [3, 5, 10, 12, 15, 30, 60]
+        options: [5, 10, 12, 15, 30, 60]
       ) { self.settings.recordingPauseDuration = $0 }
     case (2, 0): showRSSIPicker()
     case (2, 1): environment.scanCoordinator.clearResults()

@@ -21,7 +21,6 @@ final class AlertRuleEditorViewController: UITableViewController {
     private let enabledSwitch = UISwitch()
     private let onceSwitch = UISwitch()
     private let modeControl = UISegmentedControl(items: AlertRuleMatchMode.allCases.map(\.shortTitle))
-    private var needsCriteriaReload = false
 
     init(rule: AlertRule, environment: AppEnvironment) {
         self.rule = rule
@@ -57,13 +56,6 @@ final class AlertRuleEditorViewController: UITableViewController {
             target: self,
             action: #selector(saveTapped)
         )
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        guard needsCriteriaReload else { return }
-        needsCriteriaReload = false
-        tableView.reloadSections(IndexSet(integer: Section.criteria.rawValue), with: .none)
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
@@ -207,7 +199,8 @@ final class AlertRuleEditorViewController: UITableViewController {
                 criteria.append(updatedCriterion)
             }
             self.rule.replaceCriteria(with: criteria)
-            self.needsCriteriaReload = true
+            guard self.isViewLoaded, self.view.window != nil else { return }
+            self.tableView.reloadSections(IndexSet(integer: Section.criteria.rawValue), with: .none)
         }
         navigationController?.pushViewController(controller, animated: true)
     }
@@ -334,6 +327,7 @@ private final class AlertCriterionEditorViewController: UITableViewController {
                 guard let self else { return }
                 self.criterion.matchType = type
                 self.applyValueFieldConfiguration()
+                guard self.isViewLoaded, self.view.window != nil else { return }
                 self.tableView.reloadData()
             }
             navigationController?.pushViewController(picker, animated: true)
@@ -361,6 +355,7 @@ private final class AlertCriterionEditorViewController: UITableViewController {
     }
 
     @objc private func saveTapped() {
+        view.endEditing(true)
         let value = valueField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !value.isEmpty else {
             presentError("Enter a match value.")
@@ -368,8 +363,19 @@ private final class AlertCriterionEditorViewController: UITableViewController {
         }
 
         criterion.matchValue = value
-        onSave?(criterion)
-        navigationController?.popViewController(animated: true)
+        guard let navigationController else {
+            onSave?(criterion)
+            return
+        }
+        navigationController.popViewController(animated: true)
+        guard let transitionCoordinator = navigationController.transitionCoordinator else {
+            onSave?(criterion)
+            return
+        }
+        let savedCriterion = criterion
+        transitionCoordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.onSave?(savedCriterion)
+        }
     }
 }
 
@@ -416,7 +422,17 @@ private final class AlertMatchTypePickerViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         let type = AlertMatchType.allCases[indexPath.row]
         selectedType = type
-        onSelect?(type)
-        navigationController?.popViewController(animated: true)
+        guard let navigationController else {
+            onSelect?(type)
+            return
+        }
+        navigationController.popViewController(animated: true)
+        guard let transitionCoordinator = navigationController.transitionCoordinator else {
+            onSelect?(type)
+            return
+        }
+        transitionCoordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.onSelect?(type)
+        }
     }
 }

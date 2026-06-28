@@ -106,7 +106,7 @@ final class ScanViewModel {
       timer = nil
       return
     }
-    timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+    timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
       guard let self = self else { return }
       self.delegate?.scanViewModelDidTick(self)
     }

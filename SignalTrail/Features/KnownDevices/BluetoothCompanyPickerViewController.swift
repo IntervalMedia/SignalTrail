@@ -49,8 +49,18 @@ final class BluetoothCompanyPickerViewController: UITableViewController, UISearc
     if searchController.isActive {
       searchController.isActive = false
     }
-    onSelect?(company.0, company.1)
-    navigationController?.popViewController(animated: true)
+    guard let navigationController else {
+      onSelect?(company.0, company.1)
+      return
+    }
+    navigationController.popViewController(animated: true)
+    guard let transitionCoordinator = navigationController.transitionCoordinator else {
+      onSelect?(company.0, company.1)
+      return
+    }
+    transitionCoordinator.animate(alongsideTransition: nil) { [weak self] _ in
+      self?.onSelect?(company.0, company.1)
+    }
   }
 
   func updateSearchResults(for searchController: UISearchController) {

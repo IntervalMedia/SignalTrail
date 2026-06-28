@@ -12,6 +12,22 @@ protocol ScanCoordinatorDelegate: AnyObject {
 final class ScanCoordinator {
   private static let liveDeviceMaximumAge: TimeInterval = 90
   private static let liveDeviceMaximumCount = 400
+  private static let minimumMeaningfulRSSIChange = 4
+  private static let minimumVisibleUpdateInterval: TimeInterval = 0.75
+  private static let minimumRecordingObservationIntervalFloor: TimeInterval = 5
+
+  struct SnapshotMergeResult {
+    let snapshot: BLEDeviceSnapshot
+    let isNewDevice: Bool
+    let metadataChanged: Bool
+    let meaningfulRSSIChange: Bool
+  }
+
+  struct RecordedObservationState: Equatable {
+    let recordedAt: Date
+    let metadataTag: String
+    let rssi: Int
+  }
 
   enum State: Equatable {
     case idle
@@ -48,19 +64,24 @@ final class ScanCoordinator {
 
   private var stateTimer: Timer?
   private var burstTimer: Timer?
+  private var visibleUpdateTimer: Timer?
   private var snapshots: [UUID: BLEDeviceSnapshot] = [:]
+  private var visibleSnapshots: [UUID: BLEDeviceSnapshot] = [:]
   private var activeSession: ScanSession?
   private var sessionUniqueIDs = Set<UUID>()
   private var notificationHistory: [UUID: Date] = [:]
   private var notifiedRulesForSession = Set<UUID>()
   private var alertRules: [AlertRule] = []
+  private var dirtyVisibleSnapshotIdentifiers = Set<UUID>()
+  private var lastVisibleUpdateDates: [UUID: Date] = [:]
+  private var recordedObservationStates: [UUID: RecordedObservationState] = [:]
 
   private(set) var state: State = .idle {
     didSet { delegate?.scanCoordinatorDidChangeState(self) }
   }
 
   var devices: [BLEDeviceSnapshot] {
-    snapshots.values.sorted {
+    visibleSnapshots.values.sorted {
       if $0.latestRSSI == $1.latestRSSI {
         return $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
       }
@@ -179,8 +200,10 @@ final class ScanCoordinator {
     scanner.stopScanning()
     stateTimer?.invalidate()
     burstTimer?.invalidate()
+    visibleUpdateTimer?.invalidate()
     stateTimer = nil
     burstTimer = nil
+    visibleUpdateTimer = nil
     locationProvider.stopUpdating()
     UIApplication.shared.isIdleTimerDisabled = false
 
@@ -200,6 +223,12 @@ final class ScanCoordinator {
   func clearResults() {
     guard !state.isRunning else { return }
     snapshots.removeAll()
+    visibleSnapshots.removeAll()
+    dirtyVisibleSnapshotIdentifiers.removeAll()
+    lastVisibleUpdateDates.removeAll()
+    recordedObservationStates.removeAll()
+    visibleUpdateTimer?.invalidate()
+    visibleUpdateTimer = nil
     scanner.clearCachedPeripherals()
     delegate?.scanCoordinator(self, didUpdate: [])
   }
@@ -243,9 +272,15 @@ final class ScanCoordinator {
 
   private func resetTransientState() {
     snapshots.removeAll()
+    visibleSnapshots.removeAll()
     sessionUniqueIDs.removeAll()
     notificationHistory.removeAll()
     notifiedRulesForSession.removeAll()
+    dirtyVisibleSnapshotIdentifiers.removeAll()
+    lastVisibleUpdateDates.removeAll()
+    recordedObservationStates.removeAll()
+    visibleUpdateTimer?.invalidate()
+    visibleUpdateTimer = nil
     alertRules = store.loadAlertRules()
     scanner.clearCachedPeripherals()
     delegate?.scanCoordinator(self, didUpdate: [])
@@ -278,6 +313,182 @@ final class ScanCoordinator {
     }
 
     return Dictionary(uniqueKeysWithValues: retained.map { ($0.peripheralIdentifier, $0) })
+  }
+
+  static func mergeSnapshot(
+    existing: BLEDeviceSnapshot?,
+    identifier: UUID,
+    name: String,
+    advertisement: BLEAdvertisement,
+    rssi: Int,
+    timestamp: Date,
+    minimumRSSIChange: Int = minimumMeaningfulRSSIChange
+  ) -> SnapshotMergeResult {
+    let metadataTag = advertisement.metadataTag
+
+    guard var snapshot = existing else {
+      return SnapshotMergeResult(
+        snapshot: BLEDeviceSnapshot(
+          peripheralIdentifier: identifier,
+          displayName: name,
+          latestRSSI: rssi,
+          strongestRSSI: rssi,
+          firstSeen: timestamp,
+          lastSeen: timestamp,
+          lastSeenMetadataTag: metadataTag,
+          sightingCount: 1,
+          advertisement: advertisement
+        ),
+        isNewDevice: true,
+        metadataChanged: true,
+        meaningfulRSSIChange: true
+      )
+    }
+
+    let previousMetadataTag =
+      snapshot.lastSeenMetadataTag.isEmpty ? snapshot.advertisement.metadataTag : snapshot.lastSeenMetadataTag
+    let resolvedName = name.isEmpty ? snapshot.displayName : name
+    let meaningfulRSSIChange = abs(snapshot.latestRSSI - rssi) >= max(1, minimumRSSIChange)
+
+    snapshot.lastSeen = timestamp
+    snapshot.lastSeenMetadataTag = metadataTag
+    snapshot.sightingCount += 1
+    snapshot.strongestRSSI = max(snapshot.strongestRSSI, rssi)
+
+    var metadataChanged = false
+    if snapshot.displayName != resolvedName {
+      snapshot.displayName = resolvedName
+      metadataChanged = true
+    }
+
+    if previousMetadataTag != metadataTag {
+      snapshot.advertisement = advertisement
+      metadataChanged = true
+    }
+
+    if meaningfulRSSIChange {
+      snapshot.latestRSSI = rssi
+    }
+
+    return SnapshotMergeResult(
+      snapshot: snapshot,
+      isNewDevice: false,
+      metadataChanged: metadataChanged,
+      meaningfulRSSIChange: meaningfulRSSIChange
+    )
+  }
+
+  static func shouldRecordObservation(
+    previous: RecordedObservationState?,
+    currentTimestamp: Date,
+    metadataTag: String,
+    rssi: Int,
+    minimumInterval: TimeInterval,
+    minimumRSSIChange: Int = minimumMeaningfulRSSIChange
+  ) -> Bool {
+    guard let previous else { return true }
+    if previous.metadataTag != metadataTag { return true }
+    if abs(previous.rssi - rssi) >= max(1, minimumRSSIChange) { return true }
+    return currentTimestamp.timeIntervalSince(previous.recordedAt) >= minimumInterval
+  }
+
+  private func queueVisibleSnapshotUpdate(
+    for identifier: UUID,
+    at timestamp: Date,
+    forceImmediate: Bool = false
+  ) {
+    dirtyVisibleSnapshotIdentifiers.insert(identifier)
+
+    let lastVisibleUpdate = lastVisibleUpdateDates[identifier] ?? .distantPast
+    let nextAllowedUpdate = lastVisibleUpdate.addingTimeInterval(Self.minimumVisibleUpdateInterval)
+
+    if forceImmediate || visibleSnapshots[identifier] == nil || timestamp >= nextAllowedUpdate {
+      flushVisibleSnapshotUpdates(asOf: timestamp)
+    } else {
+      scheduleVisibleUpdateTimer(for: nextAllowedUpdate)
+    }
+  }
+
+  private func flushVisibleSnapshotUpdates(asOf timestamp: Date = Date()) {
+    let readyIdentifiers = dirtyVisibleSnapshotIdentifiers.filter { identifier in
+      let lastVisibleUpdate = lastVisibleUpdateDates[identifier] ?? .distantPast
+      let nextAllowedUpdate = lastVisibleUpdate.addingTimeInterval(Self.minimumVisibleUpdateInterval)
+      return visibleSnapshots[identifier] == nil || timestamp >= nextAllowedUpdate
+    }
+
+    guard !readyIdentifiers.isEmpty else {
+      scheduleNextVisibleUpdateTimer()
+      return
+    }
+
+    var visibleChanged = false
+    for identifier in readyIdentifiers {
+      dirtyVisibleSnapshotIdentifiers.remove(identifier)
+      lastVisibleUpdateDates[identifier] = timestamp
+
+      if let snapshot = snapshots[identifier] {
+        visibleSnapshots[identifier] = snapshot
+        visibleChanged = true
+      } else if visibleSnapshots.removeValue(forKey: identifier) != nil {
+        visibleChanged = true
+      }
+    }
+
+    if visibleChanged {
+      delegate?.scanCoordinator(self, didUpdate: devices)
+    }
+
+    scheduleNextVisibleUpdateTimer()
+  }
+
+  private func scheduleNextVisibleUpdateTimer() {
+    let nextAllowedUpdate = dirtyVisibleSnapshotIdentifiers
+      .map { (lastVisibleUpdateDates[$0] ?? .distantPast).addingTimeInterval(Self.minimumVisibleUpdateInterval) }
+      .min()
+
+    guard let nextAllowedUpdate else {
+      visibleUpdateTimer?.invalidate()
+      visibleUpdateTimer = nil
+      return
+    }
+
+    scheduleVisibleUpdateTimer(for: nextAllowedUpdate)
+  }
+
+  private func scheduleVisibleUpdateTimer(for date: Date) {
+    let interval = max(0.05, date.timeIntervalSinceNow)
+    if let timer = visibleUpdateTimer, timer.isValid, timer.fireDate <= date { return }
+
+    visibleUpdateTimer?.invalidate()
+    visibleUpdateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) {
+      [weak self] _ in
+      self?.flushVisibleSnapshotUpdates()
+    }
+  }
+
+  private func pruneSnapshotCaches(now: Date) -> Bool {
+    let previousSnapshotKeys = Set(snapshots.keys)
+    snapshots = Self.pruneSnapshots(snapshots, now: now)
+    let retainedKeys = Set(snapshots.keys)
+    let removedKeys = previousSnapshotKeys.subtracting(retainedKeys)
+
+    scanner.trimCachedPeripherals(to: retainedKeys)
+
+    guard !removedKeys.isEmpty else { return false }
+
+    dirtyVisibleSnapshotIdentifiers.subtract(removedKeys)
+    for identifier in removedKeys {
+      lastVisibleUpdateDates.removeValue(forKey: identifier)
+      recordedObservationStates.removeValue(forKey: identifier)
+    }
+
+    let previousVisibleCount = visibleSnapshots.count
+    visibleSnapshots = visibleSnapshots.filter { retainedKeys.contains($0.key) }
+    return visibleSnapshots.count != previousVisibleCount
+  }
+
+  private func recordingObservationInterval() -> TimeInterval {
+    max(Self.minimumRecordingObservationIntervalFloor, settingsStore.settings.recordingPauseDuration)
   }
 
   private func processAlerts(for device: BLEDeviceSnapshot) {
@@ -338,31 +549,40 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     guard rssi >= settingsStore.settings.minimumRSSI else { return }
 
     let name = peripheral.name ?? advertisement.localName ?? "Unnamed device"
-    var snapshot =
-      snapshots[peripheral.identifier]
-      ?? BLEDeviceSnapshot(
-        peripheralIdentifier: peripheral.identifier,
-        displayName: name,
-        latestRSSI: rssi,
-        strongestRSSI: rssi,
-        firstSeen: timestamp,
-        lastSeen: timestamp,
-        sightingCount: 0,
-        advertisement: advertisement
-      )
-    snapshot.displayName = name
-    snapshot.latestRSSI = rssi
-    snapshot.strongestRSSI = max(snapshot.strongestRSSI, rssi)
-    snapshot.lastSeen = timestamp
-    snapshot.sightingCount += 1
-    snapshot.advertisement = advertisement
+    let mergeResult = Self.mergeSnapshot(
+      existing: snapshots[peripheral.identifier],
+      identifier: peripheral.identifier,
+      name: name,
+      advertisement: advertisement,
+      rssi: rssi,
+      timestamp: timestamp
+    )
+    let snapshot = mergeResult.snapshot
     snapshots[peripheral.identifier] = snapshot
-    snapshots = Self.pruneSnapshots(snapshots, now: timestamp)
-    scanner.trimCachedPeripherals(to: Set(snapshots.keys))
-    delegate?.scanCoordinator(self, didUpdate: devices)
+
+    let visibleSnapshotsChangedFromPrune = pruneSnapshotCaches(now: timestamp)
+    if visibleSnapshotsChangedFromPrune {
+      delegate?.scanCoordinator(self, didUpdate: devices)
+    }
+
+    queueVisibleSnapshotUpdate(
+      for: peripheral.identifier,
+      at: timestamp,
+      forceImmediate: mergeResult.isNewDevice
+    )
     processAlerts(for: snapshot)
 
     guard case .recording = state, var session = activeSession else { return }
+    let metadataTag = snapshot.lastSeenMetadataTag
+    let shouldRecordObservation = Self.shouldRecordObservation(
+      previous: recordedObservationStates[peripheral.identifier],
+      currentTimestamp: timestamp,
+      metadataTag: metadataTag,
+      rssi: snapshot.latestRSSI,
+      minimumInterval: recordingObservationInterval()
+    )
+    guard shouldRecordObservation else { return }
+
     let location = locationProvider.currentLocation
     let detection = BLEDetection(
       id: UUID(),
@@ -379,6 +599,11 @@ extension ScanCoordinator: BluetoothScannerDelegate {
 
     do {
       try store.appendDetection(detection)
+      recordedObservationStates[peripheral.identifier] = RecordedObservationState(
+        recordedAt: timestamp,
+        metadataTag: metadataTag,
+        rssi: snapshot.latestRSSI
+      )
       session.detectionCount += 1
       sessionUniqueIDs.insert(peripheral.identifier)
       session.uniqueDeviceCount = sessionUniqueIDs.count
