@@ -40,6 +40,107 @@ final class AlertMatcherTests: XCTestCase {
     XCTAssertTrue(AlertMatcher.matches(rule: rule, device: device))
   }
 
+  func testFindMyDetectorMatchesOfflineFindingManufacturerPrefix() {
+    let findMyDevice = makeDevice(
+      manufacturerDataHex:
+        "4C00121900AABBCCDDEEFF00112233445566778899AABBCCDDEEFF001122334455",
+      companyIdentifier: 0x004C
+    )
+
+    XCTAssertTrue(
+      AlertMatcher.matches(
+        rule: makeProfileRule(.appleFindMyOfflineFinding),
+        device: findMyDevice
+      )
+    )
+  }
+
+  func testFindMyDetectorRejectsAppleIBeacon() {
+    XCTAssertFalse(
+      AlertMatcher.matches(
+        rule: makeProfileRule(.appleFindMyOfflineFinding),
+        device: device
+      )
+    )
+  }
+
+  func testFlipperDetectorMatchesMarauderServiceUUIDs() {
+    let flipper = makeDevice(serviceUUIDs: ["3082"])
+
+    XCTAssertTrue(
+      AlertMatcher.matches(rule: makeProfileRule(.flipperZero), device: flipper)
+    )
+  }
+
+  func testFlockDetectorRequiresXuntongAndPenguinNamingPattern() {
+    let flock = makeDevice(
+      localName: "Penguin-1234567890",
+      manufacturerDataHex: "C809544E313233343536",
+      companyIdentifier: 0x09C8
+    )
+    let wrongCompany = makeDevice(
+      localName: "Penguin-1234567890",
+      manufacturerDataHex: "4C00544E313233343536",
+      companyIdentifier: 0x004C
+    )
+
+    XCTAssertTrue(
+      AlertMatcher.matches(rule: makeProfileRule(.flockPenguinBattery), device: flock)
+    )
+    XCTAssertFalse(
+      AlertMatcher.matches(rule: makeProfileRule(.flockPenguinBattery), device: wrongCompany)
+    )
+  }
+
+  func testFlockDetectorAcceptsUnnamedXuntongAdvertisement() {
+    let flock = makeDevice(
+      manufacturerDataHex: "C809544E313233343536",
+      companyIdentifier: 0x09C8
+    )
+
+    XCTAssertTrue(
+      AlertMatcher.matches(rule: makeProfileRule(.flockPenguinBattery), device: flock)
+    )
+  }
+
+  func testSerialModuleDetectorUsesExactAdvertisedName() {
+    let exactMatch = makeDevice(localName: "HC-05")
+    let nearMatch = makeDevice(localName: "HC-05 Sensor")
+
+    XCTAssertTrue(
+      AlertMatcher.matches(
+        rule: makeProfileRule(.serialBluetoothModuleSkimmer),
+        device: exactMatch
+      )
+    )
+    XCTAssertFalse(
+      AlertMatcher.matches(
+        rule: makeProfileRule(.serialBluetoothModuleSkimmer),
+        device: nearMatch
+      )
+    )
+  }
+
+  func testMetaDetectorMatchesServiceDataIdentifier() {
+    let metaDevice = makeDevice(serviceData: ["FD5F": "0102"])
+
+    XCTAssertTrue(
+      AlertMatcher.matches(rule: makeProfileRule(.metaSmartGlasses), device: metaDevice)
+    )
+  }
+
+  func testMetaDetectorRejectsAdvertisementContainingBlockedIdentifier() {
+    let blockedMetaDevice = makeDevice(
+      manufacturerDataHex: "4C000102",
+      companyIdentifier: 0x004C,
+      serviceData: ["FD5F": "0102"]
+    )
+
+    XCTAssertFalse(
+      AlertMatcher.matches(rule: makeProfileRule(.metaSmartGlasses), device: blockedMetaDevice)
+    )
+  }
+
   func testDisabledRuleDoesNotMatch() {
     var rule = makeRule(type: .localNameContains, value: "sensor")
     rule.isEnabled = false
@@ -173,6 +274,43 @@ final class AlertMatcherTests: XCTestCase {
     )
 
     XCTAssertFalse(AlertMatcher.matches(rule: rule, device: device))
+  }
+
+  private func makeProfileRule(_ profile: BLEDetectorProfile) -> AlertRule {
+    makeRule(type: .detectorProfile, value: profile.rawValue)
+  }
+
+  private func makeDevice(
+    localName: String? = nil,
+    manufacturerDataHex: String? = nil,
+    companyIdentifier: UInt16? = nil,
+    memberServiceUUIDs: [String] = [],
+    serviceUUIDs: [String] = [],
+    solicitedServiceUUIDs: [String] = [],
+    serviceData: [String: String] = [:],
+    overflowServiceUUIDs: [String] = []
+  ) -> BLEDeviceSnapshot {
+    BLEDeviceSnapshot(
+      peripheralIdentifier: UUID(),
+      displayName: localName ?? "Unnamed device",
+      latestRSSI: -60,
+      strongestRSSI: -55,
+      firstSeen: Date(),
+      lastSeen: Date(),
+      sightingCount: 1,
+      advertisement: BLEAdvertisement(
+        localName: localName,
+        manufacturerDataHex: manufacturerDataHex,
+        companyIdentifier: companyIdentifier,
+        memberServiceUUIDs: memberServiceUUIDs,
+        serviceUUIDs: serviceUUIDs,
+        solicitedServiceUUIDs: solicitedServiceUUIDs,
+        serviceData: serviceData,
+        overflowServiceUUIDs: overflowServiceUUIDs,
+        txPower: nil,
+        isConnectable: false
+      )
+    )
   }
 
   private func makeRule(type: AlertMatchType, value: String) -> AlertRule {

@@ -43,7 +43,12 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
   - advertised service UUID
   - derived Bluetooth member UUID name
 - Saved-alert on/off toggles directly in the alert list
-- A seeded default alert for Axon/TASER identifiers and names
+- Seeded default alerts for:
+  - Axon/TASER identifiers and names
+  - Apple Find My Offline Finding-like broadcasts
+  - Flipper Zero service UUIDs
+  - Flock/Penguin battery-like broadcasts
+  - HC-03/HC-05/HC-06 serial-module names and Meta/Ray-Ban identifiers
 - Session list, map, clustered observation markers, phone observation route, timeline scrubbing, and playback
 - JSON and CSV session export
 - Local-only persistence

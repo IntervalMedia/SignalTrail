@@ -157,6 +157,44 @@ struct KnownDevice: Codable, Hashable, Identifiable {
     var lastSeenAt: Date?
 }
 
+enum BLEDetectorProfile: String, Codable, CaseIterable {
+    case appleFindMyOfflineFinding
+    case flipperZero
+    case flockPenguinBattery
+    case serialBluetoothModuleSkimmer
+    case metaSmartGlasses
+
+    var title: String {
+        switch self {
+        case .appleFindMyOfflineFinding:
+            return "Apple Find My Offline Finding"
+        case .flipperZero:
+            return "Flipper Zero"
+        case .flockPenguinBattery:
+            return "Flock / Penguin battery"
+        case .serialBluetoothModuleSkimmer:
+            return "HC serial-module / possible skimmer"
+        case .metaSmartGlasses:
+            return "Meta / Ray-Ban smart glasses"
+        }
+    }
+
+    var guidance: String {
+        switch self {
+        case .appleFindMyOfflineFinding:
+            return "Matches Apple manufacturer data beginning 4C001219. This identifies Find My-shaped broadcasts, not authenticated AirTags."
+        case .flipperZero:
+            return "Matches advertised 16-bit service UUIDs 3081, 3082, or 3083."
+        case .flockPenguinBattery:
+            return "Matches XUNTONG manufacturer ID 09C8 with the Penguin battery naming patterns used by ESP32Marauder."
+        case .serialBluetoothModuleSkimmer:
+            return "Matches the exact advertised names HC-03, HC-05, or HC-06. These modules are common and are not proof of a payment-card skimmer."
+        case .metaSmartGlasses:
+            return "Matches the Meta/Luxottica manufacturer, service, or service-data identifiers used by ESP32Marauder while rejecting its blocked identifiers."
+        }
+    }
+}
+
 enum AlertMatchType: String, Codable, CaseIterable {
     case peripheralIdentifier
     case companyIdentifier
@@ -165,6 +203,7 @@ enum AlertMatchType: String, Codable, CaseIterable {
     case manufacturerPrefix
     case memberServiceName
     case serviceUUID
+    case detectorProfile
 
     var title: String {
         switch self {
@@ -175,6 +214,7 @@ enum AlertMatchType: String, Codable, CaseIterable {
         case .manufacturerPrefix: return "Manufacturer prefix"
         case .memberServiceName: return "Member UUID name"
         case .serviceUUID: return "Service UUID"
+        case .detectorProfile: return "Built-in BLE detector"
         }
     }
 
@@ -194,6 +234,8 @@ enum AlertMatchType: String, Codable, CaseIterable {
             return "Exact case-insensitive match against derived Bluetooth SIG 16-bit member UUID names in the advertisement."
         case .serviceUUID:
             return "Exact case-insensitive advertised service UUID match."
+        case .detectorProfile:
+            return "Enter a built-in detector identifier. Detector profiles support compound checks that cannot be represented by a single prefix or name."
         }
     }
 
@@ -213,6 +255,8 @@ enum AlertMatchType: String, Codable, CaseIterable {
             return "Apple, Inc."
         case .serviceUUID:
             return "180F"
+        case .detectorProfile:
+            return BLEDetectorProfile.appleFindMyOfflineFinding.rawValue
         }
     }
 

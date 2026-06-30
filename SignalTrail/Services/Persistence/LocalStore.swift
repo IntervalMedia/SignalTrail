@@ -10,7 +10,17 @@ final class LocalStore {
   private static let legacyDateFormatter = ISO8601DateFormatter()
 
   private static let defaultAlertRuleID = UUID(uuidString: "1EBFD2F7-7C89-4635-B7C2-5337B859D6AB")!
-  private static let defaultAlertSeedVersion = "2026-06-26-axon-taser"
+  private static let findMyAlertRuleID =
+    UUID(uuidString: "38DFF939-E02B-4BA1-94DE-D189CDDB1D84")!
+  private static let flipperAlertRuleID =
+    UUID(uuidString: "7664741B-4E95-46FC-B7B9-AAE739E2FA43")!
+  private static let flockAlertRuleID =
+    UUID(uuidString: "EA8BA90A-604F-4DB0-9764-38A69CA78605")!
+  private static let skimmerAlertRuleID =
+    UUID(uuidString: "5691C101-C485-4A97-9B80-2029C310E4CF")!
+  private static let metaSmartGlassesAlertRuleID =
+    UUID(uuidString: "09A4994E-6A31-4BDB-A06E-CA55AEA5A989")!
+  private static let defaultAlertSeedVersion = "2026-06-30-marauder-ble-detectors-v1"
   private static let defaultAlertRules = [
     AlertRule(
       id: defaultAlertRuleID,
@@ -32,6 +42,51 @@ final class LocalStore {
         ),
       ],
       matchMode: .any,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    ),
+    AlertRule(
+      id: findMyAlertRuleID,
+      name: "Apple Find My-like broadcast detected",
+      matchType: .detectorProfile,
+      matchValue: BLEDetectorProfile.appleFindMyOfflineFinding.rawValue,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    ),
+    AlertRule(
+      id: flipperAlertRuleID,
+      name: "Flipper Zero-like broadcast detected",
+      matchType: .detectorProfile,
+      matchValue: BLEDetectorProfile.flipperZero.rawValue,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    ),
+    AlertRule(
+      id: flockAlertRuleID,
+      name: "Flock / Penguin-like broadcast detected",
+      matchType: .detectorProfile,
+      matchValue: BLEDetectorProfile.flockPenguinBattery.rawValue,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    ),
+    AlertRule(
+      id: skimmerAlertRuleID,
+      name: "HC serial-module name detected",
+      matchType: .detectorProfile,
+      matchValue: BLEDetectorProfile.serialBluetoothModuleSkimmer.rawValue,
+      isEnabled: true,
+      notifyOncePerSession: true,
+      cooldownSeconds: 300
+    ),
+    AlertRule(
+      id: metaSmartGlassesAlertRuleID,
+      name: "Meta / Ray-Ban-like broadcast detected",
+      matchType: .detectorProfile,
+      matchValue: BLEDetectorProfile.metaSmartGlasses.rawValue,
       isEnabled: true,
       notifyOncePerSession: true,
       cooldownSeconds: 300

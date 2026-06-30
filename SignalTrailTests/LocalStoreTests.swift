@@ -19,12 +19,24 @@ final class LocalStoreTests: XCTestCase {
   func testDefaultAlertRulesAreSeededWhenFileIsMissing() {
     let rules = store.loadAlertRules()
 
-    XCTAssertEqual(rules.count, 1)
-    XCTAssertEqual(rules.first?.name, "Axon / TASER detected")
-    XCTAssertEqual(rules.first?.matchType, .manufacturerPrefix)
-    XCTAssertEqual(rules.first?.matchValue, "0025DF")
-    XCTAssertEqual(rules.first?.additionalMatches.count, 3)
-    XCTAssertEqual(rules.first?.matchMode, .any)
+    XCTAssertEqual(rules.count, 6)
+
+    let axonRule = rules.first { $0.name == "Axon / TASER detected" }
+    XCTAssertEqual(axonRule?.matchType, .manufacturerPrefix)
+    XCTAssertEqual(axonRule?.matchValue, "0025DF")
+    XCTAssertEqual(axonRule?.additionalMatches.count, 3)
+    XCTAssertEqual(axonRule?.matchMode, .any)
+
+    let detectorProfiles = Set(
+      rules.compactMap { rule -> BLEDetectorProfile? in
+        guard rule.matchType == .detectorProfile else { return nil }
+        return BLEDetectorProfile(rawValue: rule.matchValue)
+      }
+    )
+
+    XCTAssertEqual(detectorProfiles, Set(BLEDetectorProfile.allCases))
+    XCTAssertTrue(rules.allSatisfy(\.isEnabled))
+    XCTAssertTrue(rules.allSatisfy(\.notifyOncePerSession))
   }
 
   func testSessionRoundTrip() throws {
