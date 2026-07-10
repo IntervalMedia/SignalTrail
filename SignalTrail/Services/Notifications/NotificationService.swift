@@ -11,6 +11,12 @@ final class NotificationService {
         }
     }
 
+    func authorizationStatus(completion: @escaping (UNAuthorizationStatus) -> Void) {
+        center.getNotificationSettings { settings in
+            DispatchQueue.main.async { completion(settings.authorizationStatus) }
+        }
+    }
+
     func notify(rule: AlertRule, device: BLEDeviceSnapshot) {
         let content = UNMutableNotificationContent()
         content.title = rule.name.isEmpty ? "BLE device detected" : rule.name

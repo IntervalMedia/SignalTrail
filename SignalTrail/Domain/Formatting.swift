@@ -65,3 +65,61 @@ extension String {
             .uppercased()
     }
 }
+
+struct DeviceClassification {
+    let title: String
+    let confidence: String
+}
+
+extension BLEAdvertisement {
+    var classification: DeviceClassification {
+        if let companyIdentifier {
+            return DeviceClassification(
+                title: BluetoothCompanyLookup.displayName(for: companyIdentifier),
+                confidence: "Likely"
+            )
+        }
+
+        if !memberServiceUUIDs.isEmpty {
+            let names = BluetoothMemberUUIDLookup.displayList(for: memberServiceUUIDs)
+            return DeviceClassification(
+                title: names.prefix(2).joined(separator: ", "),
+                confidence: "Possible"
+            )
+        }
+
+        if !serviceUUIDs.isEmpty {
+            return DeviceClassification(
+                title: "Advertises service \(serviceUUIDs.prefix(2).joined(separator: ", "))",
+                confidence: "Possible"
+            )
+        }
+
+        return DeviceClassification(title: "Unknown device type", confidence: "Unknown")
+    }
+}
+
+extension BLEDeviceSnapshot {
+    var presentationName: String {
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty && trimmedName != "Unnamed device" {
+            return trimmedName
+        }
+
+        if let localName = advertisement.localName?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !localName.isEmpty {
+            return localName
+        }
+
+        let classification = advertisement.classification
+        if classification.confidence != "Unknown" {
+            return classification.title
+        }
+
+        return "Unknown BLE device"
+    }
+
+    var signalDescription: String {
+        "\(latestRSSI) dBm \(signalLevel.title.lowercased()) signal"
+    }
+}

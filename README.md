@@ -20,20 +20,24 @@ The `.xcodeproj` uses the Xcode 12 project-file compatibility format, but Xcode 
 3. Change the bundle identifier if required.
 4. Select your Apple development team.
 5. Run on a physical iPhone or iPad.
-6. Grant Bluetooth access. Grant location access when starting a recorded session.
+6. Review the first-run introduction.
+7. Grant Bluetooth access when scanning. Grant location access when starting a recorded session.
 
 The iOS Simulator does not provide normal nearby BLE scanning, so use real hardware.
 
 ## Current features
 
-- Timed active BLE scan, defaulting to two minutes
-- User-started recorded sessions using configurable scan bursts and pauses
+- First-run onboarding that explains Quick Scan, Record Session, and phone-observation locations
+- Readiness checklist for Bluetooth, Location, and Notifications before scanning
+- Timed Quick Scan, defaulting to two minutes
+- User-started Record Session flow using configurable scan bursts and pauses
 - Repeated advertisement logging with timestamp, RSSI, advertisement fields, and the phone's current location
-- Live filtering with search, minimum-RSSI thresholds, and signal-strength indicators
-- Device details, connection, service discovery, characteristic read/write, and notifications
+- Live filtering with search, horizontal filter chips, sorting, minimum-RSSI thresholds, and signal-strength indicators
+- Device rows that prioritize device names, inferred company/profile, signal age, observation count, and status badges before raw identifiers
+- Device details with summary-first presentation, collapsed technical sections, tap-to-copy raw values, connection, service discovery, characteristic read/write, and notifications
 - Bluetooth SIG company-name lookup from bundled `company_identifiers.yaml`
 - Bluetooth SIG 16-bit member UUID detection and display for advertised service UUIDs
-- Known-device nicknames, notes, and saved matching metadata
+- Library tab with saved-device nicknames, notes, saved matching metadata, and first-class alert management
 - Local alerts matching:
   - iOS peripheral identifier
   - Bluetooth SIG company identifier
@@ -42,7 +46,8 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
   - manufacturer-data prefix
   - advertised service UUID
   - derived Bluetooth member UUID name
-- Saved-alert on/off toggles directly in the alert list
+- Saved-alert on/off toggles, enabled/disabled counts, recent current-result matches, plain-language previews, and a test action before saving
+- Alert creation templates from live scan rows, device details, recorded-session device rows, and saved-device details
 - Seeded default alerts for:
   - Axon/TASER identifiers and names
   - Apple Find My Offline Finding-like broadcasts
@@ -58,9 +63,10 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
 
 - CoreBluetooth does **not** expose a BLE hardware MAC address on iOS. SignalTrail uses the app-scoped `CBPeripheral.identifier` and advertisement content instead.
 - A map marker is the **phone location where an advertisement was observed**. It is not the BLE device's verified location.
-- “Record” mode is application-level burst scanning. It is not raw RF sniffing, and iOS controls the underlying radio scan intervals.
+- “Record Session” mode is application-level burst scanning. It is not raw RF sniffing, and iOS controls the underlying radio scan intervals.
 - The MVP deliberately stops scanning when the app enters the background. This avoids implying reliable continuous monitoring that iOS does not guarantee for an unrestricted device scan.
 - Company identifier and company-name alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
+- GATT writes can alter device behavior, so characteristic writes are grouped under Advanced tools and require confirmation.
 
 ## Data storage
 
@@ -93,10 +99,10 @@ Before distribution:
 
 The app presents four tabs:
 
-- `Scan`: live scan results, active/record modes, and device search
+- `Scan`: Quick Scan, Record Session, permission readiness, live filters, sorting, minimum RSSI, and device search
 - `Sessions`: recorded-session replay, map playback, and export
-- `Known`: saved devices and detection-alert management
-- `Settings`: scan timing, filters, permissions, and reset actions
+- `Library`: saved devices and detection-alert management
+- `Settings`: scan timing, permissions, and reset actions
 
 ## Project layout
 

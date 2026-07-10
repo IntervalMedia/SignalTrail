@@ -6,6 +6,42 @@ protocol ScanViewModelDelegate: AnyObject {
   func scanViewModel(_ viewModel: ScanViewModel, didEncounter message: String)
 }
 
+enum LiveResultFilter: CaseIterable {
+  case strongest
+  case recentlySeen
+  case known
+  case alertMatched
+  case connectable
+  case unknown
+
+  var title: String {
+    switch self {
+    case .strongest: return "Strongest"
+    case .recentlySeen: return "Recently seen"
+    case .known: return "Known"
+    case .alertMatched: return "Alert matched"
+    case .connectable: return "Connectable"
+    case .unknown: return "Unknown devices"
+    }
+  }
+}
+
+enum LiveResultSort: Int, CaseIterable {
+  case signal
+  case newest
+  case name
+  case observations
+
+  var title: String {
+    switch self {
+    case .signal: return "Signal"
+    case .newest: return "Newest"
+    case .name: return "Name"
+    case .observations: return "Count"
+    }
+  }
+}
+
 final class ScanViewModel {
   weak var delegate: ScanViewModelDelegate?
 
@@ -15,10 +51,27 @@ final class ScanViewModel {
   private var timer: Timer?
   private var allDevices: [BLEDeviceSnapshot] = []
   private var knownIDs = Set<UUID>()
+  private var alertRules: [AlertRule] = []
 
   var selectedMode: ScanMode = .active
   var searchText = "" {
     didSet { delegate?.scanViewModelDidUpdate(self) }
+  }
+  var activeFilters = Set<LiveResultFilter>() {
+    didSet { delegate?.scanViewModelDidUpdate(self) }
+  }
+  var sort: LiveResultSort = .signal {
+    didSet { delegate?.scanViewModelDidUpdate(self) }
+  }
+
+  var minimumRSSI: Int {
+    get { settingsStore.settings.minimumRSSI }
+    set {
+      var settings = settingsStore.settings
+      settings.minimumRSSI = newValue
+      settingsStore.settings = settings
+      delegate?.scanViewModelDidUpdate(self)
+    }
   }
 
   private(set) var state: ScanCoordinator.State = .idle
@@ -26,20 +79,29 @@ final class ScanViewModel {
   var isRunning: Bool { state.isRunning }
 
   var devices: [BLEDeviceSnapshot] {
-    guard !searchText.isEmpty else { return allDevices }
-    return allDevices.filter {
-      $0.displayName.localizedCaseInsensitiveContains(searchText)
-        || $0.peripheralIdentifier.uuidString.localizedCaseInsensitiveContains(searchText)
-        || ($0.advertisement.manufacturerDataHex?.localizedCaseInsensitiveContains(searchText)
-          ?? false)
-    }
+    sortedDevices(
+      allDevices.filter { device in
+        device.latestRSSI >= minimumRSSI
+          && matchesSearch(device)
+          && matchesFilters(device)
+      }
+    )
   }
 
   var knownPeripheralIDs: Set<UUID> { knownIDs }
 
+  var alertMatchedPeripheralIDs: Set<UUID> {
+    Set(allDevices.filter(matchesAlert).map(\.peripheralIdentifier))
+  }
+
   func refreshKnownDevices() {
     knownIDs = Set(store.loadKnownDevices().map(\.peripheralIdentifier))
+    alertRules = store.loadAlertRules()
     delegate?.scanViewModelDidUpdate(self)
+  }
+
+  func matchesAlert(_ device: BLEDeviceSnapshot) -> Bool {
+    alertRules.contains { AlertMatcher.matches(rule: $0, device: device) }
   }
 
   var observationCount: Int {
@@ -52,7 +114,7 @@ final class ScanViewModel {
       return selectedMode == .active
         ? settingsStore.settings.activeScanDuration.clockString : "00:00"
     case .waitingForBluetooth, .waitingForLocation:
-      return "—:—"
+      return "--:--"
     case .active(_, let endsAt):
       return max(0, endsAt.timeIntervalSinceNow).clockString
     case .recording(let startedAt, _, _):
@@ -69,9 +131,9 @@ final class ScanViewModel {
     case .waitingForLocation:
       return "Waiting for location permission"
     case .active:
-      return "Scanning continuously"
+      return "Scanning"
     case .recording(_, _, let active):
-      return active ? "Recording • scan burst" : "Recording • battery pause"
+      return active ? "Recording scan burst" : "Recording battery pause"
     }
   }
 
@@ -86,6 +148,7 @@ final class ScanViewModel {
     self.settingsStore = settingsStore
     coordinator.delegate = self
     knownIDs = Set(store.loadKnownDevices().map(\.peripheralIdentifier))
+    alertRules = store.loadAlertRules()
   }
 
   func toggleScan() {
@@ -98,6 +161,67 @@ final class ScanViewModel {
 
   func clear() {
     coordinator.clearResults()
+  }
+
+  private func matchesSearch(_ device: BLEDeviceSnapshot) -> Bool {
+    guard !searchText.isEmpty else { return true }
+    return device.presentationName.localizedCaseInsensitiveContains(searchText)
+      || device.displayName.localizedCaseInsensitiveContains(searchText)
+      || device.peripheralIdentifier.uuidString.localizedCaseInsensitiveContains(searchText)
+      || device.advertisement.classification.title.localizedCaseInsensitiveContains(searchText)
+      || (device.advertisement.manufacturerDataHex?.localizedCaseInsensitiveContains(searchText)
+        ?? false)
+  }
+
+  private func matchesFilters(_ device: BLEDeviceSnapshot) -> Bool {
+    for filter in activeFilters {
+      switch filter {
+      case .strongest, .recentlySeen:
+        continue
+      case .known:
+        guard knownIDs.contains(device.peripheralIdentifier) else { return false }
+      case .alertMatched:
+        guard matchesAlert(device) else { return false }
+      case .connectable:
+        guard device.advertisement.isConnectable else { return false }
+      case .unknown:
+        guard !knownIDs.contains(device.peripheralIdentifier),
+              device.advertisement.classification.confidence == "Unknown" else { return false }
+      }
+    }
+    return true
+  }
+
+  private func sortedDevices(_ devices: [BLEDeviceSnapshot]) -> [BLEDeviceSnapshot] {
+    let resolvedSort: LiveResultSort
+    if activeFilters.contains(.strongest) {
+      resolvedSort = .signal
+    } else if activeFilters.contains(.recentlySeen) {
+      resolvedSort = .newest
+    } else {
+      resolvedSort = sort
+    }
+
+    return devices.sorted { left, right in
+      switch resolvedSort {
+      case .signal:
+        if left.latestRSSI == right.latestRSSI { return compareNames(left, right) }
+        return left.latestRSSI > right.latestRSSI
+      case .newest:
+        if left.lastSeen == right.lastSeen { return compareNames(left, right) }
+        return left.lastSeen > right.lastSeen
+      case .name:
+        if left.presentationName == right.presentationName { return left.lastSeen > right.lastSeen }
+        return compareNames(left, right)
+      case .observations:
+        if left.sightingCount == right.sightingCount { return compareNames(left, right) }
+        return left.sightingCount > right.sightingCount
+      }
+    }
+  }
+
+  private func compareNames(_ left: BLEDeviceSnapshot, _ right: BLEDeviceSnapshot) -> Bool {
+    left.presentationName.localizedCaseInsensitiveCompare(right.presentationName) == .orderedAscending
   }
 
   private func updateTimerLifecycle() {

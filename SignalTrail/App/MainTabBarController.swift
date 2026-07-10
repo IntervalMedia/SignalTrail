@@ -36,7 +36,7 @@ final class MainTabBarController: UITabBarController {
         sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 1)
 
         let known = KnownDevicesViewController(environment: environment)
-        known.tabBarItem = UITabBarItem(title: "Known", image: UIImage(systemName: "star"), tag: 2)
+        known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 2)
 
         let settings = SettingsViewController(environment: environment)
         settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gearshape"), tag: 3)

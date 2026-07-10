@@ -7,6 +7,9 @@ final class CharacteristicViewController: UITableViewController {
         case value
         case read
         case notify
+    }
+
+    private enum AdvancedRow: Int, CaseIterable {
         case writeText
         case writeHex
     }
@@ -40,47 +43,64 @@ final class CharacteristicViewController: UITableViewController {
         inspector.delegate = self
     }
 
+    override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        Row.allCases.count
+        section == 0 ? Row.allCases.count : AdvancedRow.allCases.count
+    }
+
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        section == 0 ? "Characteristic" : "Advanced tools"
+    }
+
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        section == 1 ? "Writing to a GATT characteristic can change device behaviour." : nil
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let row = Row(rawValue: indexPath.row)!
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         var content = cell.defaultContentConfiguration()
         cell.selectionStyle = .none
         cell.accessoryType = .none
 
-        switch row {
-        case .properties:
-            content.text = "Properties"
-            content.secondaryText = snapshot.properties.joined(separator: ", ")
-        case .value:
-            content.text = "Latest value"
-            content.secondaryText = snapshot.valueHex ?? "No value read"
-            content.secondaryTextProperties.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        case .read:
-            content.text = "Read value"
-            content.image = UIImage(systemName: "arrow.down.circle")
-            content.textProperties.color = characteristic.properties.contains(.read) ? AppTheme.accent : .secondaryLabel
-            cell.selectionStyle = characteristic.properties.contains(.read) ? .default : .none
-        case .notify:
-            content.text = snapshot.isNotifying ? "Disable notifications" : "Enable notifications"
-            content.image = UIImage(systemName: snapshot.isNotifying ? "bell.slash" : "bell")
-            let allowed = characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate)
-            content.textProperties.color = allowed ? AppTheme.accent : .secondaryLabel
-            cell.selectionStyle = allowed ? .default : .none
-        case .writeText:
-            content.text = "Write UTF-8 text"
-            content.image = UIImage(systemName: "text.cursor")
+        if indexPath.section == 0 {
+            let row = Row(rawValue: indexPath.row)!
+            switch row {
+            case .properties:
+                content.text = "Properties"
+                content.secondaryText = snapshot.properties.joined(separator: ", ")
+            case .value:
+                content.text = "Latest value"
+                content.secondaryText = snapshot.valueHex ?? "No value read"
+                content.secondaryTextProperties.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+                content.image = snapshot.valueHex == nil ? nil : UIImage(systemName: "doc.on.doc")
+                content.imageProperties.tintColor = AppTheme.accent
+                cell.selectionStyle = snapshot.valueHex == nil ? .none : .default
+            case .read:
+                content.text = "Read value"
+                content.image = UIImage(systemName: "arrow.down.circle")
+                content.textProperties.color = characteristic.properties.contains(.read) ? AppTheme.accent : .secondaryLabel
+                cell.selectionStyle = characteristic.properties.contains(.read) ? .default : .none
+            case .notify:
+                content.text = snapshot.isNotifying ? "Disable notifications" : "Enable notifications"
+                content.image = UIImage(systemName: snapshot.isNotifying ? "bell.slash" : "bell")
+                let allowed = characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate)
+                content.textProperties.color = allowed ? AppTheme.accent : .secondaryLabel
+                cell.selectionStyle = allowed ? .default : .none
+            }
+        } else {
+            let row = AdvancedRow(rawValue: indexPath.row)!
+            switch row {
+            case .writeText:
+                content.text = "Write UTF-8 text"
+                content.image = UIImage(systemName: "text.cursor")
+            case .writeHex:
+                content.text = "Write hexadecimal"
+                content.image = UIImage(systemName: "number")
+            }
             let allowed = canWrite
             content.textProperties.color = allowed ? AppTheme.accent : .secondaryLabel
-            cell.selectionStyle = allowed ? .default : .none
-        case .writeHex:
-            content.text = "Write hexadecimal"
-            content.image = UIImage(systemName: "number")
-            let allowed = canWrite
-            content.textProperties.color = allowed ? AppTheme.accent : .secondaryLabel
+            content.imageProperties.tintColor = allowed ? AppTheme.accent : .secondaryLabel
             cell.selectionStyle = allowed ? .default : .none
         }
         cell.contentConfiguration = content
@@ -89,17 +109,27 @@ final class CharacteristicViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        switch Row(rawValue: indexPath.row)! {
-        case .read where characteristic.properties.contains(.read):
-            inspector.read(characteristic)
-        case .notify where characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate):
-            inspector.setNotify(!snapshot.isNotifying, for: characteristic)
-        case .writeText where canWrite:
-            presentWritePrompt(hex: false)
-        case .writeHex where canWrite:
-            presentWritePrompt(hex: true)
-        default:
-            break
+        if indexPath.section == 0 {
+            switch Row(rawValue: indexPath.row)! {
+            case .value:
+                guard let value = snapshot.valueHex else { return }
+                UIPasteboard.general.string = value
+            case .read where characteristic.properties.contains(.read):
+                inspector.read(characteristic)
+            case .notify where characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate):
+                inspector.setNotify(!snapshot.isNotifying, for: characteristic)
+            default:
+                break
+            }
+        } else {
+            switch AdvancedRow(rawValue: indexPath.row)! {
+            case .writeText where canWrite:
+                presentWritePrompt(hex: false)
+            case .writeHex where canWrite:
+                presentWritePrompt(hex: true)
+            default:
+                break
+            }
         }
     }
 
@@ -119,13 +149,27 @@ final class CharacteristicViewController: UITableViewController {
             field.placeholder = hex ? "01 FF A0" : "Value"
         }
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Write", style: .default) { [weak self, weak alert] _ in
+        alert.addAction(UIAlertAction(title: "Continue", style: .default) { [weak self, weak alert] _ in
             guard let self = self, let text = alert?.textFields?.first?.text else { return }
             let data = hex ? Data(hexadecimalString: text) : text.data(using: .utf8)
             guard let data = data else {
                 self.presentError("The value could not be encoded.")
                 return
             }
+            self.confirmWrite(data)
+        })
+        present(alert, animated: true)
+    }
+
+    private func confirmWrite(_ data: Data) {
+        let alert = UIAlertController(
+            title: "Write to characteristic?",
+            message: "This will send \(data.hexadecimalString) to \(snapshot.uuid). Device behaviour may change.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Write", style: .destructive) { [weak self] _ in
+            guard let self else { return }
             self.inspector.write(data, to: self.characteristic)
         })
         present(alert, animated: true)

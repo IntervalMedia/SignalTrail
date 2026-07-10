@@ -292,6 +292,40 @@ extension SessionDetailViewController: UITableViewDataSource, UITableViewDelegat
       DeviceDetailViewController(device: snapshot, environment: environment),
       animated: true)
   }
+
+  func tableView(
+    _ tableView: UITableView,
+    trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+  ) -> UISwipeActionsConfiguration? {
+    let (identifier, observations) = deviceGroups[indexPath.row]
+    let snapshot = makeSnapshot(for: observations, identifier: identifier)
+    let alert = UIContextualAction(style: .normal, title: "Alert") { [weak self] _, _, completion in
+      self?.showAlertTemplates(for: snapshot)
+      completion(true)
+    }
+    alert.backgroundColor = .systemOrange
+    return UISwipeActionsConfiguration(actions: [alert])
+  }
+
+  private func showAlertTemplates(for device: BLEDeviceSnapshot) {
+    let alert = UIAlertController(title: "Create Alert", message: nil, preferredStyle: .actionSheet)
+    for template in alertTemplates(for: device) {
+      alert.addAction(UIAlertAction(title: template.title, style: .default) { [weak self] _ in
+        self?.openAlertEditor(rule: template.rule)
+      })
+    }
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    if let popover = alert.popoverPresentationController {
+      popover.sourceView = view
+      popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+    }
+    present(alert, animated: true)
+  }
+
+  private func openAlertEditor(rule: AlertRule) {
+    let controller = AlertRuleEditorViewController(rule: rule, environment: environment, isNewRule: true)
+    navigationController?.pushViewController(controller, animated: true)
+  }
 }
 
 extension SessionDetailViewController: MKMapViewDelegate {

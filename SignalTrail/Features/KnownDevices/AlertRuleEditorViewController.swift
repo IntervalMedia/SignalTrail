@@ -1,15 +1,18 @@
 import UIKit
+import UserNotifications
 
 final class AlertRuleEditorViewController: UITableViewController {
     private enum Section: Int, CaseIterable {
         case alert
         case criteria
+        case preview
         case behaviour
 
         var title: String {
             switch self {
             case .alert: return "Alert"
             case .criteria: return "Criteria"
+            case .preview: return "Preview"
             case .behaviour: return "Behaviour"
             }
         }
@@ -52,6 +55,7 @@ final class AlertRuleEditorViewController: UITableViewController {
         modeControl.selectedSegmentIndex = rule.matchMode == .any ? 0 : 1
         modeControl.addAction(UIAction { [weak self] _ in
             self?.rule.matchMode = self?.modeControl.selectedSegmentIndex == 0 ? .any : .all
+            self?.tableView.reloadSections(IndexSet(integer: Section.preview.rawValue), with: .none)
         }, for: .valueChanged)
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
@@ -70,6 +74,8 @@ final class AlertRuleEditorViewController: UITableViewController {
             return 1
         case .criteria:
             return 2 + rule.criteria.count
+        case .preview:
+            return 2
         case .behaviour:
             return 2
         }
@@ -88,6 +94,8 @@ final class AlertRuleEditorViewController: UITableViewController {
 
             Example: name contains "apple" plus member UUID name "Apple, Inc."
             """
+        case .preview:
+            return "Test uses the current live scan results still held by the scanner."
         default:
             return nil
         }
@@ -111,6 +119,18 @@ final class AlertRuleEditorViewController: UITableViewController {
         case .criteria:
             configureCriteriaCell(cell, content: &content, row: indexPath.row)
 
+        case .preview:
+            if indexPath.row == 0 {
+                content.text = "Plain-language rule"
+                content.secondaryText = previewText()
+                content.secondaryTextProperties.numberOfLines = 4
+            } else {
+                content.text = "Test rule against current results"
+                content.image = UIImage(systemName: "checkmark.seal")
+                content.imageProperties.tintColor = AppTheme.accent
+                cell.selectionStyle = .default
+            }
+
         case .behaviour:
             if indexPath.row == 0 {
                 content.text = "Enabled"
@@ -127,7 +147,14 @@ final class AlertRuleEditorViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        guard Section(rawValue: indexPath.section) == .criteria else { return }
+        guard let section = Section(rawValue: indexPath.section) else { return }
+
+        if section == .preview, indexPath.row == 1 {
+            testRuleAgainstCurrentResults()
+            return
+        }
+
+        guard section == .criteria else { return }
 
         if indexPath.row == 0 {
             return
@@ -203,9 +230,68 @@ final class AlertRuleEditorViewController: UITableViewController {
             }
             self.rule.replaceCriteria(with: criteria)
             guard self.isViewLoaded, self.view.window != nil else { return }
-            self.tableView.reloadSections(IndexSet(integer: Section.criteria.rawValue), with: .none)
+            self.tableView.reloadSections(IndexSet([Section.criteria.rawValue, Section.preview.rawValue]), with: .none)
         }
         navigationController?.pushViewController(controller, animated: true)
+    }
+
+    private func previewText() -> String {
+        let criteria = rule.criteria.map {
+            AlertRuleMatch(
+                matchType: $0.matchType,
+                matchValue: $0.matchValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        }.filter { !$0.matchValue.isEmpty }
+
+        guard !criteria.isEmpty else { return "Add criteria to preview this alert." }
+
+        let connector = rule.matchMode == .all ? " and " : " or "
+        let parts = criteria.map { criterion -> String in
+            switch criterion.matchType {
+            case .peripheralIdentifier:
+                return "the app-scoped device ID is \(criterion.matchValue)"
+            case .companyIdentifier:
+                return "a device advertises company ID \(criterion.matchValue)"
+            case .companyName:
+                return "a device advertises company \(criterion.matchValue)"
+            case .localNameContains:
+                return "the advertised name contains \(criterion.matchValue)"
+            case .manufacturerPrefix:
+                return "manufacturer data starts with \(criterion.matchValue)"
+            case .memberServiceName:
+                return "a Bluetooth member UUID identifies \(criterion.matchValue)"
+            case .serviceUUID:
+                return "service UUID \(criterion.matchValue) is advertised"
+            case .detectorProfile:
+                return "the built-in \(criterion.matchValue) detector matches"
+            }
+        }
+        return "Notify when \(parts.joined(separator: connector))."
+    }
+
+    private func testRuleAgainstCurrentResults() {
+        var testRule = rule
+        testRule.matchMode = modeControl.selectedSegmentIndex == 0 ? .any : .all
+        let criteria = testRule.criteria.map {
+            AlertRuleMatch(
+                matchType: $0.matchType,
+                matchValue: $0.matchValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        }
+        testRule.replaceCriteria(with: criteria)
+        let matches = environment.scanCoordinator.devices.filter {
+            AlertMatcher.matches(rule: testRule, device: $0)
+        }
+        let names = matches.prefix(5).map(\.presentationName).joined(separator: "\n")
+        let message: String
+        if matches.isEmpty {
+            message = "No current live results match this rule."
+        } else {
+            message = "\(matches.count) current result\(matches.count == 1 ? "" : "s") match:\n\n\(names)"
+        }
+        let alert = UIAlertController(title: "Rule Test", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     @objc private func saveTapped() {
@@ -241,35 +327,103 @@ final class AlertRuleEditorViewController: UITableViewController {
             try environment.store.upsertAlertRule(rule)
             let shouldRequestPermission = isNewRule
                 && environment.settingsStore.settings.requestNotificationPermissionOnRuleCreation
+            let savedRule = rule
+            let onSave = self.onSave
+            let environment = self.environment
 
             guard let navigationController else {
-                onSave?(rule)
+                onSave?(savedRule)
                 if shouldRequestPermission {
-                    environment.notificationService.requestAuthorization()
+                    Self.scheduleNotificationPermissionPrompt(
+                        environment: environment,
+                        preferredPresenter: self
+                    )
                 }
                 return
             }
 
-            let savedRule = rule
             navigationController.popViewController(animated: true)
             guard let transitionCoordinator = navigationController.transitionCoordinator else {
                 onSave?(savedRule)
                 if shouldRequestPermission {
-                    environment.notificationService.requestAuthorization()
+                    Self.scheduleNotificationPermissionPrompt(
+                        environment: environment,
+                        preferredPresenter: navigationController.topViewController
+                    )
                 }
                 return
             }
 
-            transitionCoordinator.animate(alongsideTransition: nil) { [weak self] _ in
-                self?.onSave?(savedRule)
+            transitionCoordinator.animate(alongsideTransition: nil) { _ in
+                onSave?(savedRule)
                 if shouldRequestPermission {
-                    self?.environment.notificationService.requestAuthorization()
+                    Self.scheduleNotificationPermissionPrompt(
+                        environment: environment,
+                        preferredPresenter: navigationController.topViewController
+                    )
                 }
             }
         } catch {
             navigationItem.rightBarButtonItem?.isEnabled = true
             presentError(error.localizedDescription)
         }
+    }
+
+    private static func scheduleNotificationPermissionPrompt(
+        environment: AppEnvironment,
+        preferredPresenter: UIViewController?
+    ) {
+        environment.notificationService.authorizationStatus { status in
+            guard status == .notDetermined else { return }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                guard let presenter = preferredPresenter?.stableVisiblePresenter
+                    ?? UIApplication.shared.signalTrailTopViewController else {
+                    environment.notificationService.requestAuthorization()
+                    return
+                }
+
+                guard presenter.presentedViewController == nil else { return }
+
+                let alert = UIAlertController(
+                    title: "Enable alert notifications?",
+                    message: "SignalTrail can notify you when this rule matches a future scan or recording.",
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "Not Now", style: .cancel))
+                alert.addAction(UIAlertAction(title: "Enable", style: .default) { _ in
+                    environment.notificationService.requestAuthorization()
+                })
+                presenter.present(alert, animated: true)
+            }
+        }
+    }
+}
+
+private extension UIViewController {
+    var stableVisiblePresenter: UIViewController? {
+        guard viewIfLoaded?.window != nil else { return nil }
+        if let navigationController = self as? UINavigationController {
+            return navigationController.visibleViewController?.stableVisiblePresenter
+        }
+        if let tabBarController = self as? UITabBarController {
+            return tabBarController.selectedViewController?.stableVisiblePresenter
+        }
+        if let presentedViewController {
+            return presentedViewController.stableVisiblePresenter
+        }
+        return self
+    }
+}
+
+private extension UIApplication {
+    var signalTrailTopViewController: UIViewController? {
+        connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }?
+            .rootViewController?
+            .stableVisiblePresenter
     }
 }
 

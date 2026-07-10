@@ -34,7 +34,7 @@ Owns `CBCentralManager`, discovers advertisements, retains current `CBPeripheral
 
 Owns the scan state machine:
 
-- active scan timer
+- Quick Scan timer
 - recording burst/pause timer
 - live-device aggregation
 - location attachment
@@ -57,7 +57,7 @@ Normalizes CoreBluetooth advertisement dictionaries into `BLEAdvertisement` valu
 
 ### `PeripheralInspector`
 
-Manages one connected peripheral and converts GATT services and characteristics into UI-safe snapshots. Read, write, and notification operations remain separate from discovery state.
+Manages one connected peripheral and converts GATT services and characteristics into UI-safe snapshots. Read, write, and notification operations remain separate from discovery state. Characteristic writes are surfaced by the UI as Advanced tools and require confirmation before dispatch.
 
 ### `LocalStore`
 
@@ -65,11 +65,11 @@ Provides repository-like methods for sessions, detections, known devices, and ru
 
 ### Feature modules
 
-- `Scan`: live active/recorded scanning
-- `Device`: advertisement and GATT inspection
+- `Scan`: first-run onboarding, readiness checks, Quick Scan, Record Session, live filters, sorting, minimum RSSI, and device search
+- `Device`: summary-first advertisement and GATT inspection with collapsed technical sections
 - `Sessions`: map/timeline replay and export
-- `KnownDevices`: saved devices and rule editing
-- `Settings`: timing, filtering, permissions, and defaults
+- `KnownDevices`: Library tab, saved devices, alert templates, rule preview/testing, and rule editing
+- `Settings`: scan timing, permissions, and defaults
 
 ### Assigned-number lookups
 
@@ -101,3 +101,4 @@ CoreBluetooth, `ScanCoordinator`, and UIKit updates run on the main queue. `Loca
 - Alerts are loaded at scan start for efficiency. Changes made while a scan is already running apply to the next scan.
 - Default alert seeds are migration-driven. Changes to bundled defaults should advance the seed version rather than rewriting user-managed rules in place.
 - Device-detail inspection depends on the peripheral still being retained by the live scanner; replayed sessions cannot reconnect unless the device is observed again in realtime.
+- Notification permission prompts are requested contextually after alert creation and must be presented from a stable visible controller, not from a disappearing editor during a navigation transition.

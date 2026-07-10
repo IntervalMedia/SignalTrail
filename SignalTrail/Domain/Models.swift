@@ -9,8 +9,15 @@ enum ScanMode: String, Codable, CaseIterable {
 
     var title: String {
         switch self {
-        case .active: return "Active"
-        case .recording: return "Record"
+        case .active: return "Quick Scan"
+        case .recording: return "Record Session"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .active: return "Temporarily discover nearby BLE devices."
+        case .recording: return "Save repeated observations with the phone's location."
         }
     }
 }

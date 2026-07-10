@@ -1,18 +1,39 @@
-import UIKit
 import CoreBluetooth
+import UIKit
 
 final class DeviceDetailViewController: UITableViewController {
     private enum Section: Int, CaseIterable {
-        case identity
-        case advertisement
+        case summary
         case actions
+        case advertisement
+        case serviceData
         case services
+        case rawValues
+
+        var title: String {
+            switch self {
+            case .summary: return "Summary"
+            case .actions: return "Actions"
+            case .advertisement: return "Advertisement data"
+            case .serviceData: return "Service data"
+            case .services: return "GATT services"
+            case .rawValues: return "Raw values"
+            }
+        }
+
+        var isTechnical: Bool {
+            switch self {
+            case .advertisement, .serviceData, .services, .rawValues: return true
+            default: return false
+            }
+        }
     }
 
     private let device: BLEDeviceSnapshot
     private let environment: AppEnvironment
     private var inspector: PeripheralInspector?
     private var services: [GATTServiceSnapshot] = []
+    private var expandedSections = Set<Section>()
 
     init(device: BLEDeviceSnapshot, environment: AppEnvironment) {
         self.device = device
@@ -25,7 +46,7 @@ final class DeviceDetailViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = device.displayName
+        title = device.presentationName
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         configureToolbar()
@@ -35,6 +56,7 @@ final class DeviceDetailViewController: UITableViewController {
         super.viewWillAppear(animated)
         inspector?.delegate = self
         configureToolbar()
+        tableView.reloadData()
     }
 
     private func configureToolbar() {
@@ -44,11 +66,15 @@ final class DeviceDetailViewController: UITableViewController {
             target: self,
             action: #selector(saveKnownTapped)
         )
-        navigationItem.rightBarButtonItem?.accessibilityLabel = "Save known device"
+        navigationItem.rightBarButtonItem?.accessibilityLabel = "Save device"
     }
 
     private var isKnown: Bool {
         environment.store.loadKnownDevices().contains { $0.peripheralIdentifier == device.peripheralIdentifier }
+    }
+
+    private var hasAlertMatch: Bool {
+        environment.store.loadAlertRules().contains { AlertMatcher.matches(rule: $0, device: device) }
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -56,32 +82,31 @@ final class DeviceDetailViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        switch Section(rawValue: section)! {
-        case .identity: return 5
-        case .advertisement:
-            var count = 5
-            if !device.advertisement.serviceData.isEmpty { count += device.advertisement.serviceData.count }
-            return count
-        case .actions: return 1
-        case .services: return max(services.count, 1)
+        guard let section = Section(rawValue: section) else { return 0 }
+        switch section {
+        case .summary:
+            return 1
+        case .actions:
+            return 3
+        case .advertisement, .serviceData, .rawValues:
+            return expandedSections.contains(section) ? max(rows(for: section).count, 1) : 1
+        case .services:
+            return expandedSections.contains(section) ? max(services.count, 1) : 1
         }
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        switch Section(rawValue: section)! {
-        case .identity: return "Device"
-        case .advertisement: return "Latest advertisement"
-        case .actions: return "Connection"
-        case .services: return "GATT services"
-        }
+        Section(rawValue: section)?.title
     }
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        switch Section(rawValue: section)! {
-        case .identity:
-            return "iOS exposes an app-scoped peripheral identifier, not the hardware BLE MAC address."
+        switch Section(rawValue: section) {
+        case .summary:
+            return "Observation locations are where this phone heard a signal, not verified device positions."
         case .services:
-            return services.isEmpty ? "Connect to discover services and characteristics." : "Select a service to inspect its characteristics."
+            return expandedSections.contains(.services)
+                ? (services.isEmpty ? "Connect to discover services and characteristics." : "Select a service to inspect characteristics.")
+                : nil
         default:
             return nil
         }
@@ -92,42 +117,57 @@ final class DeviceDetailViewController: UITableViewController {
         var content = cell.defaultContentConfiguration()
         cell.accessoryType = .none
         cell.selectionStyle = .none
-        content.secondaryTextProperties.numberOfLines = 2
+        cell.accessoryView = nil
+        content.secondaryTextProperties.numberOfLines = 4
 
-        switch Section(rawValue: indexPath.section)! {
-        case .identity:
-            let rows: [(String, String)] = [
-                ("Name", device.displayName),
-                ("Identifier", device.peripheralIdentifier.uuidString),
-                ("Signal", "\(device.latestRSSI) dBm • \(device.signalLevel.title)"),
-                ("Company", BluetoothCompanyLookup.displayName(for: device.advertisement.companyIdentifier)),
-                ("Connectable", device.advertisement.isConnectable ? "Yes" : "No")
-            ]
-            content.text = rows[indexPath.row].0
-            content.secondaryText = rows[indexPath.row].1
+        guard let section = Section(rawValue: indexPath.section) else {
+            cell.contentConfiguration = content
+            return cell
+        }
 
-        case .advertisement:
-            let memberUUIDSummary = device.advertisement.memberServiceUUIDs.isEmpty
-                ? "None"
-                : BluetoothMemberUUIDLookup.displayList(for: device.advertisement.memberServiceUUIDs).joined(separator: ", ")
-            var rows: [(String, String)] = [
-                ("Local name", device.advertisement.localName ?? "Not advertised"),
-                ("Manufacturer data", device.advertisement.manufacturerDataHex ?? "Not advertised"),
-                ("Member UUIDs", memberUUIDSummary),
-                ("Service UUIDs", device.advertisement.serviceUUIDs.isEmpty ? "None" : device.advertisement.serviceUUIDs.joined(separator: ", ")),
-                ("TX power", device.advertisement.txPower.map { "\($0) dBm" } ?? "Not advertised")
-            ]
-            rows.append(contentsOf: device.advertisement.serviceData.sorted(by: { $0.key < $1.key }).map {
-                ("Service data \($0.key)", $0.value)
-            })
-            content.text = rows[indexPath.row].0
-            content.secondaryText = rows[indexPath.row].1
+        if section.isTechnical && !expandedSections.contains(section) {
+            content.text = "Show \(section.title.lowercased())"
+            content.image = UIImage(systemName: "chevron.right.circle")
+            content.imageProperties.tintColor = AppTheme.accent
+            cell.selectionStyle = .default
+            cell.contentConfiguration = content
+            return cell
+        }
+
+        switch section {
+        case .summary:
+            let classification = device.advertisement.classification
+            content.text = device.presentationName
+            content.secondaryText = [
+                "\(classification.confidence): \(classification.title)",
+                "Current \(device.latestRSSI) dBm • strongest \(device.strongestRSSI) dBm",
+                "Last seen \(DateFormatter.signalTrailTime.string(from: device.lastSeen)) • \(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s")",
+                "\(isKnown ? "Saved device" : "Not saved") • \(hasAlertMatch ? "Alert matched" : "No alert match")"
+            ].joined(separator: "\n")
+            content.image = UIImage(systemName: "antenna.radiowaves.left.and.right")
+            content.imageProperties.tintColor = AppTheme.accent
 
         case .actions:
-            content.text = connectionActionTitle
-            content.image = UIImage(systemName: connectionActionSymbol)
-            content.imageProperties.tintColor = inspector?.connectionState == .connected ? .systemRed : AppTheme.accent
-            cell.selectionStyle = .default
+            configureActionCell(cell, content: &content, row: indexPath.row)
+
+        case .advertisement, .serviceData, .rawValues:
+            let rowData = rows(for: section)
+            if rowData.isEmpty {
+                content.text = emptyText(for: section)
+                content.textProperties.color = .secondaryLabel
+            } else {
+                let row = rowData[indexPath.row]
+                content.text = row.title
+                content.secondaryText = row.value
+                content.secondaryTextProperties.font = row.copyable
+                    ? .monospacedSystemFont(ofSize: 13, weight: .regular)
+                    : .preferredFont(forTextStyle: .body)
+                if row.copyable {
+                    content.image = UIImage(systemName: "doc.on.doc")
+                    content.imageProperties.tintColor = AppTheme.accent
+                    cell.selectionStyle = .default
+                }
+            }
 
         case .services:
             if services.isEmpty {
@@ -150,9 +190,29 @@ final class DeviceDetailViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        switch Section(rawValue: indexPath.section)! {
+        guard let section = Section(rawValue: indexPath.section) else { return }
+
+        if section.isTechnical && !expandedSections.contains(section) {
+            expandedSections.insert(section)
+            tableView.reloadSections(IndexSet(integer: indexPath.section), with: .automatic)
+            return
+        }
+
+        switch section {
         case .actions:
-            toggleConnection()
+            if indexPath.row == 0 {
+                saveKnownTapped()
+            } else if indexPath.row == 1 {
+                showAlertTemplates()
+            } else {
+                toggleConnection()
+            }
+
+        case .advertisement, .serviceData, .rawValues:
+            let row = rows(for: section)[indexPath.row]
+            guard row.copyable else { return }
+            UIPasteboard.general.string = row.value
+
         case .services where !services.isEmpty:
             guard let inspector = inspector else { return }
             let service = services[indexPath.row]
@@ -160,17 +220,77 @@ final class DeviceDetailViewController: UITableViewController {
                 ServiceDetailViewController(service: service, inspector: inspector),
                 animated: true
             )
+
         default:
             break
         }
     }
 
+    private func configureActionCell(
+        _ cell: UITableViewCell,
+        content: inout UIListContentConfiguration,
+        row: Int
+    ) {
+        cell.selectionStyle = .default
+        switch row {
+        case 0:
+            content.text = isKnown ? "Edit saved device" : "Save device"
+            content.image = UIImage(systemName: isKnown ? "star.fill" : "star")
+            content.imageProperties.tintColor = .systemYellow
+        case 1:
+            content.text = "Create alert"
+            content.image = UIImage(systemName: "bell.badge")
+            content.imageProperties.tintColor = .systemOrange
+        default:
+            content.text = connectionActionTitle
+            content.image = UIImage(systemName: connectionActionSymbol)
+            content.imageProperties.tintColor = inspector?.connectionState == .connected ? .systemRed : AppTheme.accent
+        }
+    }
+
+    private func rows(for section: Section) -> [(title: String, value: String, copyable: Bool)] {
+        switch section {
+        case .advertisement:
+            let memberUUIDSummary = device.advertisement.memberServiceUUIDs.isEmpty
+                ? "None"
+                : BluetoothMemberUUIDLookup.displayList(for: device.advertisement.memberServiceUUIDs).joined(separator: ", ")
+            return [
+                ("Local name", device.advertisement.localName ?? "Not advertised", false),
+                ("Manufacturer data", device.advertisement.manufacturerDataHex ?? "Not advertised", device.advertisement.manufacturerDataHex != nil),
+                ("Member UUIDs", memberUUIDSummary, !device.advertisement.memberServiceUUIDs.isEmpty),
+                ("Service UUIDs", device.advertisement.serviceUUIDs.isEmpty ? "None" : device.advertisement.serviceUUIDs.joined(separator: ", "), !device.advertisement.serviceUUIDs.isEmpty),
+                ("TX power", device.advertisement.txPower.map { "\($0) dBm" } ?? "Not advertised", false)
+            ]
+        case .serviceData:
+            return device.advertisement.serviceData
+                .sorted { $0.key < $1.key }
+                .map { ("Service \($0.key)", $0.value, true) }
+        case .rawValues:
+            return [
+                ("App-scoped UUID", device.peripheralIdentifier.uuidString, true),
+                ("Metadata tag", device.lastSeenMetadataTag, true),
+                ("Solicited service UUIDs", device.advertisement.solicitedServiceUUIDs.joined(separator: ", "), !device.advertisement.solicitedServiceUUIDs.isEmpty),
+                ("Overflow service UUIDs", device.advertisement.overflowServiceUUIDs.joined(separator: ", "), !device.advertisement.overflowServiceUUIDs.isEmpty)
+            ].filter { !$0.value.isEmpty }
+        default:
+            return []
+        }
+    }
+
+    private func emptyText(for section: Section) -> String {
+        switch section {
+        case .serviceData: return "No service data advertised"
+        case .rawValues: return "No raw values available"
+        default: return "No data advertised"
+        }
+    }
+
     private var connectionActionTitle: String {
         switch inspector?.connectionState ?? .disconnected {
-        case .disconnected: return "Connect and discover services"
-        case .connecting: return "Connecting…"
+        case .disconnected: return "Connect"
+        case .connecting: return "Connecting..."
         case .connected: return "Disconnect"
-        case .failed(let message): return "Retry connection • \(message)"
+        case .failed(let message): return "Retry connection - \(message)"
         }
     }
 
@@ -195,7 +315,8 @@ final class DeviceDetailViewController: UITableViewController {
         inspector.delegate = self
         self.inspector = inspector
         inspector.connect()
-        tableView.reloadSections(IndexSet(integer: Section.actions.rawValue), with: .automatic)
+        expandedSections.insert(.services)
+        tableView.reloadSections(IndexSet([Section.actions.rawValue, Section.services.rawValue]), with: .automatic)
     }
 
     @objc private func saveKnownTapped() {
@@ -206,7 +327,7 @@ final class DeviceDetailViewController: UITableViewController {
         let known = KnownDevice(
             id: UUID(),
             peripheralIdentifier: device.peripheralIdentifier,
-            nickname: device.displayName,
+            nickname: device.presentationName,
             lastKnownName: device.displayName,
             companyIdentifier: device.advertisement.companyIdentifier,
             manufacturerPrefixHex: device.advertisement.manufacturerDataHex.map { String($0.prefix(8)) },
@@ -219,9 +340,33 @@ final class DeviceDetailViewController: UITableViewController {
 
     private func showKnownDeviceEditor(_ known: KnownDevice) {
         let controller = KnownDeviceEditorViewController(device: known, environment: environment)
-        controller.onSave = { [weak self] in self?.configureToolbar() }
+        controller.onSave = { [weak self] in
+            self?.configureToolbar()
+            self?.tableView.reloadData()
+        }
         let navigation = UINavigationController(rootViewController: controller)
         present(navigation, animated: true)
+    }
+
+    private func showAlertTemplates() {
+        let alert = UIAlertController(title: "Create Alert", message: nil, preferredStyle: .actionSheet)
+        for template in alertTemplates(for: device) {
+            alert.addAction(UIAlertAction(title: template.title, style: .default) { [weak self] _ in
+                self?.openAlertEditor(rule: template.rule)
+            })
+        }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        }
+        present(alert, animated: true)
+    }
+
+    private func openAlertEditor(rule: AlertRule) {
+        let controller = AlertRuleEditorViewController(rule: rule, environment: environment, isNewRule: true)
+        controller.onSave = { [weak self] _ in self?.tableView.reloadData() }
+        navigationController?.pushViewController(controller, animated: true)
     }
 }
 

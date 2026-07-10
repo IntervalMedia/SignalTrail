@@ -27,15 +27,15 @@ final class SettingsViewController: UITableViewController {
     tableView.reloadData()
   }
 
-  override func numberOfSections(in tableView: UITableView) -> Int { 5 }
+  override func numberOfSections(in tableView: UITableView) -> Int { 4 }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    [1, 3, 2, 2, 3][section]
+    [2, 3, 2, 3][section]
   }
 
   override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String?
   {
-    ["Active Scan", "Recorded Sessions", "Filtering", "Permissions", "About"][section]
+    ["Quick Scan", "Recorded Sessions", "Permissions", "About"][section]
   }
 
   override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String?
@@ -46,8 +46,7 @@ final class SettingsViewController: UITableViewController {
     case 1:
       return
         "Record mode alternates short scan bursts and pauses to reduce CPU, battery, and storage use."
-    case 2: return "Weaker RSSI values are more negative. Filtering can reduce noisy observations."
-    case 4:
+    case 3:
       return
         "SignalTrail records the phone location where an advertisement was observed. It cannot determine the BLE device’s actual location or hardware MAC address."
     default: return nil
@@ -65,10 +64,16 @@ final class SettingsViewController: UITableViewController {
 
     switch indexPath.section {
     case 0:
-      content.text = "Duration"
-      content.secondaryText = settings.activeScanDuration.clockString
-      cell.accessoryType = .disclosureIndicator
-      cell.selectionStyle = .default
+      if indexPath.row == 0 {
+        content.text = "Duration"
+        content.secondaryText = settings.activeScanDuration.clockString
+        cell.accessoryType = .disclosureIndicator
+        cell.selectionStyle = .default
+      } else {
+        content.text = "Clear live scan results"
+        content.textProperties.color = .systemRed
+        cell.selectionStyle = .default
+      }
 
     case 1:
       if indexPath.row == 0 {
@@ -90,18 +95,6 @@ final class SettingsViewController: UITableViewController {
       }
 
     case 2:
-      if indexPath.row == 0 {
-        content.text = "Minimum RSSI"
-        content.secondaryText = "\(settings.minimumRSSI) dBm"
-        cell.accessoryType = .disclosureIndicator
-        cell.selectionStyle = .default
-      } else {
-        content.text = "Clear live scan results"
-        content.textProperties.color = .systemRed
-        cell.selectionStyle = .default
-      }
-
-    case 3:
       content.text = indexPath.row == 0 ? "Location permission" : "Notification permission"
       content.secondaryText = indexPath.row == 0 ? locationStatusText : "Tap to request or review"
       content.image = UIImage(systemName: indexPath.row == 0 ? "location" : "bell")
@@ -109,7 +102,7 @@ final class SettingsViewController: UITableViewController {
       cell.accessoryType = .disclosureIndicator
       cell.selectionStyle = .default
 
-    case 4:
+    case 3:
       if indexPath.row == 0 {
         content.text = "SignalTrail"
         content.secondaryText =
@@ -137,6 +130,7 @@ final class SettingsViewController: UITableViewController {
         title: "Active scan duration", current: settings.activeScanDuration,
         options: [30, 60, 120, 180, 300]
       ) { self.settings.activeScanDuration = $0 }
+    case (0, 1): environment.scanCoordinator.clearResults()
     case (1, 0):
       showDurationPicker(
         title: "Scan burst", current: settings.recordingBurstDuration,
@@ -147,14 +141,12 @@ final class SettingsViewController: UITableViewController {
         title: "Pause", current: settings.recordingPauseDuration,
         options: [5, 10, 12, 15, 30, 60]
       ) { self.settings.recordingPauseDuration = $0 }
-    case (2, 0): showRSSIPicker()
-    case (2, 1): environment.scanCoordinator.clearResults()
-    case (3, 0): environment.locationProvider.requestWhenInUseAuthorization()
-    case (3, 1):
+    case (2, 0): environment.locationProvider.requestWhenInUseAuthorization()
+    case (2, 1):
       environment.notificationService.requestAuthorization { [weak self] granted in
         if !granted { self?.openSystemSettings() }
       }
-    case (4, 2): resetSettings()
+    case (3, 2): resetSettings()
     default: break
     }
   }
@@ -185,28 +177,6 @@ final class SettingsViewController: UITableViewController {
           update(value)
           self.environment.settingsStore.settings = self.settings
           self.tableView.reloadData()
-        })
-    }
-    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-    if let popover = alert.popoverPresentationController {
-      popover.sourceView = view
-      popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
-    }
-    present(alert, animated: true)
-  }
-
-  private func showRSSIPicker() {
-    let alert = UIAlertController(title: "Minimum RSSI", message: nil, preferredStyle: .actionSheet)
-    [-110, -100, -90, -80, -70].forEach { value in
-      alert.addAction(
-        UIAlertAction(
-          title: value == settings.minimumRSSI ? "✓ \(value) dBm" : "\(value) dBm", style: .default
-        ) { [weak self] _ in
-          self?.settings.minimumRSSI = value
-          if let self = self {
-            self.environment.settingsStore.settings = self.settings
-            self.tableView.reloadData()
-          }
         })
     }
     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
