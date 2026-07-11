@@ -127,3 +127,13 @@ private final class PaddedLabel: UILabel {
         )
     }
 }
+
+// Transitional compatibility for views not yet migrated from the old classification API.
+extension DeviceIntelligence {
+    var title: String { categoryTitle }
+    var confidence: String { confidenceLabel }
+}
+
+extension BLEAdvertisement {
+    var classification: DeviceIntelligence { intelligence }
+}
