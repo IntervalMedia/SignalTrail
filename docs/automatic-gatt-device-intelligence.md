@@ -19,7 +19,7 @@ Improve identification of connectable BLE peripherals by automatically performin
    - `0x2A29` Manufacturer Name String
    - `0x2A50` PnP ID (structured decode where possible)
 6. The device intelligence engine incorporates GATT identification evidence in addition to advertisement evidence. Model/manufacturer evidence may raise or correct the category when it is more specific than advertisement-only inference.
-7. Example: `2A29 = Apple Inc.` plus `2A24 = AppleTV14,1` should classify the device as a TV/media device and show the decoded strings rather than `4170706C65...`.
+7. Example: `0x2A29 = Apple Inc.` plus `0x2A24 = AppleTV14,1` should classify the device as a TV/media device and show the decoded strings rather than `4170706C65...`.
 
 ## Safety and resource constraints
 
@@ -43,6 +43,12 @@ Add a focused decoder in `Services/Bluetooth` (or alongside `PeripheralInspector
 
 ```swift
 struct GATTDecodedValue: Hashable {
+    enum Format: Hashable {
+        case utf8
+        case hex
+        case structured(String)  // e.g. "PnP ID"
+    }
+
     let displayText: String
     let rawHex: String
     let format: Format
@@ -176,7 +182,7 @@ Unit tests should cover at minimum:
 
 BLE connection behaviour must be validated on physical hardware. Test at least:
 
-1. Apple TV exposing `180A/2A29/2A24`.
+1. Apple TV exposing `0x180A`/`0x2A29`/`0x2A24`.
 2. A connectable peripheral with readable binary characteristics to verify no bogus text conversion.
 3. Several connectable peripherals in range to verify the probe queue remains sequential and scanning continues.
 4. A peripheral that refuses connection/read requests to verify timeout/failure recovery.
