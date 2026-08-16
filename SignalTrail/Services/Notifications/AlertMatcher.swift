@@ -62,48 +62,46 @@ struct AlertMatcher {
     }
 }
 
-private enum BLEAdvertisementDetector {
-    private static let findMyManufacturerPrefix = "4C001219"
+enum BLEAdvertisementDetector {
     private static let flipperServiceIdentifiers: Set<UInt16> = [0x3081, 0x3082, 0x3083]
-    private static let metaIdentifiers: Set<UInt16> = [
-        0xFD5F,
-        0xFEB7,
-        0xFEB8,
-        0x01AB,
-        0x058E,
-        0x0D53,
-    ]
-    private static let blockedMetaIdentifiers: Set<UInt16> = [
-        0xFD5A,
-        0xFD69,
-        0x004C,
-        0x0006,
-        0xFEF3,
-    ]
-    private static let suspiciousSerialModuleNames: Set<String> = [
-        "HC-03",
-        "HC-05",
-        "HC-06",
-    ]
+    private static let metaIdentifiers: Set<UInt16> = [0xFD5F, 0xFEB7, 0xFEB8, 0x01AB, 0x058E, 0x0D53]
+    private static let blockedMetaIdentifiers: Set<UInt16> = [0xFD5A, 0xFD69, 0x004C, 0x0006, 0xFEF3]
+    private static let suspiciousSerialModuleNames: Set<String> = ["HC-03", "HC-05", "HC-06"]
 
     static func matches(profile: BLEDetectorProfile, device: BLEDeviceSnapshot) -> Bool {
+        matches(profile: profile, advertisement: device.advertisement)
+    }
+
+    static func matches(profile: BLEDetectorProfile, advertisement: BLEAdvertisement) -> Bool {
         switch profile {
         case .appleFindMyOfflineFinding:
-            return matchesFindMy(device.advertisement)
+            return matchesFindMy(advertisement)
         case .flipperZero:
-            return matchesFlipperZero(device.advertisement)
+            return matchesFlipperZero(advertisement)
         case .flockPenguinBattery:
-            return matchesFlockPenguinBattery(device.advertisement)
+            return matchesFlockPenguinBattery(advertisement)
         case .serialBluetoothModuleSkimmer:
-            return matchesSerialBluetoothModule(device.advertisement)
+            return matchesSerialBluetoothModule(advertisement)
         case .metaSmartGlasses:
-            return matchesMetaSmartGlasses(device.advertisement)
+            return matchesMetaSmartGlasses(advertisement)
         }
     }
 
     private static func matchesFindMy(_ advertisement: BLEAdvertisement) -> Bool {
-        guard let manufacturerDataHex = advertisement.manufacturerDataHex else { return false }
-        return manufacturerDataHex.normalizedHex.hasPrefix(findMyManufacturerPrefix)
+        guard advertisement.companyIdentifier == 0x004C,
+              let hex = advertisement.manufacturerDataHex,
+              let bytes = Data(hexadecimalString: hex).map({ Array($0) }),
+              bytes.count >= 29
+        else { return false }
+
+        // CoreBluetooth manufacturer data begins with the little-endian company ID.
+        // Find My Offline Finding uses Apple type 0x12 and declares a 25-byte body.
+        guard bytes[0] == 0x4C, bytes[1] == 0x00,
+              bytes[2] == 0x12, bytes[3] == 0x19
+        else { return false }
+
+        let declaredBodyLength = Int(bytes[3])
+        return bytes.count >= 4 + declaredBodyLength
     }
 
     private static func matchesFlipperZero(_ advertisement: BLEAdvertisement) -> Bool {
@@ -112,83 +110,49 @@ private enum BLEAdvertisementDetector {
 
     private static func matchesFlockPenguinBattery(_ advertisement: BLEAdvertisement) -> Bool {
         guard advertisement.companyIdentifier == 0x09C8 else { return false }
-
-        let name = advertisement.localName?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-        // ESP32Marauder accepts unnamed XUNTONG advertisements.
+        let name = advertisement.localName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !name.isEmpty else { return true }
-
-        if name == "FS Ext Battery" {
-            return true
-        }
-
-        if name.hasPrefix("Penguin-") {
+        if name.caseInsensitiveCompare("FS Ext Battery") == .orderedSame { return true }
+        if name.lowercased().hasPrefix("penguin-") {
             return isTenASCIIDigits(String(name.dropFirst("Penguin-".count)))
         }
-
         return isTenASCIIDigits(name)
     }
 
     private static func matchesSerialBluetoothModule(_ advertisement: BLEAdvertisement) -> Bool {
-        guard let name = advertisement.localName?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-            !name.isEmpty
-        else {
-            return false
-        }
-
-        return suspiciousSerialModuleNames.contains(name)
+        guard let name = advertisement.localName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !name.isEmpty else { return false }
+        return suspiciousSerialModuleNames.contains(name.uppercased())
     }
 
     private static func matchesMetaSmartGlasses(_ advertisement: BLEAdvertisement) -> Bool {
         var identifiers = serviceIdentifiers(in: advertisement)
-        if let companyIdentifier = advertisement.companyIdentifier {
-            identifiers.insert(companyIdentifier)
-        }
-
-        // Marauder returns immediately when any blocked identifier is present,
-        // even if a Meta identifier also appears elsewhere in the advertisement.
+        if let companyIdentifier = advertisement.companyIdentifier { identifiers.insert(companyIdentifier) }
         guard identifiers.isDisjoint(with: blockedMetaIdentifiers) else { return false }
         return !identifiers.isDisjoint(with: metaIdentifiers)
     }
 
-    private static func serviceIdentifiers(in advertisement: BLEAdvertisement) -> Set<UInt16> {
-        let values =
-            advertisement.memberServiceUUIDs
+    static func serviceIdentifiers(in advertisement: BLEAdvertisement) -> Set<UInt16> {
+        let values = advertisement.memberServiceUUIDs
             + advertisement.serviceUUIDs
             + advertisement.solicitedServiceUUIDs
             + advertisement.overflowServiceUUIDs
             + Array(advertisement.serviceData.keys)
-
         return Set(values.compactMap(identifier16(from:)))
     }
 
-    private static func identifier16(from value: String) -> UInt16? {
-        let normalized = value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .uppercased()
-            .replacingOccurrences(of: "0X", with: "")
-
-        if normalized.count == 4 {
-            return UInt16(normalized, radix: 16)
-        }
-
+    static func identifier16(from value: String) -> UInt16? {
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased().replacingOccurrences(of: "0X", with: "")
+        if normalized.count == 4 { return UInt16(normalized, radix: 16) }
         let compact = normalized.filter { $0.isHexDigit }
-        if compact.count == 8, compact.hasPrefix("0000") {
-            return UInt16(compact.suffix(4), radix: 16)
-        }
-
+        if compact.count == 8, compact.hasPrefix("0000") { return UInt16(compact.suffix(4), radix: 16) }
         let bluetoothBaseSuffix = "00001000800000805F9B34FB"
-        if compact.count == 32,
-           compact.hasPrefix("0000"),
-           compact.hasSuffix(bluetoothBaseSuffix)
-        {
+        if compact.count == 32, compact.hasPrefix("0000"), compact.hasSuffix(bluetoothBaseSuffix) {
             let start = compact.index(compact.startIndex, offsetBy: 4)
             let end = compact.index(start, offsetBy: 4)
             return UInt16(compact[start..<end], radix: 16)
         }
-
         return nil
     }
 

@@ -20,7 +20,7 @@ final class DeviceCell: UITableViewCell {
 
         detailLabel.font = .preferredFont(forTextStyle: .caption1)
         detailLabel.textColor = .secondaryLabel
-        detailLabel.numberOfLines = 2
+        detailLabel.numberOfLines = 3
 
         countLabel.font = .preferredFont(forTextStyle: .caption2)
         countLabel.textColor = .tertiaryLabel
@@ -53,16 +53,21 @@ final class DeviceCell: UITableViewCell {
         nameLabel.text = device.presentationName
         signalBadge.configure(rssi: device.latestRSSI)
         savedImageView.isHidden = !isKnown
+
         badgeStack.arrangedSubviews.forEach {
             badgeStack.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
 
-        let classification = device.advertisement.classification
+        let intelligence = device.intelligence
+        let manufacturerLine = intelligence.manufacturer.map { "Manufacturer: \($0)" }
         detailLabel.text = [
-            classification.title,
+            "Estimated category: \(intelligence.categoryTitle) (\(intelligence.probability)%)",
+            manufacturerLine,
             "\(device.signalDescription) • last seen \(DateFormatter.signalTrailTime.string(from: device.lastSeen))"
-        ].joined(separator: "\n")
+        ]
+        .compactMap { $0 }
+        .joined(separator: "\n")
 
         if isKnown {
             badgeStack.addArrangedSubview(makeBadge("Known", color: .systemYellow))
@@ -73,12 +78,12 @@ final class DeviceCell: UITableViewCell {
         if device.advertisement.isConnectable {
             badgeStack.addArrangedSubview(makeBadge("Connectable", color: AppTheme.accent))
         }
-        if classification.confidence != "Unknown" {
-            badgeStack.addArrangedSubview(makeBadge("Manufacturer identified", color: .systemBlue))
+        if intelligence.category != .unknown {
+            badgeStack.addArrangedSubview(makeBadge("Guess • \(intelligence.probability)%", color: .systemBlue))
         }
         badgeStack.isHidden = badgeStack.arrangedSubviews.isEmpty
 
-        countLabel.text = "\(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s")"
+        countLabel.text = "\(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s") • category is an estimate"
     }
 
     private func makeBadge(_ text: String, color: UIColor) -> UILabel {
@@ -92,7 +97,6 @@ final class DeviceCell: UITableViewCell {
         label.clipsToBounds = true
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.textAlignment = .center
-        label.layoutMargins = UIEdgeInsets(top: 3, left: 7, bottom: 3, right: 7)
         return PaddedLabel(wrapping: label)
     }
 }
@@ -117,7 +121,19 @@ private final class PaddedLabel: UILabel {
 
     override var intrinsicContentSize: CGSize {
         let size = super.intrinsicContentSize
-        return CGSize(width: size.width + contentInsets.left + contentInsets.right,
-                      height: size.height + contentInsets.top + contentInsets.bottom)
+        return CGSize(
+            width: size.width + contentInsets.left + contentInsets.right,
+            height: size.height + contentInsets.top + contentInsets.bottom
+        )
     }
+}
+
+// Transitional compatibility for views not yet migrated from the old classification API.
+extension DeviceIntelligence {
+    var title: String { categoryTitle }
+    var confidence: String { confidenceLabel }
+}
+
+extension BLEAdvertisement {
+    var classification: DeviceIntelligence { intelligence }
 }
