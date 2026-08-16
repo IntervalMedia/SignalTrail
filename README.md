@@ -36,7 +36,10 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
 - Device rows that prioritize device names, inferred company/profile, signal age, observation count, and status badges before raw identifiers
 - Device details with summary-first presentation, collapsed technical sections, tap-to-copy raw values, connection, service discovery, characteristic read/write, and notifications
 - Bluetooth SIG company-name lookup from bundled `company_identifiers.yaml`
-- Bluetooth SIG 16-bit member UUID detection and display for advertised service UUIDs
+- Context-aware Bluetooth SIG names for adopted services, characteristics, descriptors, units, member UUIDs, and standards-organization UUIDs
+- Post-connection, read-only enrichment from GAP Appearance and Device Information values, including structured PnP ID decoding
+- Curated Bluetooth SIG characteristic decoding for identity strings, Battery Level, Heart Rate, HID metadata, cycling/running/Fitness Machine features, and environmental values while retaining raw bytes
+- GATT navigation that separates observed advertisements, device-reported values/capabilities, and inferred categories
 - Library tab with saved-device nicknames, notes, saved matching metadata, and first-class alert management
 - Local alerts matching:
   - iOS peripheral identifier
@@ -66,6 +69,8 @@ The iOS Simulator does not provide normal nearby BLE scanning, so use real hardw
 - “Record Session” mode is application-level burst scanning. It is not raw RF sniffing, and iOS controls the underlying radio scan intervals.
 - The MVP deliberately stops scanning when the app enters the background. This avoids implying reliable continuous monitoring that iOS does not guarantee for an unrestricted device scan.
 - Company identifier and company-name alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
+- Company identifiers, member UUIDs, names, Appearance, and GATT identity values are device-supplied claims or namespace assignments; they do not authenticate a manufacturer or exact product.
+- Post-connection enrichment begins only after the user taps Connect. SignalTrail automatically reads a bounded allowlist of readable, standard identification characteristics and never writes or enables notifications as part of enrichment.
 - GATT writes can alter device behavior, so characteristic writes are grouped under Advanced tools and require confirmation.
 
 ## Data storage

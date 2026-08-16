@@ -37,24 +37,39 @@ final class CharacteristicViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = snapshot.uuid
+        title = BluetoothAssignedUUIDLookup.metadata(
+            for: snapshot.uuid,
+            kind: .characteristic
+        )?.name ?? "Vendor-specific characteristic"
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         inspector.delegate = self
     }
 
-    override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+    override func numberOfSections(in tableView: UITableView) -> Int { 3 }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        section == 0 ? Row.allCases.count : AdvancedRow.allCases.count
+        switch section {
+        case 0: return Row.allCases.count
+        case 1: return max(1, snapshot.descriptors.count)
+        default: return AdvancedRow.allCases.count
+        }
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        section == 0 ? "Characteristic" : "Advanced tools"
+        switch section {
+        case 0: return "Device-reported characteristic"
+        case 1: return "Descriptors"
+        default: return "Advanced tools"
+        }
     }
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        section == 1 ? "Writing to a GATT characteristic can change device behaviour." : nil
+        switch section {
+        case 0: return "Decoded values follow Bluetooth SIG definitions when available. Raw bytes are retained."
+        case 1: return "Descriptors provide device-reported format and presentation metadata."
+        default: return "Writing to a GATT characteristic can change device behaviour."
+        }
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -71,8 +86,20 @@ final class CharacteristicViewController: UITableViewController {
                 content.secondaryText = snapshot.properties.joined(separator: ", ")
             case .value:
                 content.text = "Latest value"
-                content.secondaryText = snapshot.valueHex ?? "No value read"
-                content.secondaryTextProperties.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+                if let decoded = snapshot.decodedValue {
+                    content.secondaryText = [
+                        "Device reported: \(decoded.displayText)",
+                        decoded.fields.isEmpty ? nil : decoded.fields
+                            .map { "\($0.name): \($0.value)" }
+                            .joined(separator: "\n"),
+                        "Raw bytes: \(decoded.rawHex)",
+                        decoded.warning,
+                    ].compactMap { $0 }.joined(separator: "\n")
+                } else {
+                    content.secondaryText = snapshot.valueHex.map { "Raw bytes: \($0)" }
+                        ?? "No value read"
+                }
+                content.secondaryTextProperties.numberOfLines = 0
                 content.image = snapshot.valueHex == nil ? nil : UIImage(systemName: "doc.on.doc")
                 content.imageProperties.tintColor = AppTheme.accent
                 cell.selectionStyle = snapshot.valueHex == nil ? .none : .default
@@ -87,6 +114,24 @@ final class CharacteristicViewController: UITableViewController {
                 let allowed = characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate)
                 content.textProperties.color = allowed ? AppTheme.accent : .secondaryLabel
                 cell.selectionStyle = allowed ? .default : .none
+            }
+        } else if indexPath.section == 1 {
+            if snapshot.descriptors.isEmpty {
+                content.text = "No descriptors discovered"
+                content.textProperties.color = .secondaryLabel
+            } else {
+                let descriptor = snapshot.descriptors[indexPath.row]
+                let metadata = BluetoothAssignedUUIDLookup.metadata(
+                    for: descriptor.uuid,
+                    kind: .descriptor
+                )
+                content.text = metadata?.name ?? "Vendor-specific descriptor"
+                content.secondaryText = [
+                    "UUID \(descriptor.uuid)",
+                    descriptor.displayValue.map { "Device reported: \($0)" },
+                    descriptor.rawHex.map { "Raw bytes: \($0)" },
+                ].compactMap { $0 }.joined(separator: "\n")
+                content.secondaryTextProperties.numberOfLines = 4
             }
         } else {
             let row = AdvancedRow(rawValue: indexPath.row)!
@@ -121,7 +166,7 @@ final class CharacteristicViewController: UITableViewController {
             default:
                 break
             }
-        } else {
+        } else if indexPath.section == 2 {
             switch AdvancedRow(rawValue: indexPath.row)! {
             case .writeText where canWrite:
                 presentWritePrompt(hex: false)

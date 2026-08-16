@@ -8,7 +8,7 @@ final class AlertRulesViewController: UITableViewController {
     private let emptyState = EmptyStateView(
         symbol: "bell",
         title: "No alerts",
-        message: "Create a rule with one or more criteria to match identifiers, names, manufacturer prefixes, company names, or service UUIDs."
+        message: "Create a rule with one or more criteria to match identifiers, names, manufacturer prefixes, company-ID assignees, or service UUIDs."
     )
 
     init(environment: AppEnvironment) {

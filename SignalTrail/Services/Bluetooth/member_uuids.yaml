@@ -1,12 +1,12 @@
 # This document, regardless of its title or content, is not a Bluetooth
 # Specification as defined in the Bluetooth Patent/Copyright License Agreement
-# (â€œPCLAâ€) and Bluetooth Trademark License Agreement. Use of this document by
+# (“PCLA”) and Bluetooth Trademark License Agreement. Use of this document by
 # members of Bluetooth SIG is governed by the membership and other related
-# agreements between Bluetooth SIG Inc. (â€œBluetooth SIGâ€) and its members,
-# including the PCLA and other agreements posted on Bluetooth SIGâ€™s website
+# agreements between Bluetooth SIG Inc. (“Bluetooth SIG”) and its members,
+# including the PCLA and other agreements posted on Bluetooth SIG’s website
 # located at www.bluetooth.com.
 # 
-# THIS DOCUMENT IS PROVIDED â€œAS ISâ€ AND BLUETOOTH SIG, ITS MEMBERS, AND THEIR
+# THIS DOCUMENT IS PROVIDED “AS IS” AND BLUETOOTH SIG, ITS MEMBERS, AND THEIR
 # AFFILIATES MAKE NO REPRESENTATIONS OR WARRANTIES AND DISCLAIM ALL WARRANTIES,
 # EXPRESS OR IMPLIED, INCLUDING ANY WARRANTY OF MERCHANTABILITY, TITLE,
 # NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, THAT THE CONTENT OF THIS
@@ -27,7 +27,7 @@
 # 
 # This document is subject to change without notice.
 # 
-# Copyright Â© 2020â€“2026 by Bluetooth SIG, Inc. The Bluetooth word mark and logos
+# Copyright © 2020–2026 by Bluetooth SIG, Inc. The Bluetooth word mark and logos
 # are owned by Bluetooth SIG, Inc. Other third-party brands and names are the
 # property of their respective owners.
 
@@ -267,7 +267,7 @@ uuids:
  - uuid: 0xFE88
    name: SALTO SYSTEMS S.L.
  - uuid: 0xFE87
-   name: "Qingdao Yeelink Information Technology Co., Ltd. ( é’å²›äº¿è”å®¢ä¿¡æ¯æŠ€æœ¯æœ‰é™å…¬å¸ )"
+   name: "Qingdao Yeelink Information Technology Co., Ltd. ( 青岛亿联客信息技术有限公司 )"
  - uuid: 0xFE86
    name: "HUAWEI Technologies Co., Ltd"
  - uuid: 0xFE85
@@ -645,7 +645,7 @@ uuids:
  - uuid: 0xFDC9
    name: Busch-Jaeger Elektro GmbH
  - uuid: 0xFDC8
-   name: Hach â€“ Danaher
+   name: Hach – Danaher
  - uuid: 0xFDC7
    name: Eli Lilly and Company
  - uuid: 0xFDC6
@@ -705,7 +705,7 @@ uuids:
  - uuid: 0xFDA9
    name: "Rhombus Systems, Inc."
  - uuid: 0xFDA8
-   name: PSA Peugeot CitroÃ«n
+   name: PSA Peugeot Citroën
  - uuid: 0xFDA7
    name: WWZN Information Technology Company Limited
  - uuid: 0xFDA6
@@ -1446,3 +1446,9 @@ uuids:
    name: Ford Motor Company
  - uuid: 0xFC30
    name: Arashi Vision Inc.
+ - uuid: 0xFC2C
+   name: Verkada Inc.
+ - uuid: 0xFC2B
+   name: "Elder Technologies, Inc"
+ - uuid: 0xFC2A
+   name: Troo Corporation

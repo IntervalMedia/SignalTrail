@@ -472,7 +472,7 @@ func alertTemplates(for device: BLEDeviceSnapshot) -> [AlertTemplate] {
     let company = BluetoothCompanyLookup.displayName(for: companyIdentifier)
     templates.append(
       AlertTemplate(
-        title: "This manufacturer",
+        title: "This company ID assignee",
         rule: AlertRule(
           id: UUID(),
           name: "\(company) broadcast detected",

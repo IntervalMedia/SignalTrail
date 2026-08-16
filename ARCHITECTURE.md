@@ -57,7 +57,7 @@ Normalizes CoreBluetooth advertisement dictionaries into `BLEAdvertisement` valu
 
 ### `PeripheralInspector`
 
-Manages one connected peripheral and converts GATT services and characteristics into UI-safe snapshots. Read, write, and notification operations remain separate from discovery state. Characteristic writes are surfaced by the UI as Advanced tools and require confirmation before dispatch.
+Manages one connected peripheral and converts GATT services, characteristics, descriptors, and decoded values into UI-safe snapshots. After an explicit user connection, it automatically reads a bounded allowlist of readable GAP, Device Information, Battery, HID metadata, and selected capability characteristics. Those reads enrich the live device with device-reported Appearance, identity, and feature evidence; they never write or enable notifications. Manual read, write, and notification operations remain separate from discovery state. Characteristic writes are surfaced by the UI as Advanced tools and require confirmation before dispatch.
 
 ### `LocalStore`
 
@@ -74,8 +74,11 @@ Provides repository-like methods for sessions, detections, known devices, and ru
 ### Assigned-number lookups
 
 - `BluetoothCompanyLookup` loads the bundled Bluetooth SIG `company_identifiers.yaml` file once and caches it in memory.
-- `BluetoothMemberUUIDLookup` is a generated Swift lookup table derived from Bluetooth SIG `member_uuids.yaml`.
-- These lookups drive both presentation and higher-level alert matching for company-name and member-UUID-name rules. Raw-value matching remains available for identifiers, names, prefixes, and UUID strings.
+- `BluetoothAssignedUUIDLookup` is the generated, typed source for adopted services, characteristics, descriptors, units, member assignments, standards-organization UUIDs, and GAP Appearance values. It canonicalizes short and Bluetooth-Base-UUID forms before matching.
+- `BluetoothMemberUUIDLookup` is a compatibility facade over that typed source for existing alert matching.
+- `GATTValueDecoder` contains a curated, length-checked subset of Bluetooth SIG GSS decoders and always retains raw bytes alongside decoded fields.
+- Lookup presentation distinguishes an assigned namespace from a device-reported claim and from an inference. Company/member allocation is not presented as authenticated manufacturer identity.
+- Class of Device, Classic SDP/service-class tables, and generic Mesh Device Properties are deliberately excluded from the BLE inspection path.
 
 ## Extension points
 
@@ -83,8 +86,8 @@ Recommended next steps:
 
 1. Introduce repository protocols and inject mock implementations for view-model tests.
 2. Replace JSONL indexing with GRDB when sessions become large or require cross-session queries.
-3. Automate regeneration of both Bluetooth SIG assigned-number lookups from the bundled YAML sources.
-4. Add service decoders for Battery, Device Information, Heart Rate, Environmental Sensing, and Nordic UART.
+3. Expand curated GSS decoders only where length, flags, units, and optional fields can be validated deterministically.
+4. Add separately sourced vendor decoders for documented formats such as Nordic UART without treating arbitrary vendor UUIDs as Bluetooth SIG data.
 5. Add CoreBluetooth state restoration only for explicitly supported service UUIDs; unrestricted background discovery remains constrained by iOS.
 6. Add session naming, tags, notes, data-retention controls, and a bulk-delete workflow.
 7. Add deterministic UI tests with an injected Bluetooth scanner protocol and fixture advertisements.

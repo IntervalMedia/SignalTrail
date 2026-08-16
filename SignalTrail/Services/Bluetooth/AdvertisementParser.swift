@@ -30,7 +30,10 @@ struct AdvertisementParser {
         }
 
         let memberServiceUUIDs = Array(
-            Set((serviceUUIDs + solicited + overflow).compactMap(memberUUID16Hex(from:)))
+            Set(
+                (serviceUUIDs + solicited + overflow + Array(serviceData.keys))
+                    .compactMap(memberUUID16Hex(from:))
+            )
         ).sorted()
 
         return BLEAdvertisement(
@@ -82,23 +85,9 @@ struct AdvertisementParser {
     }
 
     private static func memberUUID16Hex(from uuid: String) -> String? {
-        // The Bluetooth Base UUID embeds 16-bit assigned numbers at bytes 12-13 (first 4 hex chars).
-        let normalized = normalizeUUID(uuid)
-        let shortHex: String?
-
-        if normalized.count == 4 {
-            shortHex = normalized
-        } else if normalized.count == 36,
-                  normalized.hasSuffix("-0000-1000-8000-00805F9B34FB")
-        {
-            shortHex = String(normalized.prefix(4))
-        } else {
-            shortHex = nil
+        guard BluetoothAssignedUUIDLookup.metadata(for: uuid, kind: .member) != nil else {
+            return nil
         }
-
-        guard let shortHex, let value = UInt16(shortHex, radix: 16) else { return nil }
-        let canonical = String(format: "0x%04X", value)
-        guard BluetoothMemberUUIDLookup.contains(canonical) else { return nil }
-        return canonical
+        return BluetoothAssignedUUIDLookup.canonical16BitString(from: uuid)
     }
 }

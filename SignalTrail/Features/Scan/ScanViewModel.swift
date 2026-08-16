@@ -165,10 +165,24 @@ final class ScanViewModel {
 
   private func matchesSearch(_ device: BLEDeviceSnapshot) -> Bool {
     guard !searchText.isEmpty else { return true }
+    let advertisedServiceUUIDs = device.advertisement.serviceUUIDs
+      + device.advertisement.solicitedServiceUUIDs
+      + device.advertisement.overflowServiceUUIDs
+      + Array(device.advertisement.serviceData.keys)
+    let assignedServiceNames = advertisedServiceUUIDs.compactMap {
+      BluetoothAssignedUUIDLookup.serviceMetadata(for: $0)?.name
+    }
+    let reportedIdentityValues = [
+      device.gattEvidence?.identity.manufacturerName,
+      device.gattEvidence?.identity.modelNumber,
+      device.gattEvidence?.identity.appearance?.displayName,
+    ].compactMap { $0 }
     return device.presentationName.localizedCaseInsensitiveContains(searchText)
       || device.displayName.localizedCaseInsensitiveContains(searchText)
       || device.peripheralIdentifier.uuidString.localizedCaseInsensitiveContains(searchText)
-      || device.advertisement.classification.title.localizedCaseInsensitiveContains(searchText)
+      || device.intelligence.categoryTitle.localizedCaseInsensitiveContains(searchText)
+      || assignedServiceNames.contains { $0.localizedCaseInsensitiveContains(searchText) }
+      || reportedIdentityValues.contains { $0.localizedCaseInsensitiveContains(searchText) }
       || (device.advertisement.manufacturerDataHex?.localizedCaseInsensitiveContains(searchText)
         ?? false)
   }
@@ -186,7 +200,7 @@ final class ScanViewModel {
         guard device.advertisement.isConnectable else { return false }
       case .unknown:
         guard !knownIDs.contains(device.peripheralIdentifier),
-              device.advertisement.classification.confidence == "Unknown" else { return false }
+              device.intelligence.confidenceLabel == "Unknown" else { return false }
       }
     }
     return true

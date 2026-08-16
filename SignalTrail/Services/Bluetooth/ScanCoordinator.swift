@@ -237,6 +237,19 @@ final class ScanCoordinator {
     scanner.peripheral(for: identifier)
   }
 
+  func enrichDevice(_ identifier: UUID, with evidence: GATTDeviceEvidence) {
+    guard evidence.hasValues else { return }
+    if var snapshot = snapshots[identifier] {
+      snapshot.gattEvidence = evidence
+      snapshots[identifier] = snapshot
+    }
+    if var visibleSnapshot = visibleSnapshots[identifier] {
+      visibleSnapshot.gattEvidence = evidence
+      visibleSnapshots[identifier] = visibleSnapshot
+      delegate?.scanCoordinator(self, didUpdate: devices)
+    }
+  }
+
   private func beginRecordingBurst() {
     guard case .recording(let startedAt, let sessionID, _) = state else {
       if case .waitingForBluetooth(.recording) = state { return }

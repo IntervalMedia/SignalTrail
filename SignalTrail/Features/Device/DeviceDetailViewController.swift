@@ -14,10 +14,10 @@ final class DeviceDetailViewController: UITableViewController {
             switch self {
             case .summary: return "Summary"
             case .actions: return "Actions"
-            case .advertisement: return "Advertisement data"
-            case .serviceData: return "Service data"
-            case .services: return "GATT services"
-            case .rawValues: return "Raw values"
+            case .advertisement: return "Observed advertisement"
+            case .serviceData: return "Observed service data"
+            case .services: return "Discovered GATT capabilities"
+            case .rawValues: return "Observed identifiers"
             }
         }
 
@@ -29,7 +29,7 @@ final class DeviceDetailViewController: UITableViewController {
         }
     }
 
-    private let device: BLEDeviceSnapshot
+    private var device: BLEDeviceSnapshot
     private let environment: AppEnvironment
     private var inspector: PeripheralInspector?
     private var services: [GATTServiceSnapshot] = []
@@ -85,7 +85,7 @@ final class DeviceDetailViewController: UITableViewController {
         guard let section = Section(rawValue: section) else { return 0 }
         switch section {
         case .summary:
-            return 1
+            return 3
         case .actions:
             return 3
         case .advertisement, .serviceData, .rawValues:
@@ -102,7 +102,7 @@ final class DeviceDetailViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch Section(rawValue: section) {
         case .summary:
-            return "Observation locations are where this phone heard a signal, not verified device positions."
+            return "Observed and device-reported values are facts from this interaction. Inferences may be wrong. Observation locations are where this phone heard a signal, not verified device positions."
         case .services:
             return expandedSections.contains(.services)
                 ? (services.isEmpty ? "Connect to discover services and characteristics." : "Select a service to inspect characteristics.")
@@ -136,16 +136,7 @@ final class DeviceDetailViewController: UITableViewController {
 
         switch section {
         case .summary:
-            let classification = device.advertisement.classification
-            content.text = device.presentationName
-            content.secondaryText = [
-                "\(classification.confidence): \(classification.title)",
-                "Current \(device.latestRSSI) dBm • strongest \(device.strongestRSSI) dBm",
-                "Last seen \(DateFormatter.signalTrailTime.string(from: device.lastSeen)) • \(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s")",
-                "\(isKnown ? "Saved device" : "Not saved") • \(hasAlertMatch ? "Alert matched" : "No alert match")"
-            ].joined(separator: "\n")
-            content.image = UIImage(systemName: "antenna.radiowaves.left.and.right")
-            content.imageProperties.tintColor = AppTheme.accent
+            configureSummaryCell(content: &content, row: indexPath.row)
 
         case .actions:
             configureActionCell(cell, content: &content, row: indexPath.row)
@@ -175,8 +166,14 @@ final class DeviceDetailViewController: UITableViewController {
                 content.textProperties.color = .secondaryLabel
             } else {
                 let service = services[indexPath.row]
-                content.text = service.uuid
-                content.secondaryText = "\(service.characteristics.count) characteristic\(service.characteristics.count == 1 ? "" : "s")"
+                let metadata = BluetoothAssignedUUIDLookup.serviceMetadata(for: service.uuid)
+                content.text = metadata?.name ?? "Vendor-specific service"
+                content.secondaryText = [
+                    "UUID \(service.uuid) • discovered after connection",
+                    metadata?.assignmentDescription,
+                    "\(service.characteristics.count) characteristic\(service.characteristics.count == 1 ? "" : "s")",
+                ].compactMap { $0 }.joined(separator: "\n")
+                content.secondaryTextProperties.numberOfLines = 4
                 content.image = UIImage(systemName: "square.stack.3d.up")
                 content.imageProperties.tintColor = AppTheme.accent
                 cell.accessoryType = .disclosureIndicator
@@ -186,6 +183,79 @@ final class DeviceDetailViewController: UITableViewController {
 
         cell.contentConfiguration = content
         return cell
+    }
+
+    private func configureSummaryCell(
+        content: inout UIListContentConfiguration,
+        row: Int
+    ) {
+        switch row {
+        case 0:
+            content.secondaryTextProperties.numberOfLines = 4
+            content.text = "Observed"
+            content.secondaryText = [
+                device.presentationName,
+                "Current \(device.latestRSSI) dBm • strongest \(device.strongestRSSI) dBm",
+                "Last seen \(DateFormatter.signalTrailTime.string(from: device.lastSeen)) • \(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s")",
+                "\(isKnown ? "Saved device" : "Not saved") • \(hasAlertMatch ? "Alert matched" : "No alert match")",
+            ].joined(separator: "\n")
+            content.image = UIImage(systemName: "antenna.radiowaves.left.and.right")
+            content.imageProperties.tintColor = AppTheme.accent
+        case 1:
+            content.secondaryTextProperties.numberOfLines = 0
+            content.text = "Device-reported"
+            content.secondaryText = deviceReportedSummary
+            content.image = UIImage(systemName: "dot.radiowaves.left.and.right")
+            content.imageProperties.tintColor = .systemTeal
+        default:
+            let intelligence = device.intelligence
+            content.text = "Inference"
+            content.secondaryText = [
+                "\(intelligence.confidenceLabel): \(intelligence.categoryTitle)",
+                intelligence.modelFamily.map { "Model family: \($0)" },
+                intelligence.evidence.first.map { "Evidence: \($0.description)" },
+            ].compactMap { $0 }.joined(separator: "\n")
+            content.image = UIImage(systemName: "sparkles")
+            content.imageProperties.tintColor = .systemBlue
+        }
+    }
+
+    private var deviceReportedSummary: String {
+        guard let identity = device.gattEvidence?.identity, identity.hasValues else {
+            return "Connect to read GAP Appearance and Device Information when the peripheral exposes them."
+        }
+        return [
+            identity.appearance.map { "Appearance: \($0.displayName)" },
+            identity.manufacturerName.map { "Manufacturer name: \($0)" },
+            identity.modelNumber.map { "Model number: \($0)" },
+            identity.serialNumber.map { "Serial number: \($0)" },
+            identity.firmwareRevision.map { "Firmware: \($0)" },
+            identity.hardwareRevision.map { "Hardware: \($0)" },
+            identity.softwareRevision.map { "Software: \($0)" },
+            identity.pnpIdentifier.map(pnpSummary),
+        ].compactMap { $0 }.joined(separator: "\n")
+    }
+
+    private func pnpSummary(_ identifier: GATTPnPIdentifier) -> String {
+        let vendor: String
+        switch identifier.vendorIDSource {
+        case .bluetoothSIG:
+            vendor = "Bluetooth SIG company ID assigned to \(BluetoothCompanyLookup.displayName(for: identifier.vendorID))"
+        case .usbImplementersForum:
+            vendor = String(format: "USB-IF vendor 0x%04X", identifier.vendorID)
+        case nil:
+            vendor = String(
+                format: "unassigned vendor namespace 0x%02X, vendor 0x%04X",
+                identifier.rawVendorIDSource,
+                identifier.vendorID
+            )
+        }
+        return String(
+            format: "PnP ID: %@ • product 0x%04X • version 0x%04X",
+            vendor,
+            identifier.productID,
+            identifier.productVersion
+        )
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -253,18 +323,24 @@ final class DeviceDetailViewController: UITableViewController {
         case .advertisement:
             let memberUUIDSummary = device.advertisement.memberServiceUUIDs.isEmpty
                 ? "None"
-                : BluetoothMemberUUIDLookup.displayList(for: device.advertisement.memberServiceUUIDs).joined(separator: ", ")
+                : device.advertisement.memberServiceUUIDs.compactMap {
+                    BluetoothAssignedUUIDLookup.metadata(for: $0, kind: .member)?.assignmentDescription
+                }.sorted().joined(separator: ", ")
             return [
                 ("Local name", device.advertisement.localName ?? "Not advertised", false),
+                ("Company identifier assignment", BluetoothCompanyLookup.displayName(for: device.advertisement.companyIdentifier), false),
                 ("Manufacturer data", device.advertisement.manufacturerDataHex ?? "Not advertised", device.advertisement.manufacturerDataHex != nil),
-                ("Member UUIDs", memberUUIDSummary, !device.advertisement.memberServiceUUIDs.isEmpty),
-                ("Service UUIDs", device.advertisement.serviceUUIDs.isEmpty ? "None" : device.advertisement.serviceUUIDs.joined(separator: ", "), !device.advertisement.serviceUUIDs.isEmpty),
+                ("Member UUID assignments", memberUUIDSummary, !device.advertisement.memberServiceUUIDs.isEmpty),
+                ("Service UUIDs", assignedServiceList(device.advertisement.serviceUUIDs), !device.advertisement.serviceUUIDs.isEmpty),
                 ("TX power", device.advertisement.txPower.map { "\($0) dBm" } ?? "Not advertised", false)
             ]
         case .serviceData:
             return device.advertisement.serviceData
                 .sorted { $0.key < $1.key }
-                .map { ("Service \($0.key)", $0.value, true) }
+                .map {
+                    let name = BluetoothAssignedUUIDLookup.serviceMetadata(for: $0.key)?.name
+                    return (name.map { "\($0) service data" } ?? "Service \($0.key)", $0.value, true)
+                }
         case .rawValues:
             return [
                 ("App-scoped UUID", device.peripheralIdentifier.uuidString, true),
@@ -275,6 +351,13 @@ final class DeviceDetailViewController: UITableViewController {
         default:
             return []
         }
+    }
+
+    private func assignedServiceList(_ uuids: [String]) -> String {
+        guard !uuids.isEmpty else { return "None" }
+        return uuids.map { uuid in
+            BluetoothAssignedUUIDLookup.serviceMetadata(for: uuid)?.displayName ?? uuid
+        }.joined(separator: ", ")
     }
 
     private func emptyText(for section: Section) -> String {
@@ -373,7 +456,17 @@ final class DeviceDetailViewController: UITableViewController {
 extension DeviceDetailViewController: PeripheralInspectorDelegate {
     func peripheralInspectorDidUpdate(_ inspector: PeripheralInspector) {
         services = inspector.services
-        tableView.reloadSections(IndexSet([Section.actions.rawValue, Section.services.rawValue]), with: .automatic)
+        if inspector.evidence.hasValues {
+            device.gattEvidence = inspector.evidence
+            environment.scanCoordinator.enrichDevice(
+                device.peripheralIdentifier,
+                with: inspector.evidence
+            )
+        }
+        tableView.reloadSections(
+            IndexSet([Section.summary.rawValue, Section.actions.rawValue, Section.services.rawValue]),
+            with: .automatic
+        )
     }
 
     func peripheralInspector(_ inspector: PeripheralInspector, didFail message: String) {

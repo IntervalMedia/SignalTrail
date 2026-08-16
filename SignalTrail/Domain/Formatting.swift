@@ -111,6 +111,9 @@ enum IntelligenceEvidenceKind: String, Codable {
     case advertisedName
     case serviceUUID
     case manufacturer
+    case gattAppearance
+    case gattIdentity
+    case gattService
 }
 
 struct IntelligenceEvidence: Codable, Hashable {
@@ -132,7 +135,7 @@ struct DeviceIntelligence: Codable, Hashable {
         category == .unknown ? "Unknown" : "Estimated \(probability)%"
     }
     var disclaimer: String {
-        "This category is inferred from advertised BLE data and may be wrong."
+        "This category is inferred from observed and device-reported Bluetooth data and may be wrong."
     }
 }
 
@@ -144,14 +147,23 @@ struct DeviceIntelligenceEngine {
         let modelFamily: String?
     }
 
-    func analyze(_ advertisement: BLEAdvertisement) -> DeviceIntelligence {
+    func analyze(
+        _ advertisement: BLEAdvertisement,
+        gattEvidence: GATTDeviceEvidence? = nil
+    ) -> DeviceIntelligence {
         let detectorMatches = BLEDetectorProfile.allCases.filter {
             BLEAdvertisementDetector.matches(profile: $0, advertisement: advertisement)
         }
-        let manufacturer = advertisement.companyIdentifier.map {
+        let companyAssignment = advertisement.companyIdentifier.map {
             BluetoothCompanyLookup.displayName(for: $0)
         }
-        let services = BLEAdvertisementDetector.serviceIdentifiers(in: advertisement)
+        let manufacturer = gattEvidence?.identity.manufacturerName ?? companyAssignment
+        let advertisedServices = BLEAdvertisementDetector.serviceIdentifiers(in: advertisement)
+        let discoveredServices = Set(
+            gattEvidence?.discoveredServiceUUIDs.compactMap {
+                BluetoothAssignedUUIDLookup.canonical16BitValue(from: $0)
+            } ?? []
+        )
         let normalizedName = (advertisement.localName ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
@@ -195,6 +207,40 @@ struct DeviceIntelligenceEngine {
             }
         }
 
+        if let appearance = gattEvidence?.identity.appearance,
+           let category = category(forAppearance: appearance) {
+            add(
+                category,
+                score: 96,
+                kind: .gattAppearance,
+                description: "Appearance: \(appearance.displayName) (device reported)",
+                modelFamily: appearance.displayName
+            )
+        }
+
+        if let model = gattEvidence?.identity.modelNumber {
+            let normalizedModel = model.lowercased()
+            let modelRules: [(DeviceCategory, [String])] = [
+                (.television, ["appletv", "apple tv", "chromecast", "fire tv", "roku"]),
+                (.mobilePhone, ["iphone", "pixel", "galaxy", "oneplus"]),
+                (.smartWatch, ["applewatch", "watch", "fitbit", "garmin"]),
+                (.computer, ["macbook", "imac", "macmini", "thinkpad", "surface"]),
+                (.audio, ["airpods", "headphone", "earbuds", "speaker", "soundbar"]),
+                (.printer, ["printer", "laserjet", "deskjet"]),
+            ]
+            if let category = modelRules.first(where: { rule in
+                rule.1.contains { normalizedModel.contains($0) }
+            })?.0 {
+                add(
+                    category,
+                    score: 92,
+                    kind: .gattIdentity,
+                    description: "Model number \(model) (device reported)",
+                    modelFamily: model
+                )
+            }
+        }
+
         let nameRules: [(DeviceCategory, Int, [String], String)] = [
             (.mobilePhone, 88, ["iphone", "pixel", "galaxy s", "phone", "oneplus", "moto "], "Phone-like advertised name"),
             (.smartWatch, 87, ["watch", "fitbit", "garmin", "wear", "band"], "Wearable-like advertised name"),
@@ -211,19 +257,28 @@ struct DeviceIntelligenceEngine {
         }
 
         let serviceRules: [(DeviceCategory, Int, Set<UInt16>, String)] = [
-            (.healthFitness, 84, [0x180D, 0x1814, 0x1816, 0x1822, 0x1826], "Fitness-related Bluetooth service"),
+            (.healthFitness, 84, [
+                0x1808, 0x1809, 0x180D, 0x1810, 0x1814, 0x1816, 0x1818,
+                0x181B, 0x181D, 0x181F, 0x1822, 0x1826, 0x183A, 0x1840,
+            ], "Health or fitness Bluetooth service"),
             (.peripheral, 82, [0x1812], "Human Interface Device service"),
-            (.smartHome, 75, [0x181A, 0x181C, 0x181E, 0x1820], "Environmental or user-data service"),
+            (.smartHome, 75, [0x1815, 0x181A, 0x183B], "Automation or sensing Bluetooth service"),
             (.tracker, 78, [0xFEAA, 0xFE2C], "Beacon or tracker service identifier"),
-            (.audio, 78, [0x184E, 0x1853], "Bluetooth audio service")
+            (.audio, 78, [
+                0x1843, 0x1844, 0x1845, 0x1846, 0x1848, 0x1849, 0x184D,
+                0x184E, 0x184F, 0x1850, 0x1851, 0x1852, 0x1853, 0x1854, 0x1855,
+            ], "Bluetooth LE Audio service"),
         ]
-        for rule in serviceRules where !services.isDisjoint(with: rule.2) {
+        for rule in serviceRules where !advertisedServices.isDisjoint(with: rule.2) {
             add(rule.0, score: rule.1, kind: .serviceUUID, description: rule.3)
         }
-
-        if candidates.isEmpty, manufacturer != nil {
-            add(.consumerElectronics, score: 35, kind: .manufacturer,
-                description: "Manufacturer identified, product type not identified")
+        for rule in serviceRules where !discoveredServices.isDisjoint(with: rule.2) {
+            add(
+                rule.0,
+                score: min(92, rule.1 + 4),
+                kind: .gattService,
+                description: "\(rule.3) discovered after connection"
+            )
         }
 
         guard let best = candidates.max(by: { $0.score < $1.score }) else {
@@ -251,6 +306,30 @@ struct DeviceIntelligenceEngine {
             evidence: Array(supporting.map(\.evidence).prefix(3))
         )
     }
+
+    private func category(forAppearance appearance: GATTAppearance) -> DeviceCategory? {
+        switch appearance.categoryName.lowercased() {
+        case "phone": return .mobilePhone
+        case "computer": return .computer
+        case "watch", "eye-glasses", "outdoor sports activity": return .smartWatch
+        case "tag", "keyring": return .tracker
+        case "media player", "audio sink", "audio source", "wearable audio device", "hearing aid":
+            return .audio
+        case "display", "av equipment", "display equipment", "signage": return .television
+        case "remote control", "barcode scanner", "human interface device", "gaming": return .peripheral
+        case "motorized vehicle", "aircraft": return .vehicle
+        case "thermometer", "heart rate sensor", "blood pressure", "glucose meter",
+             "running walking sensor", "cycling", "pulse oximeter", "weight scale",
+             "personal mobility device", "continuous glucose monitor", "insulin pump",
+             "medication delivery", "spirometer":
+            return .healthFitness
+        case "sensor", "light fixtures", "fan", "hvac", "air conditioning", "humidifier",
+             "heating", "access control", "motorized device", "power device", "light source",
+             "window covering", "domestic appliance", "cookware device":
+            return .smartHome
+        default: return nil
+        }
+    }
 }
 
 extension BLEAdvertisement {
@@ -260,7 +339,9 @@ extension BLEAdvertisement {
 }
 
 extension BLEDeviceSnapshot {
-    var intelligence: DeviceIntelligence { advertisement.intelligence }
+    var intelligence: DeviceIntelligence {
+        DeviceIntelligenceEngine().analyze(advertisement, gattEvidence: gattEvidence)
+    }
 
     var presentationName: String {
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)

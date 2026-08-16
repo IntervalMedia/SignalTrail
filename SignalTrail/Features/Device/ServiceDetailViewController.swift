@@ -16,7 +16,8 @@ final class ServiceDetailViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = service.uuid
+        title = BluetoothAssignedUUIDLookup.serviceMetadata(for: service.uuid)?.name
+            ?? "Vendor-specific service"
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         inspector.delegate = self
@@ -33,19 +34,31 @@ final class ServiceDetailViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let characteristic = service.characteristics[indexPath.row]
+        let metadata = BluetoothAssignedUUIDLookup.metadata(
+            for: characteristic.uuid,
+            kind: .characteristic
+        )
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         var content = cell.defaultContentConfiguration()
-        content.text = characteristic.uuid
-        var details = characteristic.properties.joined(separator: " • ")
-        if let value = characteristic.valueHex { details += "\nValue: \(value)" }
+        content.text = metadata?.name ?? "Vendor-specific characteristic"
+        var details = "UUID \(characteristic.uuid)\n\(characteristic.properties.joined(separator: " • "))"
+        if let decoded = characteristic.decodedValue {
+            details += "\nDevice reported: \(decoded.displayText)"
+        } else if let value = characteristic.valueHex {
+            details += "\nRaw value: \(value)"
+        }
         if characteristic.isNotifying { details += "\nNotifications enabled" }
         content.secondaryText = details
-        content.secondaryTextProperties.numberOfLines = 3
+        content.secondaryTextProperties.numberOfLines = 5
         content.image = UIImage(systemName: characteristic.isNotifying ? "bell.badge.fill" : "slider.horizontal.3")
         content.imageProperties.tintColor = characteristic.isNotifying ? .systemOrange : AppTheme.accent
         cell.contentConfiguration = content
         cell.accessoryType = .disclosureIndicator
         return cell
+    }
+
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        "Services and characteristics describe capabilities exposed by the device; they do not authenticate its manufacturer or model."
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

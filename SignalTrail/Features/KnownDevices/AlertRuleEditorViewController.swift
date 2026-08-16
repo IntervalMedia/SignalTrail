@@ -92,7 +92,7 @@ final class AlertRuleEditorViewController: UITableViewController {
             return """
             Use Match Any to trigger when any saved criterion matches. Use Match All to require every criterion to match the same device.
 
-            Example: name contains "apple" plus member UUID name "Apple, Inc."
+            Example: name contains "apple" plus a member UUID assigned to "Apple, Inc."
             """
         case .preview:
             return "Test uses the current live scan results still held by the scanner."
@@ -253,13 +253,13 @@ final class AlertRuleEditorViewController: UITableViewController {
             case .companyIdentifier:
                 return "a device advertises company ID \(criterion.matchValue)"
             case .companyName:
-                return "a device advertises company \(criterion.matchValue)"
+                return "a device advertises a company ID assigned to \(criterion.matchValue)"
             case .localNameContains:
                 return "the advertised name contains \(criterion.matchValue)"
             case .manufacturerPrefix:
                 return "manufacturer data starts with \(criterion.matchValue)"
             case .memberServiceName:
-                return "a Bluetooth member UUID identifies \(criterion.matchValue)"
+                return "a Bluetooth member UUID is assigned to \(criterion.matchValue)"
             case .serviceUUID:
                 return "service UUID \(criterion.matchValue) is advertised"
             case .detectorProfile:

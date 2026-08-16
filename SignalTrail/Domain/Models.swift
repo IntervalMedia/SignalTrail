@@ -1,6 +1,114 @@
 import Foundation
 import CoreLocation
 
+// MARK: - Bluetooth evidence
+
+enum BluetoothEvidenceProvenance: String, Hashable {
+    case deviceReported
+}
+
+struct GATTDecodedField: Hashable {
+    let name: String
+    let value: String
+}
+
+struct GATTAppearance: Hashable {
+    let rawValue: UInt16
+    let categoryName: String
+    let subcategoryName: String?
+
+    var displayName: String {
+        subcategoryName ?? categoryName
+    }
+}
+
+struct GATTPnPIdentifier: Hashable {
+    enum VendorIDSource: UInt8, Hashable {
+        case bluetoothSIG = 1
+        case usbImplementersForum = 2
+
+        var displayName: String {
+            switch self {
+            case .bluetoothSIG: return "Bluetooth SIG Company Identifier"
+            case .usbImplementersForum: return "USB Implementers Forum"
+            }
+        }
+    }
+
+    let vendorIDSource: VendorIDSource?
+    let rawVendorIDSource: UInt8
+    let vendorID: UInt16
+    let productID: UInt16
+    let productVersion: UInt16
+}
+
+struct GATTDecodedValue: Hashable {
+    let displayText: String
+    let rawHex: String
+    let fields: [GATTDecodedField]
+    let provenance: BluetoothEvidenceProvenance
+    let warning: String?
+    let appearance: GATTAppearance?
+    let pnpIdentifier: GATTPnPIdentifier?
+
+    init(
+        displayText: String,
+        rawHex: String,
+        fields: [GATTDecodedField],
+        provenance: BluetoothEvidenceProvenance = .deviceReported,
+        warning: String? = nil,
+        appearance: GATTAppearance? = nil,
+        pnpIdentifier: GATTPnPIdentifier? = nil
+    ) {
+        self.displayText = displayText
+        self.rawHex = rawHex
+        self.fields = fields
+        self.provenance = provenance
+        self.warning = warning
+        self.appearance = appearance
+        self.pnpIdentifier = pnpIdentifier
+    }
+}
+
+struct GATTDeviceIdentity: Hashable {
+    var deviceName: String?
+    var manufacturerName: String?
+    var modelNumber: String?
+    var serialNumber: String?
+    var firmwareRevision: String?
+    var hardwareRevision: String?
+    var softwareRevision: String?
+    var systemID: String?
+    var pnpIdentifier: GATTPnPIdentifier?
+    var appearance: GATTAppearance?
+
+    var hasValues: Bool {
+        deviceName != nil
+            || manufacturerName != nil
+            || modelNumber != nil
+            || serialNumber != nil
+            || firmwareRevision != nil
+            || hardwareRevision != nil
+            || softwareRevision != nil
+            || systemID != nil
+            || pnpIdentifier != nil
+            || appearance != nil
+    }
+}
+
+struct GATTDeviceEvidence: Hashable {
+    var identity = GATTDeviceIdentity()
+    var discoveredServiceUUIDs: [String] = []
+
+    var hasValues: Bool {
+        identity.hasValues || !discoveredServiceUUIDs.isEmpty
+    }
+
+    mutating func setDiscoveredServiceUUIDs(_ uuids: [String]) {
+        discoveredServiceUUIDs = Array(Set(uuids.map { $0.uppercased() })).sorted()
+    }
+}
+
 // MARK: - Scan domain
 
 enum ScanMode: String, Codable, CaseIterable {
@@ -86,6 +194,7 @@ struct BLEDeviceSnapshot: Hashable {
     var lastSeenMetadataTag: String = ""
     var sightingCount: Int
     var advertisement: BLEAdvertisement
+    var gattEvidence: GATTDeviceEvidence? = nil
 
     var signalLevel: SignalLevel { SignalLevel(rssi: latestRSSI) }
 }
@@ -216,10 +325,10 @@ enum AlertMatchType: String, Codable, CaseIterable {
         switch self {
         case .peripheralIdentifier: return "Device identifier"
         case .companyIdentifier: return "Company identifier"
-        case .companyName: return "Company name"
+        case .companyName: return "Company ID assignee"
         case .localNameContains: return "Name contains"
         case .manufacturerPrefix: return "Manufacturer prefix"
-        case .memberServiceName: return "Member UUID name"
+        case .memberServiceName: return "Member UUID assignee"
         case .serviceUUID: return "Service UUID"
         case .detectorProfile: return "Built-in BLE detector"
         }
@@ -232,13 +341,13 @@ enum AlertMatchType: String, Codable, CaseIterable {
         case .companyIdentifier:
             return "Enter a Bluetooth SIG company identifier in hexadecimal, for example 004C for Apple. Manufacturer data must be advertised."
         case .companyName:
-            return "Exact case-insensitive match against the Bluetooth SIG company name derived from manufacturer data."
+            return "Exact case-insensitive match against the Bluetooth SIG assignee of the company identifier in manufacturer data. This does not authenticate the device maker."
         case .localNameContains:
             return "Case-insensitive partial match against the advertised or peripheral name."
         case .manufacturerPrefix:
             return "Hexadecimal prefix match against manufacturer data, including the company identifier bytes."
         case .memberServiceName:
-            return "Exact case-insensitive match against derived Bluetooth SIG 16-bit member UUID names in the advertisement."
+            return "Exact case-insensitive match against the assignee of a Bluetooth SIG 16-bit member UUID. Assignment does not authenticate the device maker."
         case .serviceUUID:
             return "Exact case-insensitive advertised service UUID match."
         case .detectorProfile:
@@ -397,7 +506,15 @@ struct GATTCharacteristicSnapshot: Hashable {
     let uuid: String
     let properties: [String]
     var valueHex: String?
+    var decodedValue: GATTDecodedValue? = nil
+    var descriptors: [GATTDescriptorSnapshot] = []
     var isNotifying: Bool
+}
+
+struct GATTDescriptorSnapshot: Hashable {
+    let uuid: String
+    var displayValue: String?
+    var rawHex: String?
 }
 
 struct GATTServiceSnapshot: Hashable {

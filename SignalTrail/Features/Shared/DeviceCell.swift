@@ -60,9 +60,14 @@ final class DeviceCell: UITableViewCell {
         }
 
         let intelligence = device.intelligence
-        let manufacturerLine = intelligence.manufacturer.map { "Manufacturer: \($0)" }
+        let manufacturerLine: String?
+        if let reported = device.gattEvidence?.identity.manufacturerName {
+            manufacturerLine = "Device-reported manufacturer: \(reported)"
+        } else {
+            manufacturerLine = intelligence.manufacturer.map { "Company ID assigned to: \($0)" }
+        }
         detailLabel.text = [
-            "Estimated category: \(intelligence.categoryTitle) (\(intelligence.probability)%)",
+            "Inferred category: \(intelligence.categoryTitle) (\(intelligence.probability)%)",
             manufacturerLine,
             "\(device.signalDescription) • last seen \(DateFormatter.signalTrailTime.string(from: device.lastSeen))"
         ]
@@ -79,11 +84,11 @@ final class DeviceCell: UITableViewCell {
             badgeStack.addArrangedSubview(makeBadge("Connectable", color: AppTheme.accent))
         }
         if intelligence.category != .unknown {
-            badgeStack.addArrangedSubview(makeBadge("Guess • \(intelligence.probability)%", color: .systemBlue))
+            badgeStack.addArrangedSubview(makeBadge("Inference • \(intelligence.probability)%", color: .systemBlue))
         }
         badgeStack.isHidden = badgeStack.arrangedSubviews.isEmpty
 
-        countLabel.text = "\(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s") • category is an estimate"
+        countLabel.text = "\(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s") • identity claims are not authenticated"
     }
 
     private func makeBadge(_ text: String, color: UIColor) -> UILabel {
@@ -126,14 +131,4 @@ private final class PaddedLabel: UILabel {
             height: size.height + contentInsets.top + contentInsets.bottom
         )
     }
-}
-
-// Transitional compatibility for views not yet migrated from the old classification API.
-extension DeviceIntelligence {
-    var title: String { categoryTitle }
-    var confidence: String { confidenceLabel }
-}
-
-extension BLEAdvertisement {
-    var classification: DeviceIntelligence { intelligence }
 }

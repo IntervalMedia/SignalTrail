@@ -142,18 +142,7 @@ enum BLEAdvertisementDetector {
     }
 
     static func identifier16(from value: String) -> UInt16? {
-        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            .uppercased().replacingOccurrences(of: "0X", with: "")
-        if normalized.count == 4 { return UInt16(normalized, radix: 16) }
-        let compact = normalized.filter { $0.isHexDigit }
-        if compact.count == 8, compact.hasPrefix("0000") { return UInt16(compact.suffix(4), radix: 16) }
-        let bluetoothBaseSuffix = "00001000800000805F9B34FB"
-        if compact.count == 32, compact.hasPrefix("0000"), compact.hasSuffix(bluetoothBaseSuffix) {
-            let start = compact.index(compact.startIndex, offsetBy: 4)
-            let end = compact.index(start, offsetBy: 4)
-            return UInt16(compact[start..<end], radix: 16)
-        }
-        return nil
+        BluetoothAssignedUUIDLookup.canonical16BitValue(from: value)
     }
 
     private static func isTenASCIIDigits(_ value: String) -> Bool {
