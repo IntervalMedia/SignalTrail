@@ -103,13 +103,9 @@ final class ScanStatusCard: CardView {
     stack.spacing = 14
     addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18)
-    let trailing = stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
+      stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
+      stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
       stack.topAnchor.constraint(equalTo: topAnchor, constant: 18),
       stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -18),
     ])
@@ -224,13 +220,9 @@ final class ScanStatusCard: CardView {
     container.layer.cornerRadius = 12
     container.addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12)
-    let trailing = stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
+      stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+      stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
       stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
       stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
     ])
@@ -281,13 +273,9 @@ final class ScanStatusCard: CardView {
     container.layer.cornerRadius = 12
     container.addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12)
-    let trailing = stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
+      stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+      stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
       stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
       stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
     ])

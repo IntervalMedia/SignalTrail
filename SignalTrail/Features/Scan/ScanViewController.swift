@@ -104,13 +104,9 @@ final class ScanViewController: UIViewController {
     stack.spacing = 12
     container.addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16)
-    let trailing = stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
+      stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+      stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
       stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
       stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14),
     ])
@@ -178,13 +174,9 @@ final class ScanViewController: UIViewController {
     stack.spacing = 10
     controlsCard.addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: controlsCard.leadingAnchor, constant: 16)
-    let trailing = stack.trailingAnchor.constraint(equalTo: controlsCard.trailingAnchor, constant: -16)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
+      stack.leadingAnchor.constraint(equalTo: controlsCard.leadingAnchor, constant: 16),
+      stack.trailingAnchor.constraint(equalTo: controlsCard.trailingAnchor, constant: -16),
       stack.topAnchor.constraint(equalTo: controlsCard.topAnchor, constant: 14),
       stack.bottomAnchor.constraint(equalTo: controlsCard.bottomAnchor, constant: -14),
     ])

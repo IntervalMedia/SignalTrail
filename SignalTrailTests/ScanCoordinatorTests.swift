@@ -155,9 +155,61 @@ final class ScanCoordinatorTests: XCTestCase {
     XCTAssertNil(pruned[older.peripheralIdentifier])
   }
 
+  func testReconcileGATTIdentityDuplicatesKeepsEstablishedDeviceName() {
+    let now = Date()
+    let modelIdentifier = UUID()
+    let namedIdentifier = UUID()
+    let evidence = makeMacBookEvidence(deviceName: "Jm1", modelNumber: "MacBookPro18,3")
+
+    var modelSnapshot = makeSnapshot(
+      identifier: modelIdentifier,
+      name: "MacBookPro18,3",
+      lastSeen: now.addingTimeInterval(-1),
+      rssi: -60
+    )
+    modelSnapshot.gattEvidence = evidence
+
+    var namedSnapshot = makeSnapshot(
+      identifier: namedIdentifier,
+      name: "Jm1",
+      lastSeen: now,
+      rssi: -64
+    )
+    namedSnapshot.gattEvidence = evidence
+
+    let reconciled = ScanCoordinator.reconcileGATTIdentityDuplicates(
+      [
+        modelIdentifier: modelSnapshot,
+        namedIdentifier: namedSnapshot,
+      ],
+      preferredIdentifier: modelIdentifier
+    )
+
+    XCTAssertEqual(reconciled.count, 1)
+    XCTAssertEqual(reconciled.values.first?.displayName, "Jm1")
+    XCTAssertEqual(reconciled.values.first?.presentationName, "Jm1")
+    XCTAssertEqual(reconciled.values.first?.sightingCount, 2)
+  }
+
+  func testPresentationNamePrefersGATTDeviceNameBeforeModelNumber() {
+    var snapshot = makeSnapshot(name: "Unnamed device", lastSeen: Date(), rssi: -60)
+    snapshot.gattEvidence = makeMacBookEvidence(deviceName: "Jm1", modelNumber: "MacBookPro18,3")
+
+    XCTAssertEqual(snapshot.presentationName, "Jm1")
+  }
+
   private func makeSnapshot(name: String, lastSeen: Date, rssi: Int) -> BLEDeviceSnapshot {
+    makeSnapshot(identifier: UUID(), name: name, lastSeen: lastSeen, rssi: rssi)
+  }
+
+  private func makeSnapshot(
+    identifier: UUID,
+    name: String,
+    lastSeen: Date,
+    rssi: Int
+  ) -> BLEDeviceSnapshot {
     BLEDeviceSnapshot(
-      peripheralIdentifier: UUID(),
+      peripheralIdentifier: identifier,
       displayName: name,
       latestRSSI: rssi,
       strongestRSSI: rssi,
@@ -167,5 +219,13 @@ final class ScanCoordinatorTests: XCTestCase {
       sightingCount: 1,
       advertisement: .empty
     )
+  }
+
+  private func makeMacBookEvidence(deviceName: String, modelNumber: String) -> GATTDeviceEvidence {
+    var evidence = GATTDeviceEvidence()
+    evidence.identity.deviceName = deviceName
+    evidence.identity.manufacturerName = "Apple Inc."
+    evidence.identity.modelNumber = modelNumber
+    return evidence
   }
 }

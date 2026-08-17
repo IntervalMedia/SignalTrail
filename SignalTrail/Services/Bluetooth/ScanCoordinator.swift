@@ -75,6 +75,7 @@ final class ScanCoordinator {
   private var dirtyVisibleSnapshotIdentifiers = Set<UUID>()
   private var lastVisibleUpdateDates: [UUID: Date] = [:]
   private var recordedObservationStates: [UUID: RecordedObservationState] = [:]
+  private var peripheralAliases: [UUID: UUID] = [:]
 
   private(set) var state: State = .idle {
     didSet { delegate?.scanCoordinatorDidChangeState(self) }
@@ -227,6 +228,7 @@ final class ScanCoordinator {
     dirtyVisibleSnapshotIdentifiers.removeAll()
     lastVisibleUpdateDates.removeAll()
     recordedObservationStates.removeAll()
+    peripheralAliases.removeAll()
     visibleUpdateTimer?.invalidate()
     visibleUpdateTimer = nil
     scanner.clearCachedPeripherals()
@@ -239,15 +241,54 @@ final class ScanCoordinator {
 
   func enrichDevice(_ identifier: UUID, with evidence: GATTDeviceEvidence) {
     guard evidence.hasValues else { return }
-    if var snapshot = snapshots[identifier] {
+    let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
+    if var snapshot = snapshots[resolvedIdentifier] {
+      snapshot.gattEvidence = evidence
+      snapshots[resolvedIdentifier] = snapshot
+    } else if var snapshot = snapshots[identifier] {
       snapshot.gattEvidence = evidence
       snapshots[identifier] = snapshot
     }
-    if var visibleSnapshot = visibleSnapshots[identifier] {
+    if var visibleSnapshot = visibleSnapshots[resolvedIdentifier] {
+      visibleSnapshot.gattEvidence = evidence
+      visibleSnapshots[resolvedIdentifier] = visibleSnapshot
+    } else if var visibleSnapshot = visibleSnapshots[identifier] {
       visibleSnapshot.gattEvidence = evidence
       visibleSnapshots[identifier] = visibleSnapshot
-      delegate?.scanCoordinator(self, didUpdate: devices)
     }
+
+    reconcileGATTDuplicates(preferredIdentifier: resolvedIdentifier)
+    delegate?.scanCoordinator(self, didUpdate: devices)
+  }
+
+  private func reconcileGATTDuplicates(preferredIdentifier: UUID) {
+    let previousSnapshots = snapshots
+    let previousVisibleSnapshots = visibleSnapshots
+
+    snapshots = Self.reconcileGATTIdentityDuplicates(
+      snapshots,
+      preferredIdentifier: preferredIdentifier
+    )
+    visibleSnapshots = Self.reconcileGATTIdentityDuplicates(
+      visibleSnapshots,
+      preferredIdentifier: preferredIdentifier
+    )
+
+    let removedSnapshotIdentifiers = Set(previousSnapshots.keys).subtracting(snapshots.keys)
+    for removedIdentifier in removedSnapshotIdentifiers {
+      if let retainedIdentifier = retainedIdentifier(
+        matching: previousSnapshots[removedIdentifier],
+        in: snapshots
+      ) {
+        peripheralAliases[removedIdentifier] = retainedIdentifier
+      }
+      dirtyVisibleSnapshotIdentifiers.remove(removedIdentifier)
+      lastVisibleUpdateDates.removeValue(forKey: removedIdentifier)
+      recordedObservationStates.removeValue(forKey: removedIdentifier)
+    }
+
+    let removedVisibleIdentifiers = Set(previousVisibleSnapshots.keys).subtracting(visibleSnapshots.keys)
+    dirtyVisibleSnapshotIdentifiers.subtract(removedVisibleIdentifiers)
   }
 
   private func beginRecordingBurst() {
@@ -292,6 +333,7 @@ final class ScanCoordinator {
     dirtyVisibleSnapshotIdentifiers.removeAll()
     lastVisibleUpdateDates.removeAll()
     recordedObservationStates.removeAll()
+    peripheralAliases.removeAll()
     visibleUpdateTimer?.invalidate()
     visibleUpdateTimer = nil
     alertRules = store.loadAlertRules()
@@ -405,6 +447,158 @@ final class ScanCoordinator {
     return currentTimestamp.timeIntervalSince(previous.recordedAt) >= minimumInterval
   }
 
+  static func reconcileGATTIdentityDuplicates(
+    _ snapshots: [UUID: BLEDeviceSnapshot],
+    preferredIdentifier: UUID
+  ) -> [UUID: BLEDeviceSnapshot] {
+    var reconciled = snapshots
+    let groups = Dictionary(grouping: snapshots.values, by: gattIdentityKey)
+
+    for group in groups.values where group.count > 1 {
+      let sorted = group.sorted { lhs, rhs in
+        let lhsScore = gattMergePreferenceScore(lhs, preferredIdentifier: preferredIdentifier)
+        let rhsScore = gattMergePreferenceScore(rhs, preferredIdentifier: preferredIdentifier)
+        if lhsScore == rhsScore { return lhs.lastSeen > rhs.lastSeen }
+        return lhsScore > rhsScore
+      }
+      guard var retained = sorted.first else { continue }
+
+      for duplicate in sorted.dropFirst() {
+        retained = mergedGATTDuplicate(retained, duplicate)
+        reconciled.removeValue(forKey: duplicate.peripheralIdentifier)
+      }
+      reconciled[retained.peripheralIdentifier] = retained
+    }
+
+    return reconciled
+  }
+
+  private static func gattIdentityKey(for snapshot: BLEDeviceSnapshot) -> String {
+    guard let identity = snapshot.gattEvidence?.identity else {
+      return "peripheral|\(snapshot.peripheralIdentifier.uuidString)"
+    }
+
+    let deviceName = normalizedIdentityValue(identity.deviceName)
+    let modelNumber = normalizedIdentityValue(identity.modelNumber)
+    let manufacturerName = normalizedIdentityValue(identity.manufacturerName)
+    let serialNumber = normalizedIdentityValue(identity.serialNumber)
+    let systemID = normalizedIdentityValue(identity.systemID)
+
+    if let serialNumber, let manufacturerName {
+      return "serial|\(manufacturerName)|\(serialNumber)"
+    }
+
+    if let systemID, let manufacturerName {
+      return "system|\(manufacturerName)|\(systemID)"
+    }
+
+    if let pnpIdentifier = identity.pnpIdentifier, let modelNumber {
+      return [
+        "pnp",
+        String(pnpIdentifier.rawVendorIDSource),
+        String(pnpIdentifier.vendorID),
+        String(pnpIdentifier.productID),
+        String(pnpIdentifier.productVersion),
+        modelNumber,
+      ].joined(separator: "|")
+    }
+
+    if let deviceName, let modelNumber, let manufacturerName {
+      return "name-model|\(manufacturerName)|\(modelNumber)|\(deviceName)"
+    }
+
+    return "peripheral|\(snapshot.peripheralIdentifier.uuidString)"
+  }
+
+  private func retainedIdentifier(
+    matching removedSnapshot: BLEDeviceSnapshot?,
+    in snapshots: [UUID: BLEDeviceSnapshot]
+  ) -> UUID? {
+    guard let removedSnapshot else { return nil }
+    let removedKey = Self.gattIdentityKey(for: removedSnapshot)
+    return snapshots.values.first {
+      Self.gattIdentityKey(for: $0) == removedKey
+    }?.peripheralIdentifier
+  }
+
+  private static func gattMergePreferenceScore(
+    _ snapshot: BLEDeviceSnapshot,
+    preferredIdentifier: UUID
+  ) -> Int {
+    var score = 0
+    if snapshot.peripheralIdentifier == preferredIdentifier { score += 1 }
+    if hasEstablishedDeviceName(snapshot) { score += 8 }
+    if normalizedIdentityValue(snapshot.gattEvidence?.identity.deviceName) != nil { score += 4 }
+    if snapshot.advertisement.localName != nil { score += 2 }
+    return score
+  }
+
+  private static func mergedGATTDuplicate(
+    _ retained: BLEDeviceSnapshot,
+    _ duplicate: BLEDeviceSnapshot
+  ) -> BLEDeviceSnapshot {
+    var merged = retained
+
+    merged.firstSeen = min(retained.firstSeen, duplicate.firstSeen)
+    merged.lastSeen = max(retained.lastSeen, duplicate.lastSeen)
+    merged.sightingCount = retained.sightingCount + duplicate.sightingCount
+    merged.strongestRSSI = max(retained.strongestRSSI, duplicate.strongestRSSI)
+
+    if duplicate.lastSeen > retained.lastSeen {
+      merged.latestRSSI = duplicate.latestRSSI
+      merged.lastSeenMetadataTag = duplicate.lastSeenMetadataTag
+      merged.advertisement = duplicate.advertisement
+    }
+
+    merged.displayName = preferredDisplayName(from: [retained, duplicate])
+    if merged.gattEvidence?.hasValues != true {
+      merged.gattEvidence = duplicate.gattEvidence
+    }
+
+    return merged
+  }
+
+  private static func preferredDisplayName(from snapshots: [BLEDeviceSnapshot]) -> String {
+    if let snapshot = snapshots.first(where: hasEstablishedDeviceName) {
+      return snapshot.displayName
+    }
+
+    if let deviceName = snapshots.compactMap({ trimmedIdentityValue($0.gattEvidence?.identity.deviceName) }).first {
+      return deviceName
+    }
+
+    return snapshots.first?.displayName ?? "Unnamed device"
+  }
+
+  private static func hasEstablishedDeviceName(_ snapshot: BLEDeviceSnapshot) -> Bool {
+    isEstablishedDeviceName(snapshot.displayName, modelNumber: snapshot.gattEvidence?.identity.modelNumber)
+  }
+
+  private static func isEstablishedDeviceName(_ name: String, modelNumber: String?) -> Bool {
+    guard let normalizedName = normalizedIdentityValue(name),
+          normalizedName != "unnamed device" else {
+      return false
+    }
+
+    if let modelNumber = normalizedIdentityValue(modelNumber), normalizedName == modelNumber {
+      return false
+    }
+
+    return true
+  }
+
+  private static func normalizedIdentityValue(_ value: String?) -> String? {
+    trimmedIdentityValue(value)?.lowercased()
+  }
+
+  private static func trimmedIdentityValue(_ value: String?) -> String? {
+    guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !trimmed.isEmpty else {
+      return nil
+    }
+    return trimmed
+  }
+
   private func queueVisibleSnapshotUpdate(
     for identifier: UUID,
     at timestamp: Date,
@@ -493,6 +687,7 @@ final class ScanCoordinator {
     for identifier in removedKeys {
       lastVisibleUpdateDates.removeValue(forKey: identifier)
       recordedObservationStates.removeValue(forKey: identifier)
+      peripheralAliases.removeValue(forKey: identifier)
     }
 
     let previousVisibleCount = visibleSnapshots.count
@@ -561,17 +756,18 @@ extension ScanCoordinator: BluetoothScannerDelegate {
   ) {
     guard rssi >= settingsStore.settings.minimumRSSI else { return }
 
+    let snapshotIdentifier = peripheralAliases[peripheral.identifier] ?? peripheral.identifier
     let name = peripheral.name ?? advertisement.localName ?? "Unnamed device"
     let mergeResult = Self.mergeSnapshot(
-      existing: snapshots[peripheral.identifier],
-      identifier: peripheral.identifier,
+      existing: snapshots[snapshotIdentifier],
+      identifier: snapshotIdentifier,
       name: name,
       advertisement: advertisement,
       rssi: rssi,
       timestamp: timestamp
     )
     let snapshot = mergeResult.snapshot
-    snapshots[peripheral.identifier] = snapshot
+    snapshots[snapshotIdentifier] = snapshot
 
     let visibleSnapshotsChangedFromPrune = pruneSnapshotCaches(now: timestamp)
     if visibleSnapshotsChangedFromPrune {
@@ -579,7 +775,7 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     }
 
     queueVisibleSnapshotUpdate(
-      for: peripheral.identifier,
+      for: snapshotIdentifier,
       at: timestamp,
       forceImmediate: mergeResult.isNewDevice
     )
@@ -588,7 +784,7 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     guard case .recording = state, var session = activeSession else { return }
     let metadataTag = snapshot.lastSeenMetadataTag
     let shouldRecordObservation = Self.shouldRecordObservation(
-      previous: recordedObservationStates[peripheral.identifier],
+      previous: recordedObservationStates[snapshotIdentifier],
       currentTimestamp: timestamp,
       metadataTag: metadataTag,
       rssi: snapshot.latestRSSI,
@@ -600,8 +796,8 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     let detection = BLEDetection(
       id: UUID(),
       sessionID: session.id,
-      peripheralIdentifier: peripheral.identifier,
-      displayName: name,
+      peripheralIdentifier: snapshotIdentifier,
+      displayName: snapshot.presentationName,
       rssi: rssi,
       timestamp: timestamp,
       latitude: location?.coordinate.latitude,
@@ -612,13 +808,13 @@ extension ScanCoordinator: BluetoothScannerDelegate {
 
     do {
       try store.appendDetection(detection)
-      recordedObservationStates[peripheral.identifier] = RecordedObservationState(
+      recordedObservationStates[snapshotIdentifier] = RecordedObservationState(
         recordedAt: timestamp,
         metadataTag: metadataTag,
         rssi: snapshot.latestRSSI
       )
       session.detectionCount += 1
-      sessionUniqueIDs.insert(peripheral.identifier)
+      sessionUniqueIDs.insert(snapshotIdentifier)
       session.uniqueDeviceCount = sessionUniqueIDs.count
       activeSession = session
       if session.detectionCount.isMultiple(of: 25) {

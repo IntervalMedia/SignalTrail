@@ -352,6 +352,11 @@ extension BLEDeviceSnapshot {
             return localName
         }
 
+        if let deviceName = gattEvidence?.identity.deviceName?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !deviceName.isEmpty {
+            return deviceName
+        }
+
         if let modelFamily = intelligence.modelFamily { return modelFamily }
         if intelligence.category != .unknown { return intelligence.categoryTitle }
         return "Unknown BLE device"
