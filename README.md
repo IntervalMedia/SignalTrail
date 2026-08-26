@@ -1,76 +1,71 @@
 # SignalTrail
 
-SignalTrail is a universal iOS/iPadOS 15.2 Bluetooth Low Energy scanner and observation logger built with UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications.
+SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.2 or later and is built with UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications.
 
 ![SignalTrail app icon](SignalTrail/Resources/SignalTrail-AppIcon-1024.png)
 
 ## Build requirements
 
-- **Xcode 14.0 or newer**
-- iOS/iPadOS deployment target: **15.2**
+- Xcode 14.0 or later
+- iOS or iPadOS 15.2 deployment target
 - A physical iPhone or iPad for BLE scanning
-- An Apple development team selected under **Signing & Capabilities**
-
-The `.xcodeproj` uses the Xcode 12 project-file compatibility format, but Xcode 12 cannot build an iOS 15.2 target because it does not include the iOS 15.2 SDK. Xcode 14 was the first release to include that SDK.
+- An Apple development team selected under `Signing & Capabilities`
 
 ## Run
 
 1. Open `SignalTrail.xcodeproj`.
 2. Select the **SignalTrail** target.
-3. Change the bundle identifier if required.
-4. Select your Apple development team.
+3. Change the bundle identifier if needed.
+4. Select your development team under `Signing & Capabilities`.
 5. Run on a physical iPhone or iPad.
 6. Review the first-run introduction.
 7. Grant Bluetooth access when scanning. Grant location access when starting a recorded session.
 
-The iOS Simulator does not provide normal nearby BLE scanning, so use real hardware.
+The iOS Simulator cannot perform normal nearby BLE scans. Use a physical device for scanning; the Simulator is still suitable for unit tests.
 
-## Current features
+## Features
 
-- First-run onboarding that explains Quick Scan, Record Session, and phone-observation locations
-- Readiness checklist for Bluetooth, Location, and Notifications before scanning
-- Timed Quick Scan, defaulting to two minutes
-- User-started Record Session flow using configurable scan bursts and pauses
-- Repeated advertisement logging with timestamp, RSSI, advertisement fields, and the phone's current location
-- Live filtering with search, horizontal filter chips, sorting, minimum-RSSI thresholds, and signal-strength indicators
-- Device rows that prioritize device names, inferred company/profile, signal age, observation count, and status badges before raw identifiers
-- Device details with summary-first presentation, collapsed technical sections, tap-to-copy raw values, connection, service discovery, characteristic read/write, and notifications
-- Bluetooth SIG company-name lookup from bundled `company_identifiers.yaml`
-- Context-aware Bluetooth SIG names for adopted services, characteristics, descriptors, units, member UUIDs, and standards-organization UUIDs
-- Post-connection, read-only enrichment from GAP Appearance and Device Information values, including structured PnP ID decoding
-- Curated Bluetooth SIG characteristic decoding for identity strings, Battery Level, Heart Rate, HID metadata, cycling/running/Fitness Machine features, and environmental values while retaining raw bytes
-- GATT navigation that separates observed advertisements, device-reported values/capabilities, and inferred categories
-- Library tab with saved-device nicknames, notes, saved matching metadata, and first-class alert management
-- Local alerts matching:
-  - iOS peripheral identifier
-  - Bluetooth SIG company identifier
-  - Bluetooth SIG company name
-  - advertised name substring
-  - manufacturer-data prefix
-  - advertised service UUID
-  - derived Bluetooth member UUID name
-- Saved-alert on/off toggles, enabled/disabled counts, recent current-result matches, plain-language previews, and a test action before saving
-- Alert creation templates from live scan rows, device details, recorded-session device rows, and saved-device details
-- Seeded default alerts for:
-  - Axon/TASER identifiers and names
-  - Apple Find My Offline Finding-like broadcasts
-  - Flipper Zero service UUIDs
-  - Flock/Penguin battery-like broadcasts
-  - HC-03/HC-05/HC-06 serial-module names and Meta/Ray-Ban identifiers
-- Session list, map, clustered observation markers, phone observation route, timeline scrubbing, and playback
-- JSON and CSV session export
-- Local-only persistence
-- Unit tests for alert matching and session persistence
+### Scanning and sessions
+
+- First-run guidance for Quick Scan, Record Session, and location data
+- A readiness checklist for Bluetooth, Location, and Notifications
+- Timed Quick Scans, set to two minutes by default
+- Recorded sessions with configurable scanning and pause intervals
+- Repeated advertisement logging, including the timestamp, RSSI, advertisement fields, and the phone's location
+- Live search, filters, sorting, minimum RSSI thresholds, and signal-strength indicators
+- Session maps with clustered observation markers, the phone's route, timeline scrubbing, and playback
+- Session export in JSON or CSV format
+
+### Devices and Bluetooth data
+
+- Scan results that show useful details, such as the device name, inferred company or profile, signal age, observation count, and status, before raw identifiers
+- Device summaries with expandable technical sections and tap-to-copy raw values
+- Device connections, service discovery, characteristic reads and writes, and notifications
+- Bluetooth SIG company-name lookup using the bundled `company_identifiers.yaml`
+- Context-aware names for Bluetooth SIG services, characteristics, descriptors, units, member UUIDs, and standards-organization UUIDs
+- Read-only enrichment after connection using GAP Appearance and Device Information values, including structured PnP ID decoding
+- Decoding for selected Bluetooth SIG characteristics, including identity strings, Battery Level, Heart Rate, HID metadata, cycling, running, Fitness Machine, and environmental data. Raw bytes remain available.
+- GATT navigation that clearly separates observed advertisements, values reported by the device, and inferred categories
+
+### Library and alerts
+
+- Saved devices with nicknames, notes, and matching metadata
+- Alerts that can match an iOS peripheral identifier, Bluetooth SIG company identifier or name, advertised-name substring, manufacturer-data prefix, advertised service UUID, or derived Bluetooth member UUID name
+- Alert enable and disable controls, status counts, recent matches, plain-language previews, and a test action before saving
+- Alert templates available from live scan results, device details, recorded sessions, and saved devices
+- Default alerts for Axon/TASER identifiers and names, Apple Find My Offline Finding-like broadcasts, Flipper Zero service UUIDs, Flock/Penguin battery-like broadcasts, HC-03/HC-05/HC-06 serial-module names, and Meta/Ray-Ban identifiers
+
+All data stays on the device. Unit tests cover alert matching and session persistence.
 
 ## Important platform limits
 
-- CoreBluetooth does **not** expose a BLE hardware MAC address on iOS. SignalTrail uses the app-scoped `CBPeripheral.identifier` and advertisement content instead.
-- A map marker is the **phone location where an advertisement was observed**. It is not the BLE device's verified location.
-- “Record Session” mode is application-level burst scanning. It is not raw RF sniffing, and iOS controls the underlying radio scan intervals.
+- CoreBluetooth does not expose a BLE hardware MAC address on iOS. SignalTrail uses the app-scoped `CBPeripheral.identifier` and advertisement data instead.
+- Each map marker shows where the phone observed an advertisement. It does not show the BLE device's verified location.
+- Record Session uses application-level scan bursts. It is not raw RF sniffing, and iOS controls the radio's scan intervals.
 - The MVP deliberately stops scanning when the app enters the background. This avoids implying reliable continuous monitoring that iOS does not guarantee for an unrestricted device scan.
 - Company identifier and company-name alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
-- Company identifiers, member UUIDs, names, Appearance, and GATT identity values are device-supplied claims or namespace assignments; they do not authenticate a manufacturer or exact product.
-- Post-connection enrichment begins only after the user taps Connect. SignalTrail automatically reads a bounded allowlist of readable, standard identification characteristics and never writes or enables notifications as part of enrichment.
+- Company identifiers, member UUIDs, names, Appearance values, and GATT identity values come from the device or an assigned namespace. They do not prove who made the device or identify its exact product model.
+- Post-connection enrichment begins only after the user taps Connect. SignalTrail reads a limited set of standard, readable identification characteristics. This process never writes to characteristics or enables notifications.
 - GATT writes can alter device behavior, so characteristic writes are grouped under Advanced tools and require confirmation.
 
 ## Data storage
@@ -86,7 +81,7 @@ SignalTrail/
     └── <session-id>.detections.jsonl
 ```
 
-Each observation is appended as one JSON object per line. This avoids rewriting a potentially large JSON array for every advertisement and keeps migration to GRDB/SQLite straightforward.
+SignalTrail appends each observation as one JSON object per line. This avoids rewriting a large JSON array whenever it receives an advertisement and leaves a clear migration path to GRDB or SQLite.
 
 Settings are stored separately in `UserDefaults` under the app's `SignalTrail.AppSettings` key.
 
@@ -95,8 +90,8 @@ Settings are stored separately in `UserDefaults` under the app's `SignalTrail.Ap
 Before distribution:
 
 - Write a user-facing privacy policy.
-- Complete App Store privacy labels accurately for precise location and device/diagnostic data actually collected.
-- Review retention controls and add an explicit “delete all data” option if required.
+- Complete the App Store privacy labels for the precise location, device, and diagnostic data the app collects.
+- Review data-retention controls and add a "delete all data" option if required.
 - Add a privacy manifest when building with a toolchain/App Store policy that requires one for the APIs or third-party SDKs used.
 - Do not market the app as locating devices or exposing MAC addresses.
 
@@ -104,10 +99,10 @@ Before distribution:
 
 The app presents four tabs:
 
-- `Scan`: Quick Scan, Record Session, permission readiness, live filters, sorting, minimum RSSI, and device search
-- `Sessions`: recorded-session replay, map playback, and export
-- `Library`: saved devices and detection-alert management
-- `Settings`: scan timing, permissions, and reset actions
+- `Scan` provides Quick Scan, Record Session, permission checks, filters, sorting, minimum RSSI controls, and device search.
+- `Sessions` provides recorded-session replay, map playback, and export.
+- `Library` contains saved devices and detection alerts.
+- `Settings` contains scan timing, permissions, and reset actions.
 
 ## Project layout
 
@@ -115,4 +110,12 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for responsibilities, data flow, extens
 
 ## Contributing
 
-Keep changes narrowly scoped and commit with short imperative subjects, for example `Add session export validation`. Run `xcodebuild -project SignalTrail.xcodeproj -scheme SignalTrail -destination 'platform=iOS Simulator,name=<installed simulator>' test` when changing testable logic, and note any required on-device BLE verification in your pull request.
+Keep changes narrowly scoped. Use short, imperative commit subjects such as `Add session export validation`.
+
+When changing testable logic, run:
+
+```sh
+xcodebuild -project SignalTrail.xcodeproj -scheme SignalTrail -destination 'platform=iOS Simulator,name=<installed simulator>' test
+```
+
+Note any required on-device BLE verification in the pull request.
