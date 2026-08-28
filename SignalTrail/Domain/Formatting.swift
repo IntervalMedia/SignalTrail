@@ -344,6 +344,10 @@ extension BLEDeviceSnapshot {
     }
 
     var presentationName: String {
+        if let custom = customName?.trimmingCharacters(in: .whitespacesAndNewlines), !custom.isEmpty {
+            return custom
+        }
+
         let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedName.isEmpty && trimmedName != "Unnamed device" { return trimmedName }
 

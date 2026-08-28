@@ -426,6 +426,20 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
 
   func tableView(
     _ tableView: UITableView,
+    leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+  ) -> UISwipeActionsConfiguration? {
+    let device = viewModel.devices[indexPath.row]
+    let rename = UIContextualAction(style: .normal, title: "Rename") { [weak self] _, _, completion in
+      self?.presentRenameDialog(for: device, at: indexPath)
+      completion(true)
+    }
+    rename.image = UIImage(systemName: "pencil")
+    rename.backgroundColor = AppTheme.accent
+    return UISwipeActionsConfiguration(actions: [rename])
+  }
+
+  func tableView(
+    _ tableView: UITableView,
     trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
   ) -> UISwipeActionsConfiguration? {
     let device = viewModel.devices[indexPath.row]
@@ -433,8 +447,138 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
       self?.showAlertTemplates(for: device)
       completion(true)
     }
+    alert.image = UIImage(systemName: "bell")
     alert.backgroundColor = .systemOrange
-    return UISwipeActionsConfiguration(actions: [alert])
+
+    let export = UIContextualAction(style: .normal, title: "Export") { [weak self] _, _, completion in
+      let cell = tableView.cellForRow(at: indexPath)
+      self?.exportDeviceJSON(for: device, sourceView: cell)
+      completion(true)
+    }
+    export.image = UIImage(systemName: "square.and.arrow.up")
+    export.backgroundColor = .systemBlue
+
+    let clear = UIContextualAction(style: .destructive, title: "Clear") { [weak self] _, _, completion in
+      self?.confirmClearStoredData(for: device, at: indexPath)
+      completion(true)
+    }
+    clear.image = UIImage(systemName: "arrow.counterclockwise")
+
+    return UISwipeActionsConfiguration(actions: [clear, export, alert])
+  }
+
+  func tableView(
+    _ tableView: UITableView,
+    contextMenuConfigurationForRowAt indexPath: IndexPath,
+    point: CGPoint
+  ) -> UIContextMenuConfiguration? {
+    let device = viewModel.devices[indexPath.row]
+    return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+      let editNameAction = UIAction(
+        title: "Edit Display Name",
+        image: UIImage(systemName: "pencil")
+      ) { _ in
+        self?.presentRenameDialog(for: device, at: indexPath)
+      }
+
+      let exportAction = UIAction(
+        title: "Export JSON",
+        image: UIImage(systemName: "square.and.arrow.up")
+      ) { _ in
+        let cell = self?.tableView.cellForRow(at: indexPath)
+        self?.exportDeviceJSON(for: device, sourceView: cell)
+      }
+
+      let clearAction = UIAction(
+        title: "Clear / Reset Data",
+        image: UIImage(systemName: "arrow.counterclockwise"),
+        attributes: .destructive
+      ) { _ in
+        self?.confirmClearStoredData(for: device, at: indexPath)
+      }
+
+      let alertAction = UIAction(
+        title: "Alert",
+        image: UIImage(systemName: "bell")
+      ) { _ in
+        self?.showAlertTemplates(for: device)
+      }
+
+      return UIMenu(title: device.presentationName, children: [editNameAction, exportAction, clearAction, alertAction])
+    }
+  }
+
+  private func presentRenameDialog(for device: BLEDeviceSnapshot, at indexPath: IndexPath?) {
+    let alert = UIAlertController(
+      title: "Edit Display Name",
+      message: "Enter a custom name for this device.",
+      preferredStyle: .alert
+    )
+    alert.addTextField { textField in
+      textField.placeholder = "Custom display name"
+      textField.text = device.customName
+      textField.autocapitalizationType = .words
+      textField.clearButtonMode = .whileEditing
+    }
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+      guard let self = self else { return }
+      let entered = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+      let customName = (entered?.isEmpty == false) ? entered : nil
+      self.viewModel.updateCustomName(customName, for: device.peripheralIdentifier)
+      if let indexPath = indexPath, indexPath.row < self.viewModel.devices.count {
+        self.tableView.reloadRows(at: [indexPath], with: .automatic)
+      } else {
+        self.tableView.reloadData()
+      }
+    })
+    present(alert, animated: true)
+  }
+
+  private func exportDeviceJSON(for device: BLEDeviceSnapshot, sourceView: UIView?) {
+    guard let url = viewModel.exportDeviceJSON(for: device.peripheralIdentifier) else {
+      presentError("Could not generate device JSON export file.")
+      return
+    }
+    let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    if let popover = activity.popoverPresentationController {
+      if let sourceView = sourceView {
+        popover.sourceView = sourceView
+        popover.sourceRect = sourceView.bounds
+      } else {
+        popover.sourceView = view
+        popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+      }
+    }
+    present(activity, animated: true)
+  }
+
+  private func confirmClearStoredData(for device: BLEDeviceSnapshot, at indexPath: IndexPath?) {
+    let alert = UIAlertController(
+      title: "Reset Stored Data",
+      message: "This will remove the stored JSON record and reset custom names and explored capabilities for this device.",
+      preferredStyle: .actionSheet
+    )
+    alert.addAction(UIAlertAction(title: "Clear / Reset Data", style: .destructive) { [weak self] _ in
+      guard let self = self else { return }
+      self.viewModel.clearStoredData(for: device.peripheralIdentifier)
+      if let indexPath = indexPath, indexPath.row < self.viewModel.devices.count {
+        self.tableView.reloadRows(at: [indexPath], with: .automatic)
+      } else {
+        self.tableView.reloadData()
+      }
+    })
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    if let popover = alert.popoverPresentationController {
+      if let indexPath = indexPath, let cell = tableView.cellForRow(at: indexPath) {
+        popover.sourceView = cell
+        popover.sourceRect = cell.bounds
+      } else {
+        popover.sourceView = view
+        popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+      }
+    }
+    present(alert, animated: true)
   }
 }
 

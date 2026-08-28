@@ -106,6 +106,7 @@ final class LocalStore {
   private let fileManager: FileManager
   private let rootURL: URL
   private let sessionsURL: URL
+  private let devicesURL: URL
   private let knownDevicesURL: URL
   private let alertRulesURL: URL
   private let alertRuleSeedVersionURL: URL
@@ -113,6 +114,7 @@ final class LocalStore {
   private let lineEncoder: JSONEncoder
   private let decoder: JSONDecoder
   private let lock = NSRecursiveLock()
+  private let deviceQueue = DispatchQueue(label: "com.signaltrail.deviceStore", qos: .utility)
 
   convenience init(fileManager: FileManager = .default) throws {
     let applicationSupport = try fileManager.url(
@@ -131,6 +133,7 @@ final class LocalStore {
     self.fileManager = fileManager
     self.rootURL = rootURL
     sessionsURL = rootURL.appendingPathComponent("sessions", isDirectory: true)
+    devicesURL = rootURL.appendingPathComponent("devices", isDirectory: true)
     knownDevicesURL = rootURL.appendingPathComponent("known-devices.json")
     alertRulesURL = rootURL.appendingPathComponent("alert-rules.json")
     alertRuleSeedVersionURL = rootURL.appendingPathComponent("alert-rules-seed-version.txt")
@@ -274,12 +277,85 @@ final class LocalStore {
     try saveAlertRules(loadAlertRules().filter { $0.id != rule.id })
   }
 
+  // MARK: Devices
+
+  var devicesDirectoryURL: URL { devicesURL }
+
+  func deviceRecordFileURL(for id: UUID) -> URL {
+    devicesURL.appendingPathComponent("\(id.uuidString).json")
+  }
+
+  func saveDeviceRecord(_ snapshot: BLEDeviceSnapshot) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    try write(snapshot, to: deviceRecordFileURL(for: snapshot.peripheralIdentifier))
+  }
+
+  func saveDeviceRecordAsync(
+    _ snapshot: BLEDeviceSnapshot,
+    completion: ((Result<Void, Error>) -> Void)? = nil
+  ) {
+    deviceQueue.async { [weak self] in
+      guard let self = self else { return }
+      do {
+        try self.saveDeviceRecord(snapshot)
+        completion?(.success(()))
+      } catch {
+        completion?(.failure(error))
+      }
+    }
+  }
+
+  func loadDeviceRecord(for id: UUID) -> BLEDeviceSnapshot? {
+    lock.lock()
+    defer { lock.unlock() }
+    let url = deviceRecordFileURL(for: id)
+    guard fileManager.fileExists(atPath: url.path) else { return nil }
+    return try? read(BLEDeviceSnapshot.self, from: url)
+  }
+
+  func loadAllDeviceRecords() -> [UUID: BLEDeviceSnapshot] {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let urls = try? fileManager.contentsOfDirectory(at: devicesURL, includingPropertiesForKeys: nil) else {
+      return [:]
+    }
+    var records: [UUID: BLEDeviceSnapshot] = [:]
+    for url in urls where url.pathExtension == "json" {
+      if let snapshot = try? read(BLEDeviceSnapshot.self, from: url) {
+        records[snapshot.peripheralIdentifier] = snapshot
+      }
+    }
+    return records
+  }
+
+  func purgeDeviceRecord(for id: UUID) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    let url = deviceRecordFileURL(for: id)
+    if fileManager.fileExists(atPath: url.path) {
+      try fileManager.removeItem(at: url)
+    }
+  }
+
+  func purgeAllDeviceRecords() throws {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let urls = try? fileManager.contentsOfDirectory(at: devicesURL, includingPropertiesForKeys: nil) else {
+      return
+    }
+    for url in urls where url.pathExtension == "json" {
+      try fileManager.removeItem(at: url)
+    }
+  }
+
   // MARK: Helpers
 
   private func createDirectories() throws {
     do {
       try fileManager.createDirectory(at: rootURL, withIntermediateDirectories: true)
       try fileManager.createDirectory(at: sessionsURL, withIntermediateDirectories: true)
+      try fileManager.createDirectory(at: devicesURL, withIntermediateDirectories: true)
     } catch {
       throw StoreError.unableToCreateDirectory
     }

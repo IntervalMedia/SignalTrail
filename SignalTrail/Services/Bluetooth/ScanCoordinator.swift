@@ -67,6 +67,9 @@ final class ScanCoordinator {
   private var visibleUpdateTimer: Timer?
   private var snapshots: [UUID: BLEDeviceSnapshot] = [:]
   private var visibleSnapshots: [UUID: BLEDeviceSnapshot] = [:]
+  private var deviceCache: [UUID: BLEDeviceSnapshot] = [:]
+  private var pendingPersistenceIdentifiers = Set<UUID>()
+  private var persistenceTimer: Timer?
   private var activeSession: ScanSession?
   private var sessionUniqueIDs = Set<UUID>()
   private var notificationHistory: [UUID: Date] = [:]
@@ -102,6 +105,7 @@ final class ScanCoordinator {
     self.store = store
     self.settingsStore = settingsStore
     self.notificationService = notificationService
+    self.deviceCache = store.loadAllDeviceRecords()
     scanner.delegate = self
     locationProvider.onAuthorizationChanged = { [weak self] status in
       guard let self = self else { return }
@@ -202,9 +206,12 @@ final class ScanCoordinator {
     stateTimer?.invalidate()
     burstTimer?.invalidate()
     visibleUpdateTimer?.invalidate()
+    persistenceTimer?.invalidate()
     stateTimer = nil
     burstTimer = nil
     visibleUpdateTimer = nil
+    persistenceTimer = nil
+    flushPendingDevicePersistences()
     locationProvider.stopUpdating()
     UIApplication.shared.isIdleTimerDisabled = false
 
@@ -223,6 +230,9 @@ final class ScanCoordinator {
 
   func clearResults() {
     guard !state.isRunning else { return }
+    persistenceTimer?.invalidate()
+    persistenceTimer = nil
+    pendingPersistenceIdentifiers.removeAll()
     snapshots.removeAll()
     visibleSnapshots.removeAll()
     dirtyVisibleSnapshotIdentifiers.removeAll()
@@ -239,26 +249,119 @@ final class ScanCoordinator {
     scanner.peripheral(for: identifier)
   }
 
-  func enrichDevice(_ identifier: UUID, with evidence: GATTDeviceEvidence) {
-    guard evidence.hasValues else { return }
+  func device(for identifier: UUID) -> BLEDeviceSnapshot? {
     let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
+    return snapshots[resolvedIdentifier] ?? deviceCache[resolvedIdentifier] ?? store.loadDeviceRecord(for: resolvedIdentifier)
+  }
+
+  func updateCustomName(_ customName: String?, for identifier: UUID) {
+    let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
+    let trimmed = customName?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let finalCustomName = (trimmed?.isEmpty == false) ? trimmed : nil
+
     if var snapshot = snapshots[resolvedIdentifier] {
-      snapshot.gattEvidence = evidence
+      snapshot.customName = finalCustomName
       snapshots[resolvedIdentifier] = snapshot
-    } else if var snapshot = snapshots[identifier] {
-      snapshot.gattEvidence = evidence
-      snapshots[identifier] = snapshot
+      deviceCache[resolvedIdentifier] = snapshot
+      if visibleSnapshots[resolvedIdentifier] != nil {
+        visibleSnapshots[resolvedIdentifier] = snapshot
+      }
+      try? store.saveDeviceRecord(snapshot)
+    } else if var cached = deviceCache[resolvedIdentifier] ?? store.loadDeviceRecord(for: resolvedIdentifier) {
+      cached.customName = finalCustomName
+      deviceCache[resolvedIdentifier] = cached
+      try? store.saveDeviceRecord(cached)
     }
-    if var visibleSnapshot = visibleSnapshots[resolvedIdentifier] {
-      visibleSnapshot.gattEvidence = evidence
-      visibleSnapshots[resolvedIdentifier] = visibleSnapshot
-    } else if var visibleSnapshot = visibleSnapshots[identifier] {
-      visibleSnapshot.gattEvidence = evidence
-      visibleSnapshots[identifier] = visibleSnapshot
+
+    delegate?.scanCoordinator(self, didUpdate: devices)
+  }
+
+  func clearStoredData(for identifier: UUID) {
+    let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
+    pendingPersistenceIdentifiers.remove(resolvedIdentifier)
+    pendingPersistenceIdentifiers.remove(identifier)
+    try? store.purgeDeviceRecord(for: resolvedIdentifier)
+
+    if var snapshot = snapshots[resolvedIdentifier] {
+      snapshot.customName = nil
+      snapshot.gattEvidence = nil
+      snapshot.exploredServices = []
+      snapshot.rssiHistory = []
+      snapshot.displayName = snapshot.advertisement.localName ?? "Unnamed device"
+      snapshots[resolvedIdentifier] = snapshot
+      deviceCache[resolvedIdentifier] = snapshot
+      if visibleSnapshots[resolvedIdentifier] != nil {
+        visibleSnapshots[resolvedIdentifier] = snapshot
+      }
+    } else if var cached = deviceCache[resolvedIdentifier] {
+      cached.customName = nil
+      cached.gattEvidence = nil
+      cached.exploredServices = []
+      cached.rssiHistory = []
+      cached.displayName = cached.advertisement.localName ?? "Unnamed device"
+      deviceCache[resolvedIdentifier] = cached
+    }
+
+    delegate?.scanCoordinator(self, didUpdate: devices)
+  }
+
+  func exportDeviceJSON(for identifier: UUID) -> URL? {
+    let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
+    if let snapshot = snapshots[resolvedIdentifier] ?? deviceCache[resolvedIdentifier] ?? store.loadDeviceRecord(for: resolvedIdentifier) {
+      try? store.saveDeviceRecord(snapshot)
+      return store.deviceRecordFileURL(for: resolvedIdentifier)
+    }
+    return nil
+  }
+
+  func enrichDevice(
+    _ identifier: UUID,
+    with evidence: GATTDeviceEvidence,
+    exploredServices: [GATTServiceSnapshot] = []
+  ) {
+    guard evidence.hasValues || !exploredServices.isEmpty else { return }
+    let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
+    if var snapshot = snapshots[resolvedIdentifier] ?? snapshots[identifier] ?? deviceCache[resolvedIdentifier] {
+      if evidence.hasValues {
+        snapshot.gattEvidence = evidence
+      }
+      if !exploredServices.isEmpty {
+        snapshot.exploredServices = exploredServices
+      }
+      snapshots[resolvedIdentifier] = snapshot
+      deviceCache[resolvedIdentifier] = snapshot
+      if visibleSnapshots[resolvedIdentifier] != nil {
+        visibleSnapshots[resolvedIdentifier] = snapshot
+      }
+      try? store.saveDeviceRecord(snapshot)
     }
 
     reconcileGATTDuplicates(preferredIdentifier: resolvedIdentifier)
     delegate?.scanCoordinator(self, didUpdate: devices)
+  }
+
+  private func scheduleDevicePersistence(for identifier: UUID, immediate: Bool = false) {
+    pendingPersistenceIdentifiers.insert(identifier)
+    if immediate {
+      flushPendingDevicePersistences()
+    } else if persistenceTimer == nil {
+      persistenceTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+        self?.flushPendingDevicePersistences()
+      }
+    }
+  }
+
+  private func flushPendingDevicePersistences() {
+    persistenceTimer?.invalidate()
+    persistenceTimer = nil
+    guard !pendingPersistenceIdentifiers.isEmpty else { return }
+    let identifiersToSave = pendingPersistenceIdentifiers
+    pendingPersistenceIdentifiers.removeAll()
+    for id in identifiersToSave {
+      if let snapshot = snapshots[id] ?? deviceCache[id] {
+        store.saveDeviceRecordAsync(snapshot)
+      }
+    }
   }
 
   private func reconcileGATTDuplicates(preferredIdentifier: UUID) {
@@ -758,16 +861,62 @@ extension ScanCoordinator: BluetoothScannerDelegate {
 
     let snapshotIdentifier = peripheralAliases[peripheral.identifier] ?? peripheral.identifier
     let name = peripheral.name ?? advertisement.localName ?? "Unnamed device"
+
+    let cached = deviceCache[snapshotIdentifier] ?? store.loadDeviceRecord(for: snapshotIdentifier)
+    if deviceCache[snapshotIdentifier] == nil, let cached = cached {
+      deviceCache[snapshotIdentifier] = cached
+    }
+
+    let existingSnapshot = snapshots[snapshotIdentifier]
+    let baseSnapshot: BLEDeviceSnapshot?
+    if let existing = existingSnapshot {
+      baseSnapshot = existing
+    } else if let cached = cached {
+      baseSnapshot = BLEDeviceSnapshot(
+        peripheralIdentifier: snapshotIdentifier,
+        displayName: name.isEmpty ? cached.displayName : name,
+        customName: cached.customName,
+        latestRSSI: rssi,
+        strongestRSSI: max(cached.strongestRSSI, rssi),
+        firstSeen: min(cached.firstSeen, timestamp),
+        lastSeen: timestamp,
+        lastSeenMetadataTag: cached.lastSeenMetadataTag,
+        sightingCount: cached.sightingCount,
+        advertisement: advertisement,
+        gattEvidence: cached.gattEvidence,
+        exploredServices: cached.exploredServices,
+        lastLocation: cached.lastLocation,
+        rssiHistory: cached.rssiHistory
+      )
+    } else {
+      baseSnapshot = nil
+    }
+
     let mergeResult = Self.mergeSnapshot(
-      existing: snapshots[snapshotIdentifier],
+      existing: baseSnapshot,
       identifier: snapshotIdentifier,
       name: name,
       advertisement: advertisement,
       rssi: rssi,
       timestamp: timestamp
     )
-    let snapshot = mergeResult.snapshot
+    var snapshot = mergeResult.snapshot
+    if let location = locationProvider.currentLocation {
+      snapshot.lastLocation = DeviceLocationMetadata(
+        latitude: location.coordinate.latitude,
+        longitude: location.coordinate.longitude,
+        horizontalAccuracy: location.horizontalAccuracy,
+        timestamp: timestamp
+      )
+    }
+    snapshot.rssiHistory.append(DeviceRSSISample(timestamp: timestamp, rssi: rssi))
+    if snapshot.rssiHistory.count > 200 {
+      snapshot.rssiHistory.removeFirst(snapshot.rssiHistory.count - 200)
+    }
+
     snapshots[snapshotIdentifier] = snapshot
+    deviceCache[snapshotIdentifier] = snapshot
+    scheduleDevicePersistence(for: snapshotIdentifier, immediate: mergeResult.isNewDevice || mergeResult.metadataChanged)
 
     let visibleSnapshotsChangedFromPrune = pruneSnapshotCaches(now: timestamp)
     if visibleSnapshotsChangedFromPrune {

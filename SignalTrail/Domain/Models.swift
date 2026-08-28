@@ -3,16 +3,16 @@ import CoreLocation
 
 // MARK: - Bluetooth evidence
 
-enum BluetoothEvidenceProvenance: String, Hashable {
+enum BluetoothEvidenceProvenance: String, Codable, Hashable {
     case deviceReported
 }
 
-struct GATTDecodedField: Hashable {
+struct GATTDecodedField: Codable, Hashable {
     let name: String
     let value: String
 }
 
-struct GATTAppearance: Hashable {
+struct GATTAppearance: Codable, Hashable {
     let rawValue: UInt16
     let categoryName: String
     let subcategoryName: String?
@@ -22,8 +22,8 @@ struct GATTAppearance: Hashable {
     }
 }
 
-struct GATTPnPIdentifier: Hashable {
-    enum VendorIDSource: UInt8, Hashable {
+struct GATTPnPIdentifier: Codable, Hashable {
+    enum VendorIDSource: UInt8, Codable, Hashable {
         case bluetoothSIG = 1
         case usbImplementersForum = 2
 
@@ -42,7 +42,7 @@ struct GATTPnPIdentifier: Hashable {
     let productVersion: UInt16
 }
 
-struct GATTDecodedValue: Hashable {
+struct GATTDecodedValue: Codable, Hashable {
     let displayText: String
     let rawHex: String
     let fields: [GATTDecodedField]
@@ -70,7 +70,7 @@ struct GATTDecodedValue: Hashable {
     }
 }
 
-struct GATTDeviceIdentity: Hashable {
+struct GATTDeviceIdentity: Codable, Hashable {
     var deviceName: String?
     var manufacturerName: String?
     var modelNumber: String?
@@ -96,7 +96,7 @@ struct GATTDeviceIdentity: Hashable {
     }
 }
 
-struct GATTDeviceEvidence: Hashable {
+struct GATTDeviceEvidence: Codable, Hashable {
     var identity = GATTDeviceIdentity()
     var discoveredServiceUUIDs: [String] = []
 
@@ -184,9 +184,35 @@ struct BLEAdvertisement: Codable, Hashable {
     }
 }
 
-struct BLEDeviceSnapshot: Hashable {
+struct DeviceLocationMetadata: Codable, Hashable {
+    let latitude: Double
+    let longitude: Double
+    let horizontalAccuracy: Double?
+    let timestamp: Date
+
+    init(latitude: Double, longitude: Double, horizontalAccuracy: Double? = nil, timestamp: Date = Date()) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.horizontalAccuracy = horizontalAccuracy
+        self.timestamp = timestamp
+    }
+}
+
+struct DeviceRSSISample: Codable, Hashable {
+    let timestamp: Date
+    let rssi: Int
+
+    init(timestamp: Date = Date(), rssi: Int) {
+        self.timestamp = timestamp
+        self.rssi = rssi
+    }
+}
+
+struct BLEDeviceSnapshot: Codable, Hashable, Identifiable {
+    var id: UUID { peripheralIdentifier }
     let peripheralIdentifier: UUID
     var displayName: String
+    var customName: String?
     var latestRSSI: Int
     var strongestRSSI: Int
     var firstSeen: Date
@@ -195,8 +221,78 @@ struct BLEDeviceSnapshot: Hashable {
     var sightingCount: Int
     var advertisement: BLEAdvertisement
     var gattEvidence: GATTDeviceEvidence? = nil
+    var exploredServices: [GATTServiceSnapshot] = []
+    var lastLocation: DeviceLocationMetadata? = nil
+    var rssiHistory: [DeviceRSSISample] = []
 
     var signalLevel: SignalLevel { SignalLevel(rssi: latestRSSI) }
+
+    init(
+        peripheralIdentifier: UUID,
+        displayName: String,
+        customName: String? = nil,
+        latestRSSI: Int,
+        strongestRSSI: Int,
+        firstSeen: Date,
+        lastSeen: Date,
+        lastSeenMetadataTag: String = "",
+        sightingCount: Int,
+        advertisement: BLEAdvertisement,
+        gattEvidence: GATTDeviceEvidence? = nil,
+        exploredServices: [GATTServiceSnapshot] = [],
+        lastLocation: DeviceLocationMetadata? = nil,
+        rssiHistory: [DeviceRSSISample] = []
+    ) {
+        self.peripheralIdentifier = peripheralIdentifier
+        self.displayName = displayName
+        self.customName = customName
+        self.latestRSSI = latestRSSI
+        self.strongestRSSI = strongestRSSI
+        self.firstSeen = firstSeen
+        self.lastSeen = lastSeen
+        self.lastSeenMetadataTag = lastSeenMetadataTag
+        self.sightingCount = sightingCount
+        self.advertisement = advertisement
+        self.gattEvidence = gattEvidence
+        self.exploredServices = exploredServices
+        self.lastLocation = lastLocation
+        self.rssiHistory = rssiHistory
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case peripheralIdentifier
+        case displayName
+        case customName
+        case latestRSSI
+        case strongestRSSI
+        case firstSeen
+        case lastSeen
+        case lastSeenMetadataTag
+        case sightingCount
+        case advertisement
+        case gattEvidence
+        case exploredServices
+        case lastLocation
+        case rssiHistory
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        peripheralIdentifier = try container.decode(UUID.self, forKey: .peripheralIdentifier)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        customName = try container.decodeIfPresent(String.self, forKey: .customName)
+        latestRSSI = try container.decode(Int.self, forKey: .latestRSSI)
+        strongestRSSI = try container.decode(Int.self, forKey: .strongestRSSI)
+        firstSeen = try container.decode(Date.self, forKey: .firstSeen)
+        lastSeen = try container.decode(Date.self, forKey: .lastSeen)
+        lastSeenMetadataTag = try container.decodeIfPresent(String.self, forKey: .lastSeenMetadataTag) ?? ""
+        sightingCount = try container.decode(Int.self, forKey: .sightingCount)
+        advertisement = try container.decode(BLEAdvertisement.self, forKey: .advertisement)
+        gattEvidence = try container.decodeIfPresent(GATTDeviceEvidence.self, forKey: .gattEvidence)
+        exploredServices = try container.decodeIfPresent([GATTServiceSnapshot].self, forKey: .exploredServices) ?? []
+        lastLocation = try container.decodeIfPresent(DeviceLocationMetadata.self, forKey: .lastLocation)
+        rssiHistory = try container.decodeIfPresent([DeviceRSSISample].self, forKey: .rssiHistory) ?? []
+    }
 }
 
 enum SignalLevel: String, Codable {
@@ -502,7 +598,7 @@ struct AppSettings: Codable, Equatable {
 
 // MARK: - GATT
 
-struct GATTCharacteristicSnapshot: Hashable {
+struct GATTCharacteristicSnapshot: Codable, Hashable {
     let uuid: String
     let properties: [String]
     var valueHex: String?
@@ -511,13 +607,13 @@ struct GATTCharacteristicSnapshot: Hashable {
     var isNotifying: Bool
 }
 
-struct GATTDescriptorSnapshot: Hashable {
+struct GATTDescriptorSnapshot: Codable, Hashable {
     let uuid: String
     var displayValue: String?
     var rawHex: String?
 }
 
-struct GATTServiceSnapshot: Hashable {
+struct GATTServiceSnapshot: Codable, Hashable {
     let uuid: String
     var characteristics: [GATTCharacteristicSnapshot]
 }

@@ -167,7 +167,7 @@ Absence should normally be “not observed,” not “not supported.” Advertis
 
 ## Update and licensing considerations
 
-The snapshot examined contains machine-readable YAML but no repository-level `LICENSE`, formal schema, README, release manifest, semantic dataset version, or tags. Of 604 YAML files, 603 carry Bluetooth SIG proprietary notices that state furnishing the document does not grant an intellectual-property license, disclaim warranties, and say the content may change without notice; `company_identifiers.yaml` is the lone header exception. See, for example, the header of [`service_uuids.yaml`](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml). The repository API describes the project as public YAML for Assigned Numbers, GATT Specification Supplement, and Device Properties ([Bitbucket repository API](https://api.bitbucket.org/2.0/repositories/bluetooth-sig/public)), but public readability should not be assumed to grant unrestricted redistribution or creation of derived bundled tables. Obtain an appropriate licensing review before shipping additional copied YAML or generated lookup data.
+The snapshot examined contains machine-readable YAML but no repository-level `LICENSE`, formal schema, README, release manifest, semantic dataset version, or tags. Of 604 YAML files, 603 carry Bluetooth SIG proprietary notices that state furnishing the document does not grant an intellectual-property license, disclaim warranties, and say the content may change without notice; `company_identifiers.yaml` is the lone header exception. See, for example, the header of [`service_uuids.yaml`](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml). The repository API describes the project as public YAML for Assigned Numbers, GATT Specification Supplement, and Device Properties ([Bitbucket repository API](https://api.bitbucket.org/2.0/repositories/bluetooth-sig/public))
 
 For reproducible updates:
 
@@ -179,4 +179,4 @@ For reproducible updates:
 6. run lookup and decoder fixtures before accepting an update; and
 7. keep raw values usable when a newly changed schema cannot be decoded.
 
-The repository's current head was an automated publication commit, which reinforces treating it as a changing upstream dataset rather than a stable SDK. A small generator with checked-in output is appropriate for SignalTrail's offline/local-only design, subject to the licensing point above.
+The repository's current head was an automated publication commit, which reinforces treating it as a changing upstream dataset rather than a stable SDK. A generator with checked-in output is appropriate for SignalTrail's offline/local-only design.

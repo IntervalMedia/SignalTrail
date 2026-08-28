@@ -38,6 +38,7 @@ final class DeviceDetailViewController: UITableViewController {
     init(device: BLEDeviceSnapshot, environment: AppEnvironment) {
         self.device = device
         self.environment = environment
+        self.services = device.exploredServices
         super.init(style: .insetGrouped)
     }
 
@@ -60,13 +61,23 @@ final class DeviceDetailViewController: UITableViewController {
     }
 
     private func configureToolbar() {
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        let starItem = UIBarButtonItem(
             image: UIImage(systemName: isKnown ? "star.fill" : "star"),
             style: .plain,
             target: self,
             action: #selector(saveKnownTapped)
         )
-        navigationItem.rightBarButtonItem?.accessibilityLabel = "Save device"
+        starItem.accessibilityLabel = isKnown ? "Edit saved device" : "Save device"
+
+        let exportItem = UIBarButtonItem(
+            image: UIImage(systemName: "square.and.arrow.up"),
+            style: .plain,
+            target: self,
+            action: #selector(exportBarButtonTapped(_:))
+        )
+        exportItem.accessibilityLabel = "Export device JSON"
+
+        navigationItem.rightBarButtonItems = [starItem, exportItem]
     }
 
     private var isKnown: Bool {
@@ -87,7 +98,7 @@ final class DeviceDetailViewController: UITableViewController {
         case .summary:
             return 3
         case .actions:
-            return 3
+            return 6
         case .advertisement, .serviceData, .rawValues:
             return expandedSections.contains(section) ? max(rows(for: section).count, 1) : 1
         case .services:
@@ -274,8 +285,15 @@ final class DeviceDetailViewController: UITableViewController {
                 saveKnownTapped()
             } else if indexPath.row == 1 {
                 showAlertTemplates()
-            } else {
+            } else if indexPath.row == 2 {
                 toggleConnection()
+            } else if indexPath.row == 3 {
+                editDisplayNameTapped()
+            } else if indexPath.row == 4 {
+                let cell = tableView.cellForRow(at: indexPath)
+                exportDeviceJSON(sourceView: cell, barButtonItem: nil)
+            } else {
+                clearStoredDataTapped()
             }
 
         case .advertisement, .serviceData, .rawValues:
@@ -311,10 +329,23 @@ final class DeviceDetailViewController: UITableViewController {
             content.text = "Create alert"
             content.image = UIImage(systemName: "bell.badge")
             content.imageProperties.tintColor = .systemOrange
-        default:
+        case 2:
             content.text = connectionActionTitle
             content.image = UIImage(systemName: connectionActionSymbol)
             content.imageProperties.tintColor = inspector?.connectionState == .connected ? .systemRed : AppTheme.accent
+        case 3:
+            content.text = "Edit display name"
+            content.image = UIImage(systemName: "pencil")
+            content.imageProperties.tintColor = AppTheme.accent
+        case 4:
+            content.text = "Export device JSON"
+            content.image = UIImage(systemName: "square.and.arrow.up")
+            content.imageProperties.tintColor = AppTheme.accent
+        default:
+            content.text = "Clear / reset stored data"
+            content.image = UIImage(systemName: "arrow.counterclockwise")
+            content.imageProperties.tintColor = .systemRed
+            content.textProperties.color = .systemRed
         }
     }
 
@@ -451,18 +482,106 @@ final class DeviceDetailViewController: UITableViewController {
         controller.onSave = { [weak self] _ in self?.tableView.reloadData() }
         navigationController?.pushViewController(controller, animated: true)
     }
+
+    @objc private func exportBarButtonTapped(_ sender: UIBarButtonItem) {
+        exportDeviceJSON(sourceView: nil, barButtonItem: sender)
+    }
+
+    private func exportDeviceJSON(sourceView: UIView?, barButtonItem: UIBarButtonItem?) {
+        guard let url = environment.scanCoordinator.exportDeviceJSON(for: device.peripheralIdentifier) else {
+            presentError("Could not generate device JSON export file.")
+            return
+        }
+        let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = activity.popoverPresentationController {
+            if let barButtonItem = barButtonItem {
+                popover.barButtonItem = barButtonItem
+            } else if let sourceView = sourceView {
+                popover.sourceView = sourceView
+                popover.sourceRect = sourceView.bounds
+            } else {
+                popover.sourceView = view
+                popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+            }
+        }
+        present(activity, animated: true)
+    }
+
+    private func editDisplayNameTapped() {
+        let alert = UIAlertController(
+            title: "Edit Display Name",
+            message: "Enter a custom name for this device.",
+            preferredStyle: .alert
+        )
+        alert.addTextField { [weak self] textField in
+            textField.placeholder = "Custom display name"
+            textField.text = self?.device.customName
+            textField.autocapitalizationType = .words
+            textField.clearButtonMode = .whileEditing
+        }
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+            guard let self = self else { return }
+            let entered = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let customName = (entered?.isEmpty == false) ? entered : nil
+            self.environment.scanCoordinator.updateCustomName(customName, for: self.device.peripheralIdentifier)
+            if let updated = self.environment.scanCoordinator.device(for: self.device.peripheralIdentifier) {
+                self.device = updated
+            } else {
+                self.device.customName = customName
+            }
+            self.title = self.device.presentationName
+            self.tableView.reloadData()
+        })
+        present(alert, animated: true)
+    }
+
+    private func clearStoredDataTapped() {
+        let alert = UIAlertController(
+            title: "Reset Stored Data",
+            message: "This will remove the stored JSON record and reset custom names and explored capabilities for this device.",
+            preferredStyle: .actionSheet
+        )
+        alert.addAction(UIAlertAction(title: "Clear / Reset Data", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            self.environment.scanCoordinator.clearStoredData(for: self.device.peripheralIdentifier)
+            if let updated = self.environment.scanCoordinator.device(for: self.device.peripheralIdentifier) {
+                self.device = updated
+            } else {
+                self.device.customName = nil
+                self.device.gattEvidence = nil
+                self.device.exploredServices = []
+            }
+            self.services = self.device.exploredServices
+            self.title = self.device.presentationName
+            self.tableView.reloadData()
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            if let cell = tableView.cellForRow(at: IndexPath(row: 5, section: Section.actions.rawValue)) {
+                popover.sourceView = cell
+                popover.sourceRect = cell.bounds
+            } else {
+                popover.sourceView = view
+                popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+            }
+        }
+        present(alert, animated: true)
+    }
 }
 
 extension DeviceDetailViewController: PeripheralInspectorDelegate {
     func peripheralInspectorDidUpdate(_ inspector: PeripheralInspector) {
         services = inspector.services
+        device.exploredServices = inspector.services
         if inspector.evidence.hasValues {
             device.gattEvidence = inspector.evidence
-            environment.scanCoordinator.enrichDevice(
-                device.peripheralIdentifier,
-                with: inspector.evidence
-            )
         }
+        environment.scanCoordinator.enrichDevice(
+            device.peripheralIdentifier,
+            with: inspector.evidence,
+            exploredServices: inspector.services
+        )
         tableView.reloadSections(
             IndexSet([Section.summary.rawValue, Section.actions.rawValue, Section.services.rawValue]),
             with: .automatic

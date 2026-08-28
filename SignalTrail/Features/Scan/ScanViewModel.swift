@@ -163,6 +163,18 @@ final class ScanViewModel {
     coordinator.clearResults()
   }
 
+  func updateCustomName(_ customName: String?, for identifier: UUID) {
+    coordinator.updateCustomName(customName, for: identifier)
+  }
+
+  func clearStoredData(for identifier: UUID) {
+    coordinator.clearStoredData(for: identifier)
+  }
+
+  func exportDeviceJSON(for identifier: UUID) -> URL? {
+    coordinator.exportDeviceJSON(for: identifier)
+  }
+
   private func matchesSearch(_ device: BLEDeviceSnapshot) -> Bool {
     guard !searchText.isEmpty else { return true }
     let advertisedServiceUUIDs = device.advertisement.serviceUUIDs
