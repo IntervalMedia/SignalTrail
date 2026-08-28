@@ -1,13 +1,24 @@
 # SignalTrail
 
-SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.2 or later and is built with UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications.
+SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.0 or later and is written in Swift, built with UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications.
+
+SignalTrail is pre-configured to identify and alert the user to the presence of:
+- Police & Military issued body worn camera's and handheld Taser Weapons manufactured by Axon Inc / Taser International
+- Meta/Rayban smart glasses
+- Apple's 'Find My' compatible tracking devices
+- Credit Card skimmers used to steal payment-card details from payment terminals or ATMS (generic chinese models)
+- Flock Safety surviellance cameras that are misconfigured or have not been upgraded (This uses the battery infomation vulnerabilty which has largelt been patched as of August 2026) 
+
 
 ![SignalTrail app icon](SignalTrail/Resources/SignalTrail-AppIcon-1024.png)
+
+
+The app was written to investigate passive surviellence technique's, the concept of digital fingerprinting and identification, and to explore the hidden environment that connects our "smart" cities, homes, and workplaces.
 
 ## Build requirements
 
 - Xcode 14.0 or later
-- iOS or iPadOS 15.2 deployment target
+- iOS or iPadOS 15.0 deployment target
 - A physical iPhone or iPad for BLE scanning
 - An Apple development team selected under `Signing & Capabilities`
 
@@ -84,16 +95,6 @@ SignalTrail/
 SignalTrail appends each observation as one JSON object per line. This avoids rewriting a large JSON array whenever it receives an advertisement and leaves a clear migration path to GRDB or SQLite.
 
 Settings are stored separately in `UserDefaults` under the app's `SignalTrail.AppSettings` key.
-
-## Privacy and App Store work
-
-Before distribution:
-
-- Write a user-facing privacy policy.
-- Complete the App Store privacy labels for the precise location, device, and diagnostic data the app collects.
-- Review data-retention controls and add a "delete all data" option if required.
-- Add a privacy manifest when building with a toolchain/App Store policy that requires one for the APIs or third-party SDKs used.
-- Do not market the app as locating devices or exposing MAC addresses.
 
 ## App structure
 
