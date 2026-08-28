@@ -79,6 +79,13 @@ final class ScanCoordinator {
   private var lastVisibleUpdateDates: [UUID: Date] = [:]
   private var recordedObservationStates: [UUID: RecordedObservationState] = [:]
   private var peripheralAliases: [UUID: UUID] = [:]
+  private(set) var pendingGATTProbeQueue: [UUID] = []
+  private(set) var queuedProbeIdentifiers = Set<UUID>()
+  private(set) var probedPeripheralIdentifiers = Set<UUID>()
+  private(set) var currentProbeIdentifier: UUID?
+  private(set) var activeGATTProbe: BackgroundGATTProbe?
+
+  var probeFactory: ((CBPeripheral, BluetoothScanning, TimeInterval, @escaping (Result<GATTDeviceEvidence, Error>) -> Void) -> BackgroundGATTProbe)?
 
   private(set) var state: State = .idle {
     didSet { delegate?.scanCoordinatorDidChangeState(self) }
@@ -203,6 +210,7 @@ final class ScanCoordinator {
   func stop(reason: ScanStopReason = .user) {
     guard state.isRunning else { return }
     scanner.stopScanning()
+    cancelActiveGATTProbeAndClearQueue()
     stateTimer?.invalidate()
     burstTimer?.invalidate()
     visibleUpdateTimer?.invalidate()
@@ -230,6 +238,8 @@ final class ScanCoordinator {
 
   func clearResults() {
     guard !state.isRunning else { return }
+    cancelActiveGATTProbeAndClearQueue()
+    probedPeripheralIdentifiers.removeAll()
     persistenceTimer?.invalidate()
     persistenceTimer = nil
     pendingPersistenceIdentifiers.removeAll()
@@ -321,7 +331,8 @@ final class ScanCoordinator {
   ) {
     guard evidence.hasValues || !exploredServices.isEmpty else { return }
     let resolvedIdentifier = peripheralAliases[identifier] ?? identifier
-    if var snapshot = snapshots[resolvedIdentifier] ?? snapshots[identifier] ?? deviceCache[resolvedIdentifier] {
+    let foundSnapshot = snapshots[resolvedIdentifier] ?? snapshots[identifier] ?? deviceCache[resolvedIdentifier] ?? store.loadDeviceRecord(for: resolvedIdentifier)
+    if var snapshot = foundSnapshot {
       if evidence.hasValues {
         snapshot.gattEvidence = evidence
       }
@@ -330,9 +341,9 @@ final class ScanCoordinator {
       }
       snapshots[resolvedIdentifier] = snapshot
       deviceCache[resolvedIdentifier] = snapshot
-      if visibleSnapshots[resolvedIdentifier] != nil {
-        visibleSnapshots[resolvedIdentifier] = snapshot
-      }
+      visibleSnapshots[resolvedIdentifier] = snapshot
+      pendingPersistenceIdentifiers.remove(resolvedIdentifier)
+      pendingPersistenceIdentifiers.remove(identifier)
       try? store.saveDeviceRecord(snapshot)
     }
 
@@ -359,7 +370,7 @@ final class ScanCoordinator {
     pendingPersistenceIdentifiers.removeAll()
     for id in identifiersToSave {
       if let snapshot = snapshots[id] ?? deviceCache[id] {
-        store.saveDeviceRecordAsync(snapshot)
+        try? store.saveDeviceRecord(snapshot)
       }
     }
   }
@@ -428,6 +439,8 @@ final class ScanCoordinator {
   }
 
   private func resetTransientState() {
+    cancelActiveGATTProbeAndClearQueue()
+    probedPeripheralIdentifiers.removeAll()
     snapshots.removeAll()
     visibleSnapshots.removeAll()
     sessionUniqueIDs.removeAll()
@@ -816,6 +829,99 @@ final class ScanCoordinator {
       notificationService.notify(rule: rule, device: device)
     }
   }
+
+  // MARK: - Background GATT Probing
+
+  private func enqueueGATTProbeIfEligible(
+    snapshotIdentifier: UUID,
+    peripheral: CBPeripheral,
+    advertisement: BLEAdvertisement
+  ) {
+    guard case .active = state else { return }
+    guard settingsStore.settings.isAutomaticGATTEnrichmentEnabled else { return }
+    guard advertisement.isConnectable else { return }
+    guard probedPeripheralIdentifiers.count < 20 else { return }
+    guard !probedPeripheralIdentifiers.contains(snapshotIdentifier),
+          !queuedProbeIdentifiers.contains(snapshotIdentifier),
+          currentProbeIdentifier != snapshotIdentifier else { return }
+
+    pendingGATTProbeQueue.append(snapshotIdentifier)
+    queuedProbeIdentifiers.insert(snapshotIdentifier)
+    processNextGATTProbeQueueItem()
+  }
+
+  private func processNextGATTProbeQueueItem() {
+    guard case .active = state else { return }
+    guard activeGATTProbe == nil else { return }
+    guard probedPeripheralIdentifiers.count < 20 else {
+      pendingGATTProbeQueue.removeAll()
+      queuedProbeIdentifiers.removeAll()
+      return
+    }
+    guard !pendingGATTProbeQueue.isEmpty else { return }
+
+    let nextIdentifier = pendingGATTProbeQueue.removeFirst()
+    queuedProbeIdentifiers.remove(nextIdentifier)
+
+    guard !probedPeripheralIdentifiers.contains(nextIdentifier) else {
+      processNextGATTProbeQueueItem()
+      return
+    }
+
+    guard let peripheral = scanner.peripheral(for: nextIdentifier) else {
+      processNextGATTProbeQueueItem()
+      return
+    }
+
+    probedPeripheralIdentifiers.insert(nextIdentifier)
+    currentProbeIdentifier = nextIdentifier
+
+    let completionHandler: (Result<GATTDeviceEvidence, Error>) -> Void = { [weak self] result in
+      self?.handleGATTProbeCompletion(for: nextIdentifier, result: result)
+    }
+
+    let probe: BackgroundGATTProbe
+    if let factory = probeFactory {
+      probe = factory(peripheral, scanner, BackgroundGATTProbe.defaultTimeout, completionHandler)
+    } else {
+      probe = BackgroundGATTProbe(
+        peripheral: peripheral,
+        scanner: scanner,
+        timeout: BackgroundGATTProbe.defaultTimeout,
+        completion: completionHandler
+      )
+    }
+
+    self.activeGATTProbe = probe
+    probe.start()
+  }
+
+  private func handleGATTProbeCompletion(
+    for identifier: UUID,
+    result: Result<GATTDeviceEvidence, Error>
+  ) {
+    let exploredServices = activeGATTProbe?.exploredServices ?? []
+    activeGATTProbe = nil
+    currentProbeIdentifier = nil
+
+    switch result {
+    case .success(let evidence):
+      enrichDevice(identifier, with: evidence, exploredServices: exploredServices)
+    case .failure:
+      break
+    }
+
+    processNextGATTProbeQueueItem()
+  }
+
+  private func cancelActiveGATTProbeAndClearQueue() {
+    let probe = activeGATTProbe
+    activeGATTProbe = nil
+    currentProbeIdentifier = nil
+    pendingGATTProbeQueue.removeAll()
+    queuedProbeIdentifiers.removeAll()
+    probe?.cancel()
+  }
 }
 
 extension ScanCoordinator: BluetoothScannerDelegate {
@@ -916,6 +1022,12 @@ extension ScanCoordinator: BluetoothScannerDelegate {
 
     snapshots[snapshotIdentifier] = snapshot
     deviceCache[snapshotIdentifier] = snapshot
+    processAlerts(for: snapshot)
+    enqueueGATTProbeIfEligible(
+      snapshotIdentifier: snapshotIdentifier,
+      peripheral: peripheral,
+      advertisement: advertisement
+    )
     scheduleDevicePersistence(for: snapshotIdentifier, immediate: mergeResult.isNewDevice || mergeResult.metadataChanged)
 
     let visibleSnapshotsChangedFromPrune = pruneSnapshotCaches(now: timestamp)
@@ -928,7 +1040,6 @@ extension ScanCoordinator: BluetoothScannerDelegate {
       at: timestamp,
       forceImmediate: mergeResult.isNewDevice
     )
-    processAlerts(for: snapshot)
 
     guard case .recording = state, var session = activeSession else { return }
     let metadataTag = snapshot.lastSeenMetadataTag

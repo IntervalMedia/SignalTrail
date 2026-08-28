@@ -352,7 +352,7 @@ extension BLEDeviceSnapshot {
         if !trimmedName.isEmpty && trimmedName != "Unnamed device" { return trimmedName }
 
         if let localName = advertisement.localName?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !localName.isEmpty {
+           !localName.isEmpty && localName != "Unnamed device" {
             return localName
         }
 

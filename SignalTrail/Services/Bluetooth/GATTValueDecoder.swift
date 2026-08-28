@@ -32,6 +32,7 @@ enum GATTValueDecoder {
         0x2A00, 0x2A01, 0x2A19, 0x2A23, 0x2A24, 0x2A25, 0x2A26,
         0x2A27, 0x2A28, 0x2A29, 0x2A4A, 0x2A50, 0x2A54, 0x2A5C,
         0x2A65, 0x2ACC,
+        0x2A5D, 0x2A6C, 0x2A6D, 0x2B7D, 0x2BA4, 0x2BDA, 0x2BDC,
     ]
 
     static func shouldAutomaticallyRead(characteristicUUID: String) -> Bool {
@@ -64,10 +65,17 @@ enum GATTValueDecoder {
         case 0x2A50: return decodePnPID(data)
         case 0x2A54: return decodeRSCFeature(data)
         case 0x2A5C: return decodeCSCFeature(data)
+        case 0x2A5D: return decodeSensorLocation(data)
         case 0x2A65: return decodeCyclingPowerFeature(data)
+        case 0x2A6C: return decodeElevation(data)
+        case 0x2A6D: return decodePressure(data)
         case 0x2A6E: return decodeTemperature(data)
         case 0x2A6F: return decodeHumidity(data)
         case 0x2ACC: return decodeFitnessMachineFeature(data)
+        case 0x2B7D: return decodeVolumeState(data)
+        case 0x2BA4: return decodeMediaState(data)
+        case 0x2BDA: return decodeHearingAidFeatures(data)
+        case 0x2BDC: return decodeActivePreset(data)
         default: return nil
         }
     }
@@ -459,6 +467,57 @@ enum GATTValueDecoder {
             rawHex: data.hexadecimalString,
             fields: [GATTDecodedField(name: "Humidity", value: display)]
         )
+    }
+
+    private static func decodePressure(_ data: Data) -> GATTDecodedValue {
+        let bytes = [UInt8](data)
+        guard bytes.count == 4 else { return invalidValue(data, expected: "4-byte uint32 pressure") }
+        let display = String(format: "%.2f hPa", Double(uint32(bytes, at: 0)) / 1000.0)
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Pressure", value: display)])
+    }
+
+    private static func decodeElevation(_ data: Data) -> GATTDecodedValue {
+        let bytes = [UInt8](data)
+        guard bytes.count == 3 else { return invalidValue(data, expected: "3-byte signed elevation") }
+        var raw = Int32(bytes[0]) | (Int32(bytes[1]) << 8) | (Int32(bytes[2]) << 16)
+        if raw & 0x800000 != 0 { raw |= Int32(bitPattern: 0xFF000000) }
+        let display = String(format: "%.2f m", Double(raw) / 100.0)
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Elevation", value: display)])
+    }
+
+    private static func decodeSensorLocation(_ data: Data) -> GATTDecodedValue {
+        let names = ["Other", "Top of shoe", "In shoe", "Hip", "Front Wheel", "Rear Wheel", "Left Crank", "Right Crank", "Left Pedal", "Right Pedal", "Front Hub", "Rear Dropout", "Chainstay"]
+        let bytes = [UInt8](data)
+        guard bytes.count == 1, Int(bytes[0]) < names.count else { return invalidValue(data, expected: "assigned Sensor Location value") }
+        let display = names[Int(bytes[0])]
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Sensor Location", value: display)])
+    }
+
+    private static func decodeVolumeState(_ data: Data) -> GATTDecodedValue {
+        guard data.count >= 2 else { return invalidValue(data, expected: "at least 2-byte volume state") }
+        let display = "Volume \(data[0]) • \(data[1] == 1 ? "Muted" : "Unmuted")"
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Volume Setting", value: String(data[0])), GATTDecodedField(name: "Mute State", value: data[1] == 1 ? "Muted" : "Unmuted")])
+    }
+
+    private static func decodeMediaState(_ data: Data) -> GATTDecodedValue {
+        guard let value = data.first else { return invalidValue(data, expected: "1-byte media state") }
+        let names = ["Inactive", "Playing", "Paused", "Seeking"]
+        let display = Int(value) < names.count ? names[Int(value)] : "State \(value)"
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Media State", value: display)])
+    }
+
+    private static func decodeHearingAidFeatures(_ data: Data) -> GATTDecodedValue {
+        guard let value = data.first else { return invalidValue(data, expected: "feature bytes") }
+        var capabilities = [(value & 0x01) != 0 ? "Binaural" : "Monaural"]
+        if value & 0x02 != 0 { capabilities.append("Independent Volume") }
+        let display = capabilities.joined(separator: " • ")
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Hearing Aid Features", value: display)])
+    }
+
+    private static func decodeActivePreset(_ data: Data) -> GATTDecodedValue {
+        guard let value = data.first else { return invalidValue(data, expected: "1-byte preset index") }
+        let display = "Preset \(value)"
+        return GATTDecodedValue(displayText: display, rawHex: data.hexadecimalString, fields: [GATTDecodedField(name: "Active Preset", value: display)])
     }
 
     private static func invalidValue(_ data: Data, expected: String) -> GATTDecodedValue {

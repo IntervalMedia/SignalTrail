@@ -18,7 +18,13 @@ protocol PeripheralConnectionDelegate: AnyObject {
     func peripheralConnectionDidDisconnect(_ peripheral: CBPeripheral, error: Error?)
 }
 
-final class BluetoothScanner: NSObject {
+protocol BluetoothScanning: AnyObject {
+    func connect(_ peripheral: CBPeripheral, delegate: PeripheralConnectionDelegate)
+    func disconnect(_ peripheral: CBPeripheral)
+    func peripheral(for identifier: UUID) -> CBPeripheral?
+}
+
+final class BluetoothScanner: NSObject, BluetoothScanning {
     weak var delegate: BluetoothScannerDelegate?
 
     private lazy var centralManager = CBCentralManager(delegate: self, queue: .main)
@@ -26,9 +32,14 @@ final class BluetoothScanner: NSObject {
     private var connectionDelegates: [UUID: WeakConnectionDelegate] = [:]
 
     private(set) var isScanning = false
+    var stateOverride: CBManagerState? {
+        didSet {
+            delegate?.bluetoothScannerDidChangeState(self)
+        }
+    }
 
-    var state: CBManagerState { centralManager.state }
-    var isReady: Bool { centralManager.state == .poweredOn }
+    var state: CBManagerState { stateOverride ?? centralManager.state }
+    var isReady: Bool { state == .poweredOn }
 
     override init() {
         super.init()
@@ -54,6 +65,10 @@ final class BluetoothScanner: NSObject {
 
     func peripheral(for identifier: UUID) -> CBPeripheral? {
         peripherals[identifier]
+    }
+
+    func cachePeripheral(_ peripheral: CBPeripheral) {
+        peripherals[peripheral.identifier] = peripheral
     }
 
     func trimCachedPeripherals(to identifiers: Set<UUID>) {

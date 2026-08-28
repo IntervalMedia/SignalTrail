@@ -30,7 +30,7 @@ final class SettingsViewController: UITableViewController {
   override func numberOfSections(in tableView: UITableView) -> Int { 4 }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    [2, 3, 2, 3][section]
+    [3, 3, 2, 3][section]
   }
 
   override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String?
@@ -42,7 +42,7 @@ final class SettingsViewController: UITableViewController {
   {
     switch section {
     case 0:
-      return "The active scan continuously listens for advertisements until this timer expires."
+      return "The active scan continuously listens for advertisements. When enabled, connectable devices are probed sequentially in the background for device information, appearance, and battery level."
     case 1:
       return
         "Record mode alternates short scan bursts and pauses to reduce CPU, battery, and storage use."
@@ -69,6 +69,12 @@ final class SettingsViewController: UITableViewController {
         content.secondaryText = settings.activeScanDuration.clockString
         cell.accessoryType = .disclosureIndicator
         cell.selectionStyle = .default
+      } else if indexPath.row == 1 {
+        content.text = "Automatic GATT enrichment"
+        let toggle = UISwitch()
+        toggle.isOn = settings.isAutomaticGATTEnrichmentEnabled
+        toggle.addTarget(self, action: #selector(automaticGATTEnrichmentChanged(_:)), for: .valueChanged)
+        cell.accessoryView = toggle
       } else {
         content.text = "Clear live scan results"
         content.textProperties.color = .systemRed
@@ -130,7 +136,7 @@ final class SettingsViewController: UITableViewController {
         title: "Active scan duration", current: settings.activeScanDuration,
         options: [30, 60, 120, 180, 300]
       ) { self.settings.activeScanDuration = $0 }
-    case (0, 1): environment.scanCoordinator.clearResults()
+    case (0, 2): environment.scanCoordinator.clearResults()
     case (1, 0):
       showDurationPicker(
         title: "Scan burst", current: settings.recordingBurstDuration,
@@ -209,6 +215,11 @@ final class SettingsViewController: UITableViewController {
 
   @objc private func keepAwakeChanged(_ sender: UISwitch) {
     settings.keepScreenAwakeDuringRecording = sender.isOn
+    environment.settingsStore.settings = settings
+  }
+
+  @objc private func automaticGATTEnrichmentChanged(_ sender: UISwitch) {
+    settings.isAutomaticGATTEnrichmentEnabled = sender.isOn
     environment.settingsStore.settings = settings
   }
 }

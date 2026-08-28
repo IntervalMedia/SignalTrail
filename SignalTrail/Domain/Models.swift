@@ -587,6 +587,7 @@ struct AlertRule: Codable, Hashable, Identifiable {
 
 struct AppSettings: Codable, Equatable {
     var activeScanDuration: TimeInterval = 120
+    var isAutomaticGATTEnrichmentEnabled: Bool = true
     var recordingBurstDuration: TimeInterval = 1
     var recordingPauseDuration: TimeInterval = 5
     var minimumRSSI: Int = -100
@@ -594,6 +595,35 @@ struct AppSettings: Codable, Equatable {
     var requestNotificationPermissionOnRuleCreation = true
 
     static let `default` = AppSettings()
+
+    init(
+        activeScanDuration: TimeInterval = 120,
+        isAutomaticGATTEnrichmentEnabled: Bool = true,
+        recordingBurstDuration: TimeInterval = 1,
+        recordingPauseDuration: TimeInterval = 5,
+        minimumRSSI: Int = -100,
+        keepScreenAwakeDuringRecording: Bool = true,
+        requestNotificationPermissionOnRuleCreation: Bool = true
+    ) {
+        self.activeScanDuration = activeScanDuration
+        self.isAutomaticGATTEnrichmentEnabled = isAutomaticGATTEnrichmentEnabled
+        self.recordingBurstDuration = recordingBurstDuration
+        self.recordingPauseDuration = recordingPauseDuration
+        self.minimumRSSI = minimumRSSI
+        self.keepScreenAwakeDuringRecording = keepScreenAwakeDuringRecording
+        self.requestNotificationPermissionOnRuleCreation = requestNotificationPermissionOnRuleCreation
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        activeScanDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .activeScanDuration) ?? 120
+        isAutomaticGATTEnrichmentEnabled = try container.decodeIfPresent(Bool.self, forKey: .isAutomaticGATTEnrichmentEnabled) ?? true
+        recordingBurstDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .recordingBurstDuration) ?? 1
+        recordingPauseDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .recordingPauseDuration) ?? 5
+        minimumRSSI = try container.decodeIfPresent(Int.self, forKey: .minimumRSSI) ?? -100
+        keepScreenAwakeDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .keepScreenAwakeDuringRecording) ?? true
+        requestNotificationPermissionOnRuleCreation = try container.decodeIfPresent(Bool.self, forKey: .requestNotificationPermissionOnRuleCreation) ?? true
+    }
 }
 
 // MARK: - GATT

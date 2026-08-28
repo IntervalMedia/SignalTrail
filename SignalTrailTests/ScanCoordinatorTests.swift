@@ -635,7 +635,7 @@ final class ScanCoordinatorTests: XCTestCase {
     )
 
     let id = UUID()
-    let now = Date()
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
     let firstSeen = now.addingTimeInterval(-120)
     let lastSeen = now
 

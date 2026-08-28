@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0AE9E1423E10DC422B096FDC /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B90024DE9123A79F2FB2A /* SettingsStore.swift */; };
+		M2AUTO000000000000000002 /* AutoProbeQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */; };
 		0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */; };
 		0C063BD30F921412E2513D79 /* AlertRuleEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */; };
 		0D2B0A6A9B0B4A1A8D7E0C11 /* BluetoothCompanyPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */; };
@@ -15,8 +16,10 @@
 		0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */; };
 		0FE713D0BF072037E451901E /* AlertRulesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */; };
 		12A4E6B8C0D2F41526374859 /* BluetoothIntelligenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A4E6B8C0D2F41526374858 /* BluetoothIntelligenceTests.swift */; };
+		E2E000000000000000000002 /* E2EIntelligenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2E000000000000000000001 /* E2EIntelligenceTests.swift */; };
 		14B6D8F0A2C435465768798B /* BluetoothAssignedUUIDLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B6D8F0A2C435465768798A /* BluetoothAssignedUUIDLookup.swift */; };
 		14B6D8F0A2C435465768798D /* GATTValueDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B6D8F0A2C435465768798C /* GATTValueDecoder.swift */; };
+		M3PERMIT00000000000000002 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */; };
 		1B2173EE9FA2E17D96FF353B /* KnownDevicesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46922F384A71DFF31C02BF9 /* KnownDevicesViewController.swift */; };
 		24CA0870F247C57730345120 /* CharacteristicViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B73A64E133060BC1BD4254 /* CharacteristicViewController.swift */; };
 		354BD4DC858D40B346B823AA /* SignalBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF4D7ECEE1A29CCA243FFF7 /* SignalBadgeView.swift */; };
@@ -35,6 +38,8 @@
 		78BB5BB2FAA320923ABE8C44 /* ObservationAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C123BD702985C10B91B7D26 /* ObservationAnnotation.swift */; };
 		7EE156B207DD3AAFB6484B59 /* BluetoothCompanyLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51D5965AF835BF2C4D453E6 /* BluetoothCompanyLookup.swift */; };
 		83EF7D6B30B86E81C26F6FBA /* PeripheralInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40F94770FACA46D4116AD7F /* PeripheralInspector.swift */; };
+		83EF7D6B30B86E81C26F6FBB /* BackgroundGATTProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40F94770FACA46D4116AD80 /* BackgroundGATTProbe.swift */; };
+		0F90A814A4A5A59FB3D76211 /* BackgroundGATTProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D153B3B382D28999B59DD5 /* BackgroundGATTProbeTests.swift */; };
 		88C05BDED24819E9E8CB5C55 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED16157A68FD7EC7F8FF2BDB /* AppDelegate.swift */; };
 		88CE3840D7C9B2D86A25F5DB /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 563E030791557F1C713EC5D9 /* ScanViewModel.swift */; };
 		89E1C5C79F174AB4DF62F892 /* System/Library/Frameworks/XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A000BE7FA6F7394B2ACA22A /* System/Library/Frameworks/XCTest.framework */; };
@@ -57,6 +62,8 @@
 		DEF1A3395646EE3A2599B5A2 /* System/Library/Frameworks/MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 727F06E2C087B5C5F443A680 /* System/Library/Frameworks/MapKit.framework */; };
 		DF8D4E76FC8C9C857DF418D8 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53CBA177C3C573B57B09002F /* CardView.swift */; };
 		E1EA17DB1FEB4BFCFEBA5ECF /* DeviceDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370D3344276D5DCA0E4B1575 /* DeviceDetailViewController.swift */; };
+		M3GROUP00000000000000002 /* ServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */; };
+		M4DASH00000000000000002 /* ProfileDashboardBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */; };
 		EC8286B238A65D7DC33D36C7 /* LocationProviding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFF20EB8ACF3E3B1E9E5566 /* LocationProviding.swift */; };
 		ED84ABAB8E829780C8723E38 /* CoreLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901ACF033E726F2FFC8AF5F9 /* CoreLocationProvider.swift */; };
 		F879151D32F3DF2D774F1C08 /* System/Library/Frameworks/CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */; };
@@ -76,6 +83,7 @@
 
 /* Begin PBXFileReference section */
 		0110D71A7A9346455AC01154 /* ServiceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewController.swift; sourceTree = "<group>"; };
+		M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoProbeQueueTests.swift; sourceTree = "<group>"; };
 		04598C1B29B648B91A5710D2 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinatorTests.swift; sourceTree = "<group>"; };
 		0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertRulesViewController.swift; sourceTree = "<group>"; };
@@ -84,6 +92,7 @@
 		1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertRuleEditorViewController.swift; sourceTree = "<group>"; };
 		14B6D8F0A2C435465768798A /* BluetoothAssignedUUIDLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothAssignedUUIDLookup.swift; sourceTree = "<group>"; };
 		14B6D8F0A2C435465768798C /* GATTValueDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GATTValueDecoder.swift; sourceTree = "<group>"; };
+		M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothPermittedCharacteristicsLookup.swift; sourceTree = "<group>"; };
 		15497D607024CAB8BDE01C45 /* MainTabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabBarController.swift; sourceTree = "<group>"; };
 		16798DFE297EA7915205C79D /* KnownDeviceEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnownDeviceEditorViewController.swift; sourceTree = "<group>"; };
 		1AB16AAA22CFA257611470B5 /* AlertMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertMatcher.swift; sourceTree = "<group>"; };
@@ -94,6 +103,8 @@
 		30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		356FBA3E9341CB76EAEE4A16 /* SignalTrail-AppIcon-1024.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "SignalTrail-AppIcon-1024.png"; sourceTree = "<group>"; };
 		370D3344276D5DCA0E4B1575 /* DeviceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDetailViewController.swift; sourceTree = "<group>"; };
+		M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewModel.swift; sourceTree = "<group>"; };
+		M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDashboardBuilder.swift; sourceTree = "<group>"; };
 		3A000BE7FA6F7394B2ACA22A /* System/Library/Frameworks/XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		3A07B2FB684B67EF6D446685 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		3FC1727F809709DA7E3073E6 /* System/Library/Frameworks/UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -128,11 +139,14 @@
 		DDC49AA48921D1182CE2CE91 /* SessionDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailViewController.swift; sourceTree = "<group>"; };
 		DDFF20EB8ACF3E3B1E9E5566 /* LocationProviding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProviding.swift; sourceTree = "<group>"; };
 		E40F94770FACA46D4116AD7F /* PeripheralInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInspector.swift; sourceTree = "<group>"; };
+		E40F94770FACA46D4116AD80 /* BackgroundGATTProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundGATTProbe.swift; sourceTree = "<group>"; };
+		04D153B3B382D28999B59DD5 /* BackgroundGATTProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundGATTProbeTests.swift; sourceTree = "<group>"; };
 		EB6CEEEBC1A1DDC7FFB1B0D7 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
 		ED16157A68FD7EC7F8FF2BDB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F18538C05A0E717CC3988D19 /* AdvertisementParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementParser.swift; sourceTree = "<group>"; };
 		F51D5965AF835BF2C4D453E6 /* BluetoothCompanyLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCompanyLookup.swift; sourceTree = "<group>"; };
 		FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStoreTests.swift; sourceTree = "<group>"; };
+		E2E000000000000000000001 /* E2EIntelligenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = E2EIntelligenceTests.swift; sourceTree = "<group>"; };
 		FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDeviceCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -199,12 +213,14 @@
 			children = (
 				F18538C05A0E717CC3988D19 /* AdvertisementParser.swift */,
 				14B6D8F0A2C435465768798A /* BluetoothAssignedUUIDLookup.swift */,
+				M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */,
 				F51D5965AF835BF2C4D453E6 /* BluetoothCompanyLookup.swift */,
 				B1C2D3E4F5061728394A5B6C /* BluetoothMemberUUIDLookup.swift */,
 				6F7A8B9C0D1E2F3041526375 /* company_identifiers.yaml */,
 				14B6D8F0A2C435465768798C /* GATTValueDecoder.swift */,
 				1B4F79B8371398FC3DF90258 /* BluetoothScanner.swift */,
 				E40F94770FACA46D4116AD7F /* PeripheralInspector.swift */,
+				E40F94770FACA46D4116AD80 /* BackgroundGATTProbe.swift */,
 				D544AA7CE1B41AC4A419E64E /* ScanCoordinator.swift */,
 			);
 			path = Bluetooth;
@@ -235,6 +251,8 @@
 				26B73A64E133060BC1BD4254 /* CharacteristicViewController.swift */,
 				370D3344276D5DCA0E4B1575 /* DeviceDetailViewController.swift */,
 				0110D71A7A9346455AC01154 /* ServiceDetailViewController.swift */,
+				M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */,
+				M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */,
 			);
 			path = Device;
 			sourceTree = "<group>";
@@ -263,8 +281,11 @@
 			isa = PBXGroup;
 			children = (
 				B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */,
+				M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */,
 				12A4E6B8C0D2F41526374858 /* BluetoothIntelligenceTests.swift */,
+				04D153B3B382D28999B59DD5 /* BackgroundGATTProbeTests.swift */,
 				FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */,
+				E2E000000000000000000001 /* E2EIntelligenceTests.swift */,
 				04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */,
 			);
 			path = SignalTrailTests;
@@ -487,8 +508,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C46EEE2E4ED4F6EBF834446 /* AlertMatcherTests.swift in Sources */,
+				M2AUTO000000000000000002 /* AutoProbeQueueTests.swift in Sources */,
 				12A4E6B8C0D2F41526374859 /* BluetoothIntelligenceTests.swift in Sources */,
+				0F90A814A4A5A59FB3D76211 /* BackgroundGATTProbeTests.swift in Sources */,
 				0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */,
+				E2E000000000000000000002 /* E2EIntelligenceTests.swift in Sources */,
 				0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -506,6 +530,8 @@
 				24CA0870F247C57730345120 /* CharacteristicViewController.swift in Sources */,
 				E1EA17DB1FEB4BFCFEBA5ECF /* DeviceDetailViewController.swift in Sources */,
 				4219AD4898168750FDDC8D01 /* ServiceDetailViewController.swift in Sources */,
+				M3GROUP00000000000000002 /* ServiceDetailViewModel.swift in Sources */,
+				M4DASH00000000000000002 /* ProfileDashboardBuilder.swift in Sources */,
 				0C063BD30F921412E2513D79 /* AlertRuleEditorViewController.swift in Sources */,
 				0FE713D0BF072037E451901E /* AlertRulesViewController.swift in Sources */,
 				0D2B0A6A9B0B4A1A8D7E0C11 /* BluetoothCompanyPickerViewController.swift in Sources */,
@@ -529,8 +555,10 @@
 				7EE156B207DD3AAFB6484B59 /* BluetoothCompanyLookup.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* BluetoothMemberUUIDLookup.swift in Sources */,
 				14B6D8F0A2C435465768798D /* GATTValueDecoder.swift in Sources */,
+				M3PERMIT00000000000000002 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */,
 				4EFD5BAA28B3290B944C101B /* BluetoothScanner.swift in Sources */,
 				83EF7D6B30B86E81C26F6FBA /* PeripheralInspector.swift in Sources */,
+				83EF7D6B30B86E81C26F6FBB /* BackgroundGATTProbe.swift in Sources */,
 				FB7BAF0B7D626BC93B00B896 /* ScanCoordinator.swift in Sources */,
 				3A71B20F64DB8F5B7528833D /* SessionExporter.swift in Sources */,
 				ED84ABAB8E829780C8723E38 /* CoreLocationProvider.swift in Sources */,

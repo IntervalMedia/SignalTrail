@@ -1,21 +1,37 @@
 # Bluetooth SIG public data for Device Intelligence and GATT inspection
 
 Research date: 2026-08-16
+Last updated: 2026-08-28
 Repository snapshot examined: Bluetooth SIG `public` commit [`1415ddd9db5770dd21ecbe53173fbfc09e2943b6`](https://bitbucket.org/bluetooth-SIG/public/commits/1415ddd9db5770dd21ecbe53173fbfc09e2943b6)
 
-## Conclusion
+## Executive Summary & Status
 
-The repository can materially improve SignalTrail, but it is a terminology and data-format authority rather than a product-identification database. Its strongest uses are:
+The Bluetooth SIG public repository provides terminology and data-format authorities rather than a product-identification database. Its strongest uses are:
 
-1. naming standard, member, and standards-organization UUIDs without guessing;
-2. explaining whether a UUID was advertised, solicited, or discovered after connection;
-3. naming GATT services, characteristics, and descriptors;
-4. decoding selected standard characteristic values from their published field structures; and
-5. deriving a device category from the GAP Appearance value when a connected peripheral exposes it.
+1. **Naming standard, member, and standards-organization UUIDs** without guessing;
+2. **Explaining evidence origins** (advertised, solicited, overflow, service-data, or discovered after connection);
+3. **Naming GATT services, characteristics, and descriptors** across the inspection tree;
+4. **Decoding selected standard characteristic and descriptor values** (Device Information, Battery, Appearance, HID, Fitness/Cycling features, Presentation Format); and
+5. **Deriving device categories** from self-declared GAP Appearance and GATT device identity.
 
-It does **not** contain a registry that maps arbitrary advertisements, manufacturer payloads, or model strings to retail products. A company identifier means the identifier was allocated to that company; a member UUID means that UUID was allocated to that member. Neither fact alone proves who manufactured the observed device. Similarly, a standard service is evidence of an exposed capability, not proof of a particular product model or Bluetooth qualification status.
+It does **not** contain a registry that maps arbitrary advertisements, manufacturer payloads, or model strings to retail products. A company identifier denotes namespace allocation, not guaranteed manufacturer identity.
 
-The best first integration is a generated, typed assigned-UUID lookup similar to `BluetoothMemberUUIDLookup`, followed by a small curated set of GATT value decoders. `class_of_device.yaml` should not be integrated into the current iOS BLE path.
+### Implementation Status Overview
+
+| Capability | Status | Implementation Reference |
+| --- | --- | --- |
+| **Assigned UUID Lookups (Services, Characteristics, Descriptors, Units, SDOs, Members)** | **Completed** | `BluetoothAssignedUUIDLookup.swift`, `scripts/generate_bluetooth_sig_lookups.rb` |
+| **UUID Canonicalization (16/32/128-bit Base UUID)** | **Completed** | `BluetoothAssignedUUIDLookup.canonical16BitValue(from:)` |
+| **GAP Appearance Decoding (`0x2A01`)** | **Completed** | `GATTValueDecoder.decodeAppearance` & `BluetoothAppearanceLookup` |
+| **Device Information Strings & EUI-64 System ID** | **Completed** | `GATTValueDecoder.swift` (`0x2A23`–`0x2A29`) |
+| **PnP ID Decoding (`0x2A50`) with SIG Vendor join** | **Completed** | `GATTValueDecoder.decodePnPID` |
+| **Standard Feature & Measurement Decoders** | **Completed** | Battery (`0x2A19`), Heart Rate (`0x2A37`), HID (`0x2A4A`/`0x2A4B`), RSC/CSC/Cycling/Fitness (`0x2A54`, `0x2A5C`, `0x2A65`, `0x2ACC`), Environment (`0x2A6E`, `0x2A6F`) |
+| **Descriptor Decoding (Presentation Format `0x2904`)** | **Completed** | `GATTValueDecoder.decodePresentationFormatDescriptor` |
+| **Provenance-Preserving Device Intelligence Engine** | **Completed** | `DeviceIntelligenceEngine` in `Formatting.swift` |
+| **Per-Device Persistent JSON Storage & Cache** | **Completed** | `LocalStore.swift`, `ScanCoordinator.swift` |
+| **Automatic Bounded GATT Inspection during Scan** | **Planned** | Detailed in `docs/automatic-gatt-device-intelligence.md` |
+| **Permitted-Characteristic Service Grouping in UI** | **Completed** | `BluetoothPermittedCharacteristicsLookup`, `ServiceDetailViewModel`, and Service Detail sections |
+| **High-Level Profile Summary Dashboards** | **Completed** | `ProfileDashboardBuilder` and Device Detail profile dashboard section |
 
 ## The iOS observation boundary
 
@@ -139,31 +155,55 @@ The UI and intelligence engine should preserve provenance instead of collapsing 
 
 Absence should normally be “not observed,” not “not supported.” Advertisements are size-constrained, a service need not be advertised to exist, connection/security can hide readable values, and an interrupted discovery can leave a partial tree.
 
-## Concrete integration order
+## Detailed Implementation Roadmap
 
-### Phase 1 — names and provenance
+### Phase 1 — Names and Provenance *(Status: COMPLETED)*
 
-1. Generate a typed lookup from service, characteristic, descriptor, unit, member, and SDO YAML files.
-2. Canonicalize 16-, 32-, and Bluetooth-Base-UUID-expanded representations before matching.
-3. Render SIG names beside raw UUIDs in advertisements and connected GATT screens.
-4. Label evidence origin: advertised, solicited, overflow, service-data key, or discovered after connection.
-5. Change member/company language so allocation is not presented as conclusive device manufacture.
-6. Add snapshot tests for representative UUIDs and collision/context behavior.
+- [x] **1.1. Assigned Number Generators**: Ruby generator script `scripts/generate_bluetooth_sig_lookups.rb` parses YAML for adopted services, characteristics, descriptors, units, members, SDOs, and Appearance values.
+- [x] **1.2. Unified Typed Lookup**: Implemented `BluetoothAssignedUUIDLookup.swift` with context-aware queries (`serviceMetadata`, `metadata(for:kind:)`).
+- [x] **1.3. Canonical UUID Normalization**: Standardized 16-bit, 32-bit (`0000xxxx`), and 128-bit Bluetooth Base UUID (`-0000-1000-8000-00805F9B34FB`) expansion and parsing.
+- [x] **1.4. Contextual UI Labels**: UI displays SIG names alongside hexadecimal values across advertisement cards, detail views, and characteristic rows.
+- [x] **1.5. Attribution Language Refinement**: Phrasing reflects namespace allocation ("UUID assigned to X") rather than definitive manufacturing proof.
+- [x] **1.6. Test Coverage**: Snapshot and unit tests in `BluetoothIntelligenceTests.swift` verify UUID lookups, collisions, and provenance descriptions.
 
-### Phase 2 — bounded standard-value decoding
+### Phase 2 — Bounded Standard-Value Decoding & Intelligence *(Status: COMPLETED)*
 
-1. Add a characteristic decoder registry generated or curated from selected `gss` files.
-2. Implement Device Information, PnP ID, GAP Appearance, and Battery first.
-3. Preserve both a structured display value and raw hex, including parsing warnings.
-4. Discover and name descriptors; decode Presentation Format and its unit where present.
-5. Feed explicit service/appearance/feature evidence into `DeviceIntelligenceEngine`, retaining provenance and confidence.
+- [x] **2.1. Decoder Registry**: Implemented `GATTValueDecoder.swift` for safe, length-checked value parsing.
+- [x] **2.2. Core Characteristic Decoders**:
+  - Device Information: Manufacturer Name (`0x2A29`), Model Number (`0x2A24`), Serial Number (`0x2A25`), Hardware/Firmware/Software Revisions (`0x2A26`–`0x2A28`), System ID EUI-64 (`0x2A23`).
+  - PnP ID (`0x2A50`): Decodes Vendor ID Source (Bluetooth SIG vs USB-IF), joining SIG IDs directly to company lookup.
+  - GAP Appearance (`0x2A01`): Decodes category and subcategory from `BluetoothAppearanceLookup`.
+  - Battery Level (`0x2A19`): Percentage display with 0–100 range validation.
+  - Health & Fitness: Heart Rate Measurement (`0x2A37`), Body Sensor Location (`0x2A38`), RSC Feature (`0x2A54`), CSC Feature (`0x2A5C`), Cycling Power (`0x2A65`), Fitness Machine (`0x2ACC`).
+  - HID & Environmental: HID Information (`0x2A4A`), Report Map (`0x2A4B`), Temperature (`0x2A6E`), Humidity (`0x2A6F`).
+- [x] **2.3. Presentation Format Descriptor**: Decodes format type, exponent, unit name lookup, namespace, and description for `0x2904`.
+- [x] **2.4. Raw Hex Preservation & Warning Fallback**: Retains raw hexadecimal representations and attaches warnings whenever parsing encounters unexpected lengths or reserved bits.
+- [x] **2.5. Intelligence Engine Integration**: `DeviceIntelligenceEngine` in `Formatting.swift` scores candidates using combined advertisement and GATT evidence.
+- [x] **2.6. Persistent Per-Device Caching**: `LocalStore` and `ScanCoordinator` store individual device JSON snapshots and hydrate known attributes on discovery.
 
-### Phase 3 — guided inspection
+### Phase 3 — Remaining & Future Work *(Status: PLANNED / IN PROGRESS)*
 
-1. Use permitted-characteristic tables to group supported standard services.
-2. Add profile-oriented summaries such as health sensor, HID, environmental sensor, cycling sensor, fitness equipment, or LE Audio control based on observed standard services/features.
-3. Keep exact retail-model mappings in separately sourced datasets; the SIG repository does not supply them.
-4. Add vendor payload decoders only when a vendor-owned primary specification can be cited and versioned.
+#### 3.1. Automatic Bounded GATT Inspection during Scan *(Completed)*
+- [x] **Sequential Background Queue**: Implemented automatic, read-only GATT probing for connectable peripherals during active Quick Scans (capped at 20 devices, 5s timeout, 1 concurrent connection), including synchronous cancellation reentrancy protection.
+- [ ] **Read-Only Safety**: Probe discovers services and reads safe identification characteristics only (`0x180A`, `0x2A00`, `0x2A01`, `0x2A19`); never writes or enables notifications.
+- [ ] **Live Intelligence Enrichment**: Merge discovered identity directly into live scan snapshots to classify devices (e.g. `AppleTV14,1` classifying immediately as `.television`).
+- *Detailed specification:* See `docs/automatic-gatt-device-intelligence.md`.
+
+#### 3.2. Permitted-Characteristic Semantic Service Grouping *(Completed)*
+- [x] **Permitted-Characteristic Tables**: Added curated SIG mappings for Environmental Sensing (`ess`), User Data (`uds`), Industrial Measurement (`imds`), Cookware (`cws`), and core inspector services.
+- [x] **Semantic Service Organization**: Grouped characteristics on `ServiceDetailViewController` into standard permitted and additional/custom sections.
+- [x] **Graceful Handling**: Missing permitted characteristics remain neutral and produce no conformance warning.
+
+#### 3.3. Profile-Oriented Summary Dashboards *(Completed)*
+- [x] **Specialized Profile Cards**: Added summary widgets in `DeviceDetailViewController` when standard service clusters are detected:
+  - *Fitness & Cycling*: Summary card displaying sensor location, battery, supported features (cadence, power balance, speed).
+  - *Environmental Monitor*: Aggregated dashboard for Temperature, Humidity, and Pressure.
+  - *HID Accessory*: Keyboard/Mouse capabilities, remote wake, battery level, country code.
+  - *Hearing / Audio*: Standard audio control and volume offset capabilities.
+
+#### 3.4. Curated External Model Datasets & Sourced Vendor Decoders *(Low / Future Priority)*
+- [ ] **External Retail Model Lookups**: Maintain a distinct, locally-versioned dataset for commercial model strings (e.g. Apple Model Identifiers `AudioAccessory5,1` -> HomePod mini) separate from Bluetooth SIG lookups.
+- [ ] **Documented Vendor Decoders**: Implement decoders for publicly specified vendor formats (e.g., RuuviTag, BTHome, Eddystone, Exposure Notification) accompanied by citations to primary specification documents.
 
 ## Update and licensing considerations
 

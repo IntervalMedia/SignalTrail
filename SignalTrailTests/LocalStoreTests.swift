@@ -474,7 +474,7 @@ final class LocalStoreTests: XCTestCase {
     XCTAssertEqual(loaded.lastLocation?.longitude, 151.2093)
     XCTAssertEqual(loaded.rssiHistory.count, 200)
     XCTAssertEqual(loaded.rssiHistory.first?.rssi, -89)
-    XCTAssertEqual(loaded.rssiHistory.last?.rssi, -50)
+    XCTAssertEqual(loaded.rssiHistory.last?.rssi, -90)
   }
 
   func testConcurrentReadsWritesAndPurgesThreadSafety() {

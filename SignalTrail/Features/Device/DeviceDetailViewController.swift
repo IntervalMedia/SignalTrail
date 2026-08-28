@@ -4,6 +4,7 @@ import UIKit
 final class DeviceDetailViewController: UITableViewController {
     private enum Section: Int, CaseIterable {
         case summary
+        case dashboards
         case actions
         case advertisement
         case serviceData
@@ -13,6 +14,7 @@ final class DeviceDetailViewController: UITableViewController {
         var title: String {
             switch self {
             case .summary: return "Summary"
+            case .dashboards: return "Profile dashboards"
             case .actions: return "Actions"
             case .advertisement: return "Observed advertisement"
             case .serviceData: return "Observed service data"
@@ -34,6 +36,10 @@ final class DeviceDetailViewController: UITableViewController {
     private var inspector: PeripheralInspector?
     private var services: [GATTServiceSnapshot] = []
     private var expandedSections = Set<Section>()
+
+    private var dashboards: [ProfileDashboardCard] {
+        ProfileDashboardBuilder.buildCards(for: device)
+    }
 
     init(device: BLEDeviceSnapshot, environment: AppEnvironment) {
         self.device = device
@@ -97,6 +103,8 @@ final class DeviceDetailViewController: UITableViewController {
         switch section {
         case .summary:
             return 3
+        case .dashboards:
+            return dashboards.count
         case .actions:
             return 6
         case .advertisement, .serviceData, .rawValues:
@@ -114,6 +122,8 @@ final class DeviceDetailViewController: UITableViewController {
         switch Section(rawValue: section) {
         case .summary:
             return "Observed and device-reported values are facts from this interaction. Inferences may be wrong. Observation locations are where this phone heard a signal, not verified device positions."
+        case .dashboards:
+            return dashboards.isEmpty ? "No standard profile cluster was observed." : "Values are device-reported where available; raw hexadecimal is retained for inspection."
         case .services:
             return expandedSections.contains(.services)
                 ? (services.isEmpty ? "Connect to discover services and characteristics." : "Select a service to inspect characteristics.")
@@ -148,6 +158,16 @@ final class DeviceDetailViewController: UITableViewController {
         switch section {
         case .summary:
             configureSummaryCell(content: &content, row: indexPath.row)
+
+        case .dashboards:
+            let dashboard = dashboards[indexPath.row]
+            content.text = dashboard.title
+            content.secondaryText = dashboard.metrics.map { metric in
+                "\(metric.title): \(metric.value)"
+            }.joined(separator: "\n")
+            content.secondaryTextProperties.numberOfLines = 8
+            content.image = UIImage(systemName: dashboard.iconName)
+            content.imageProperties.tintColor = dashboard.accentColor
 
         case .actions:
             configureActionCell(cell, content: &content, row: indexPath.row)

@@ -4,6 +4,7 @@ import CoreBluetooth
 final class ServiceDetailViewController: UITableViewController {
     private var service: GATTServiceSnapshot
     private let inspector: PeripheralInspector
+    private var sections: [ServiceDetailSection] = []
 
     init(service: GATTServiceSnapshot, inspector: PeripheralInspector) {
         self.service = service
@@ -18,6 +19,10 @@ final class ServiceDetailViewController: UITableViewController {
         super.viewDidLoad()
         title = BluetoothAssignedUUIDLookup.serviceMetadata(for: service.uuid)?.name
             ?? "Vendor-specific service"
+        sections = ServiceDetailViewModel.buildSections(
+            serviceUUID: service.uuid,
+            characteristics: service.characteristics
+        )
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         inspector.delegate = self
@@ -29,16 +34,31 @@ final class ServiceDetailViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        service.characteristics.count
+        sections.isEmpty ? 1 : sections[section].characteristics.count
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        max(sections.count, 1)
+    }
+
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        sections.isEmpty ? "Discovered Characteristics" : sections[section].title
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let characteristic = service.characteristics[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
+        guard !sections.isEmpty else {
+            var content = cell.defaultContentConfiguration()
+            content.text = "No characteristics discovered"
+            content.textProperties.color = .secondaryLabel
+            cell.contentConfiguration = content
+            return cell
+        }
+        let characteristic = sections[indexPath.section].characteristics[indexPath.row]
         let metadata = BluetoothAssignedUUIDLookup.metadata(
             for: characteristic.uuid,
             kind: .characteristic
         )
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         var content = cell.defaultContentConfiguration()
         content.text = metadata?.name ?? "Vendor-specific characteristic"
         var details = "UUID \(characteristic.uuid)\n\(characteristic.properties.joined(separator: " • "))"
@@ -63,7 +83,8 @@ final class ServiceDetailViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let characteristic = service.characteristics[indexPath.row]
+        guard !sections.isEmpty else { return }
+        let characteristic = sections[indexPath.section].characteristics[indexPath.row]
         guard let cbCharacteristic = inspector.characteristic(
             serviceUUID: service.uuid,
             characteristicUUID: characteristic.uuid
@@ -84,6 +105,10 @@ extension ServiceDetailViewController: PeripheralInspectorDelegate {
     func peripheralInspectorDidUpdate(_ inspector: PeripheralInspector) {
         if let updated = inspector.services.first(where: { $0.uuid == service.uuid }) {
             service = updated
+            sections = ServiceDetailViewModel.buildSections(
+                serviceUUID: service.uuid,
+                characteristics: service.characteristics
+            )
             tableView.reloadData()
         }
     }
