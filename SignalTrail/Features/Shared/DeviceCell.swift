@@ -83,12 +83,9 @@ final class DeviceCell: UITableViewCell {
         if device.advertisement.isConnectable {
             badgeStack.addArrangedSubview(makeBadge("Connectable", color: AppTheme.accent))
         }
-        if intelligence.category != .unknown {
-            badgeStack.addArrangedSubview(makeBadge("Inference • \(intelligence.probability)%", color: .systemBlue))
-        }
         badgeStack.isHidden = badgeStack.arrangedSubviews.isEmpty
 
-        countLabel.text = "\(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s") • identity claims are not authenticated"
+        countLabel.text = "\(device.sightingCount) observation\(device.sightingCount == 1 ? "" : "s")"
     }
 
     private func makeBadge(_ text: String, color: UIColor) -> UILabel {

@@ -257,6 +257,15 @@ final class HunterViewController: UIViewController, HunterControllerDelegate {
         super.viewDidLoad()
         title = "Hunter"
         view.backgroundColor = AppTheme.groupedBackground
+        let infoItem = UIBarButtonItem(
+            image: UIImage(systemName: "info.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showHunterInfo)
+        )
+        infoItem.accessibilityLabel = "About Hunter signal guidance"
+        infoItem.accessibilityHint = "Shows more information"
+        navigationItem.rightBarButtonItem = infoItem
         configureUI()
         updateUI()
     }
@@ -302,16 +311,9 @@ final class HunterViewController: UIViewController, HunterControllerDelegate {
         clearButton.setTitle("Clear target", for: .normal)
         clearButton.addTarget(self, action: #selector(clearTapped), for: .touchUpInside)
 
-        let note = UILabel()
-        note.text = "Choose Hunt this device from a device detail screen. Pulse speed increases as the received signal grows stronger. RSSI is affected by walls, reflections, antenna direction, and device transmit power."
-        note.font = .preferredFont(forTextStyle: .footnote)
-        note.textColor = .secondaryLabel
-        note.numberOfLines = 0
-        note.textAlignment = .center
-
         let stack = UIStackView(arrangedSubviews: [
             icon, targetLabel, statusLabel, rssiLabel, signalBar, lastSeenLabel,
-            actionButton, clearButton, note
+            actionButton, clearButton
         ])
         stack.axis = .vertical
         stack.spacing = 18
@@ -332,6 +334,14 @@ final class HunterViewController: UIViewController, HunterControllerDelegate {
         actionButton.isEnabled = hunter.target != nil
         clearButton.isHidden = hunter.target == nil
         actionButton.configuration?.title = hunter.isHunting ? "Stop hunting" : "Start hunting"
+
+        if hunter.target == nil {
+            rssiLabel.text = "— dBm"
+            signalBar.progress = 0
+            statusLabel.text = "No target selected"
+            lastSeenLabel.text = "Choose Hunt this device from a device detail screen."
+            return
+        }
 
         guard let rssi = hunter.latestRSSI, let lastSeen = hunter.lastSeen,
               Date().timeIntervalSince(lastSeen) < 5 else {
@@ -364,5 +374,12 @@ final class HunterViewController: UIViewController, HunterControllerDelegate {
 
     @objc private func clearTapped() {
         environment.hunter.clearTarget()
+    }
+
+    @objc private func showHunterInfo() {
+        presentInfo(
+            title: "Using Hunter",
+            message: "Pulse speed increases as the received signal grows stronger. Walls, reflections, phone orientation, device transmit power, and antenna placement can change RSSI, so use it as relative guidance while moving around."
+        )
     }
 }

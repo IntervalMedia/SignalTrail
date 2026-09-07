@@ -3,6 +3,47 @@ import CoreLocation
 import UIKit
 
 final class SettingsViewController: UITableViewController {
+  private enum Section: Int, CaseIterable {
+    case quickScan
+    case recordedSessions
+    case hunterFeedback
+    case permissions
+    case about
+
+    var title: String {
+      switch self {
+      case .quickScan: return "Quick Scan"
+      case .recordedSessions: return "Recorded Sessions"
+      case .hunterFeedback: return "Hunter Feedback"
+      case .permissions: return "Permissions"
+      case .about: return "About"
+      }
+    }
+
+    var rowCount: Int {
+      switch self {
+      case .quickScan, .recordedSessions, .about: return 3
+      case .hunterFeedback: return 4
+      case .permissions: return 2
+      }
+    }
+
+    var infoMessage: String? {
+      switch self {
+      case .quickScan:
+        return "Quick Scan continuously listens for advertisements for the selected duration. When automatic GATT enrichment is enabled, connectable devices are probed one at a time for device information, appearance, and battery level."
+      case .recordedSessions:
+        return "Record Session alternates short scan bursts and pauses to reduce CPU, battery, and storage use."
+      case .hunterFeedback:
+        return "Hunter pulses follow the selected device's signal. Faster pulses indicate a stronger received signal."
+      case .permissions:
+        return "Location is used to record where this phone observed an advertisement. It cannot determine the BLE device's actual location or hardware MAC address. Notifications are used for enabled detection alerts."
+      case .about:
+        return nil
+      }
+    }
+  }
+
   private let environment: AppEnvironment
   private var settings: AppSettings
 
@@ -19,6 +60,8 @@ final class SettingsViewController: UITableViewController {
     super.viewDidLoad()
     title = "Settings"
     tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+    tableView.sectionHeaderHeight = UITableView.automaticDimension
+    tableView.estimatedSectionHeaderHeight = 44
   }
 
   override func viewWillAppear(_ animated: Bool) {
@@ -27,31 +70,29 @@ final class SettingsViewController: UITableViewController {
     tableView.reloadData()
   }
 
-  override func numberOfSections(in tableView: UITableView) -> Int { 5 }
+  override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    [3, 3, 4, 2, 3][section]
+    Section(rawValue: section)?.rowCount ?? 0
   }
 
   override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String?
   {
-    ["Quick Scan", "Recorded Sessions", "Hunter Feedback", "Permissions", "About"][section]
+    Section(rawValue: section)?.title
   }
 
   override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String?
   {
-    switch section {
-    case 0:
-      return "The active scan continuously listens for advertisements. When enabled, connectable devices are probed sequentially in the background for device information, appearance, and battery level."
-    case 1:
-      return
-        "Record mode alternates short scan bursts and pauses to reduce CPU, battery, and storage use."
-    case 2:
-      return "Hunter pulses follow the target signal. Faster pulses indicate a stronger received signal."
-    case 4:
-      return
-        "SignalTrail records the phone location where an advertisement was observed. It cannot determine the BLE device’s actual location or hardware MAC address."
-    default: return nil
+    nil
+  }
+
+  override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+    guard let section = Section(rawValue: section), section.infoMessage != nil else { return nil }
+    return makeInfoSectionHeader(
+      title: section.title,
+      accessibilityLabel: "About \(section.title)"
+    ) { [weak self] in
+      self?.showSectionInfo(section)
     }
   }
 
@@ -225,6 +266,11 @@ final class SettingsViewController: UITableViewController {
   private func openSystemSettings() {
     guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
     UIApplication.shared.open(url)
+  }
+
+  private func showSectionInfo(_ section: Section) {
+    guard let message = section.infoMessage else { return }
+    presentInfo(title: section.title, message: message)
   }
 
   private func showHunterTonePicker() {

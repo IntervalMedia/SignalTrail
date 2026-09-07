@@ -22,6 +22,7 @@ final class ScanViewController: UIViewController {
   private let sortControl = UISegmentedControl(items: LiveResultSort.allCases.map(\.title))
   private let rssiSlider = UISlider()
   private let rssiValueLabel = UILabel()
+  private let liveResultsInfoButton = UIButton(type: .system)
   private let emptyState = EmptyStateView(
     symbol: "dot.radiowaves.left.and.right",
     title: "No devices yet",
@@ -39,7 +40,8 @@ final class ScanViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    title = "SignalTrail"
+    title = "Scan"
+    navigationItem.title = "SignalTrail"
     view.backgroundColor = AppTheme.groupedBackground
     viewModel.delegate = self
     configureNavigation()
@@ -94,6 +96,8 @@ final class ScanViewController: UIViewController {
   private func configureHeader() {
     statusCard.modeControl.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
     statusCard.actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
+    statusCard.modeInfoButton.addTarget(self, action: #selector(showScanModeInfo), for: .touchUpInside)
+    statusCard.readinessInfoButton.addTarget(self, action: #selector(showReadinessInfo), for: .touchUpInside)
     configureResultControls()
 
     let initialWidth = max(view.bounds.width, UIScreen.main.bounds.width, 320)
@@ -104,14 +108,9 @@ final class ScanViewController: UIViewController {
     stack.spacing = 12
     container.addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16)
-    let trailing = stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
-      stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+      stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+      stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
       stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
       stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14),
     ])
@@ -122,6 +121,11 @@ final class ScanViewController: UIViewController {
     let titleLabel = UILabel()
     titleLabel.text = "Live results"
     titleLabel.font = .preferredFont(forTextStyle: .headline)
+    liveResultsInfoButton.configureAsInfoButton(accessibilityLabel: "About live result identities")
+    liveResultsInfoButton.addTarget(self, action: #selector(showLiveResultsInfo), for: .touchUpInside)
+    let titleRow = UIStackView(arrangedSubviews: [titleLabel, UIView(), liveResultsInfoButton])
+    titleRow.axis = .horizontal
+    titleRow.alignment = .center
 
     filterStack.axis = .horizontal
     filterStack.spacing = 8
@@ -152,7 +156,7 @@ final class ScanViewController: UIViewController {
       filterStack.bottomAnchor.constraint(equalTo: filterScroll.contentLayoutGuide.bottomAnchor),
       filterStack.heightAnchor.constraint(equalTo: filterScroll.frameLayoutGuide.heightAnchor),
     ])
-    filterScroll.heightAnchor.constraint(equalToConstant: 36).isActive = true
+    filterScroll.heightAnchor.constraint(greaterThanOrEqualToConstant: 36).isActive = true
 
     sortControl.selectedSegmentIndex = viewModel.sort.rawValue
     sortControl.addTarget(self, action: #selector(sortChanged), for: .valueChanged)
@@ -174,19 +178,14 @@ final class ScanViewController: UIViewController {
     rssiSlider.value = Float(viewModel.minimumRSSI)
     rssiSlider.addTarget(self, action: #selector(rssiChanged), for: .valueChanged)
 
-    let stack = UIStackView(arrangedSubviews: [titleLabel, filterScroll, sortControl, rssiHeader, rssiSlider])
+    let stack = UIStackView(arrangedSubviews: [titleRow, filterScroll, sortControl, rssiHeader, rssiSlider])
     stack.axis = .vertical
     stack.spacing = 10
     controlsCard.addSubview(stack)
     stack.translatesAutoresizingMaskIntoConstraints = false
-    let leading = stack.leadingAnchor.constraint(equalTo: controlsCard.leadingAnchor, constant: 16)
-    let trailing = stack.trailingAnchor.constraint(equalTo: controlsCard.trailingAnchor, constant: -16)
-    leading.priority = .defaultHigh
-    trailing.priority = .defaultHigh
     NSLayoutConstraint.activate([
-      leading,
-      trailing,
-      stack.centerXAnchor.constraint(equalTo: controlsCard.centerXAnchor),
+      stack.leadingAnchor.constraint(equalTo: controlsCard.leadingAnchor, constant: 16),
+      stack.trailingAnchor.constraint(equalTo: controlsCard.trailingAnchor, constant: -16),
       stack.topAnchor.constraint(equalTo: controlsCard.topAnchor, constant: 14),
       stack.bottomAnchor.constraint(equalTo: controlsCard.bottomAnchor, constant: -14),
     ])
@@ -269,9 +268,9 @@ final class ScanViewController: UIViewController {
   private var locationReadinessText: String {
     switch environment.locationProvider.authorizationStatus {
     case .authorizedAlways, .authorizedWhenInUse: return "Granted"
-    case .notDetermined: return "Required for recording"
-    case .denied, .restricted: return "Required for recording"
-    @unknown default: return "Required for recording"
+    case .notDetermined: return "Required"
+    case .denied, .restricted: return "Required"
+    @unknown default: return "Required"
     }
   }
 
@@ -328,6 +327,33 @@ final class ScanViewController: UIViewController {
       self?.viewModel.toggleScan()
     })
     present(alert, animated: true)
+  }
+
+  @objc private func showScanModeInfo() {
+    presentInfo(
+      title: "Scan modes",
+      message: "Quick Scan temporarily discovers nearby BLE devices. Record Session saves repeated observations with the phone's location. Locations show where this phone heard a signal; they do not verify the device's location."
+    )
+  }
+
+  @objc private func showReadinessInfo() {
+    let alert = UIAlertController(
+      title: "Readiness",
+      message: "Bluetooth is required for scanning. Location is required only for recorded sessions. Notifications are used for enabled detection alerts.",
+      preferredStyle: .alert
+    )
+    alert.addAction(UIAlertAction(title: "Done", style: .cancel))
+    alert.addAction(UIAlertAction(title: "Review Settings", style: .default) { [weak self] _ in
+      self?.tabBarController?.selectedIndex = 4
+    })
+    present(alert, animated: true)
+  }
+
+  @objc private func showLiveResultsInfo() {
+    presentInfo(
+      title: "Device identities",
+      message: "Names, company assignments, and inferred categories come from broadcasts or assigned namespaces. They are useful clues, but they do not authenticate a device's identity."
+    )
   }
 
   @objc private func modeChanged() {

@@ -132,8 +132,8 @@ final class ScanViewModel {
       return "Waiting for location permission"
     case .active:
       return "Scanning"
-    case .recording(_, _, let active):
-      return active ? "Recording scan burst" : "Recording battery pause"
+    case .recording:
+      return "Recording"
     }
   }
 

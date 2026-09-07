@@ -118,12 +118,30 @@ final class DeviceDetailViewController: UITableViewController {
         Section(rawValue: section)?.title
     }
 
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        guard let detailSection = Section(rawValue: section) else { return nil }
+        switch detailSection {
+        case .summary:
+            return makeInfoSectionHeader(
+                title: detailSection.title,
+                accessibilityLabel: "About the device summary"
+            ) { [weak self] in
+                self?.showSummaryInfo()
+            }
+        case .dashboards:
+            return makeInfoSectionHeader(
+                title: detailSection.title,
+                accessibilityLabel: "About profile dashboards"
+            ) { [weak self] in
+                self?.showDashboardInfo()
+            }
+        default:
+            return nil
+        }
+    }
+
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch Section(rawValue: section) {
-        case .summary:
-            return "Observed and device-reported values are facts from this interaction. Inferences may be wrong. Observation locations are where this phone heard a signal, not verified device positions."
-        case .dashboards:
-            return dashboards.isEmpty ? "No standard profile cluster was observed." : "Values are device-reported where available; raw hexadecimal is retained for inspection."
         case .services:
             return expandedSections.contains(.services)
                 ? (services.isEmpty ? "Connect to discover services and characteristics." : "Select a service to inspect characteristics.")
@@ -131,6 +149,23 @@ final class DeviceDetailViewController: UITableViewController {
         default:
             return nil
         }
+    }
+
+    private func showSummaryInfo() {
+        presentInfo(
+            title: "Device summary",
+            message: "Observed and device-reported values are facts from this interaction. Inferences may be wrong. Observation locations show where this phone heard a signal, not a verified device position."
+        )
+    }
+
+    private func showDashboardInfo() {
+        let availability = dashboards.isEmpty
+            ? "No standard profile cluster was observed. "
+            : ""
+        presentInfo(
+            title: "Profile dashboards",
+            message: availability + "Values are device-reported where available, and raw hexadecimal remains available for inspection."
+        )
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
