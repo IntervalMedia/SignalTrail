@@ -10,6 +10,7 @@ protocol ScanCoordinatorDelegate: AnyObject {
 }
 
 final class ScanCoordinator {
+  var onWillStart: (() -> Void)?
   private static let liveDeviceMaximumAge: TimeInterval = 90
   private static let liveDeviceMaximumCount = 400
   private static let minimumMeaningfulRSSIChange = 4
@@ -88,7 +89,7 @@ final class ScanCoordinator {
   var probeFactory: ((CBPeripheral, BluetoothScanning, TimeInterval, @escaping (Result<GATTDeviceEvidence, Error>) -> Void) -> BackgroundGATTProbe)?
 
   private(set) var state: State = .idle {
-    didSet { delegate?.scanCoordinatorDidChangeState(self) }
+    didSet { notifyDelegate { $0.scanCoordinatorDidChangeState(self) } }
   }
 
   var devices: [BLEDeviceSnapshot] {
@@ -121,10 +122,12 @@ final class ScanCoordinator {
           self.startRecordingWithAuthorization()
         } else if status == .denied || status == .restricted {
           self.state = .idle
-          self.delegate?.scanCoordinator(
-            self,
-            didEncounter: "Location access was not granted, so the recording was not started."
-          )
+          self.notifyDelegate {
+            $0.scanCoordinator(
+              self,
+              didEncounter: "Location access was not granted, so the recording was not started."
+            )
+          }
         }
         return
       }
@@ -132,16 +135,19 @@ final class ScanCoordinator {
       guard self.state.mode == .recording else { return }
       if status == .denied || status == .restricted {
         self.stop(reason: .user)
-        self.delegate?.scanCoordinator(
-          self,
-          didEncounter: "Location access was removed, so the recording was stopped."
-        )
+        self.notifyDelegate {
+          $0.scanCoordinator(
+            self,
+            didEncounter: "Location access was removed, so the recording was stopped."
+          )
+        }
       }
     }
   }
 
   func startActive() {
     guard !state.isRunning else { return }
+    onWillStart?()
     resetTransientState()
     let duration = settingsStore.settings.activeScanDuration
     let start = Date()
@@ -156,6 +162,7 @@ final class ScanCoordinator {
 
   func startRecording() {
     guard !state.isRunning else { return }
+    onWillStart?()
 
     switch locationProvider.authorizationStatus {
     case .notDetermined:
@@ -164,13 +171,17 @@ final class ScanCoordinator {
     case .authorizedWhenInUse, .authorizedAlways:
       startRecordingWithAuthorization()
     case .denied, .restricted:
-      delegate?.scanCoordinator(
-        self,
-        didEncounter:
-          "Location access is required to record observation locations. Enable it in Settings."
-      )
+      notifyDelegate {
+        $0.scanCoordinator(
+          self,
+          didEncounter:
+            "Location access is required to record observation locations. Enable it in Settings."
+        )
+      }
     @unknown default:
-      delegate?.scanCoordinator(self, didEncounter: "Location access is not currently available.")
+      notifyDelegate {
+        $0.scanCoordinator(self, didEncounter: "Location access is not currently available.")
+      }
     }
   }
 
@@ -193,8 +204,10 @@ final class ScanCoordinator {
       activeSession = session
     } catch {
       state = .idle
-      delegate?.scanCoordinator(
-        self, didEncounter: "Unable to create the recording: \(error.localizedDescription)")
+      notifyDelegate {
+        $0.scanCoordinator(
+          self, didEncounter: "Unable to create the recording: \(error.localizedDescription)")
+      }
       return
     }
 
@@ -227,8 +240,10 @@ final class ScanCoordinator {
       session.endedAt = Date()
       session.uniqueDeviceCount = sessionUniqueIDs.count
       do { try store.updateSession(session) } catch {
-        delegate?.scanCoordinator(
-          self, didEncounter: "The session ended, but its summary could not be saved.")
+        notifyDelegate {
+          $0.scanCoordinator(
+            self, didEncounter: "The session ended, but its summary could not be saved.")
+        }
       }
     }
 
@@ -252,7 +267,7 @@ final class ScanCoordinator {
     visibleUpdateTimer?.invalidate()
     visibleUpdateTimer = nil
     scanner.clearCachedPeripherals()
-    delegate?.scanCoordinator(self, didUpdate: [])
+    notifyDelegate { $0.scanCoordinator(self, didUpdate: []) }
   }
 
   func peripheral(for identifier: UUID) -> CBPeripheral? {
@@ -283,7 +298,7 @@ final class ScanCoordinator {
       try? store.saveDeviceRecord(cached)
     }
 
-    delegate?.scanCoordinator(self, didUpdate: devices)
+    notifyDelegate { $0.scanCoordinator(self, didUpdate: self.devices) }
   }
 
   func clearStoredData(for identifier: UUID) {
@@ -312,7 +327,7 @@ final class ScanCoordinator {
       deviceCache[resolvedIdentifier] = cached
     }
 
-    delegate?.scanCoordinator(self, didUpdate: devices)
+    notifyDelegate { $0.scanCoordinator(self, didUpdate: self.devices) }
   }
 
   func exportDeviceJSON(for identifier: UUID) -> URL? {
@@ -322,6 +337,19 @@ final class ScanCoordinator {
       return store.deviceRecordFileURL(for: resolvedIdentifier)
     }
     return nil
+  }
+
+  private func notifyDelegate(_ callback: @escaping (ScanCoordinatorDelegate) -> Void) {
+    if Thread.isMainThread {
+      if let delegate {
+        callback(delegate)
+      }
+    } else {
+      DispatchQueue.main.async { [weak self] in
+        guard let self, let delegate = self.delegate else { return }
+        callback(delegate)
+      }
+    }
   }
 
   func enrichDevice(
@@ -348,7 +376,7 @@ final class ScanCoordinator {
     }
 
     reconcileGATTDuplicates(preferredIdentifier: resolvedIdentifier)
-    delegate?.scanCoordinator(self, didUpdate: devices)
+    notifyDelegate { $0.scanCoordinator(self, didUpdate: self.devices) }
   }
 
   private func scheduleDevicePersistence(for identifier: UUID, immediate: Bool = false) {
@@ -454,7 +482,7 @@ final class ScanCoordinator {
     visibleUpdateTimer = nil
     alertRules = store.loadAlertRules()
     scanner.clearCachedPeripherals()
-    delegate?.scanCoordinator(self, didUpdate: [])
+    notifyDelegate { $0.scanCoordinator(self, didUpdate: []) }
   }
 
   static func pruneSnapshots(
@@ -758,7 +786,7 @@ final class ScanCoordinator {
     }
 
     if visibleChanged {
-      delegate?.scanCoordinator(self, didUpdate: devices)
+      notifyDelegate { $0.scanCoordinator(self, didUpdate: self.devices) }
     }
 
     scheduleNextVisibleUpdateTimer()
@@ -927,7 +955,7 @@ final class ScanCoordinator {
 extension ScanCoordinator: BluetoothScannerDelegate {
   func bluetoothScannerDidChangeState(_ scanner: BluetoothScanner) {
     guard state.isRunning else {
-      delegate?.scanCoordinatorDidChangeState(self)
+      notifyDelegate { $0.scanCoordinatorDidChangeState(self) }
       return
     }
 
@@ -951,7 +979,7 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     } else if scanner.state == .poweredOff || scanner.state == .unauthorized
       || scanner.state == .unsupported
     {
-      delegate?.scanCoordinator(self, didEncounter: bluetoothMessage(for: scanner.state))
+      notifyDelegate { $0.scanCoordinator(self, didEncounter: self.bluetoothMessage(for: scanner.state)) }
       stop(reason: .bluetoothUnavailable)
     }
   }
@@ -1032,7 +1060,7 @@ extension ScanCoordinator: BluetoothScannerDelegate {
 
     let visibleSnapshotsChangedFromPrune = pruneSnapshotCaches(now: timestamp)
     if visibleSnapshotsChangedFromPrune {
-      delegate?.scanCoordinator(self, didUpdate: devices)
+      notifyDelegate { $0.scanCoordinator(self, didUpdate: self.devices) }
     }
 
     queueVisibleSnapshotUpdate(
@@ -1081,7 +1109,9 @@ extension ScanCoordinator: BluetoothScannerDelegate {
         try store.updateSession(session)
       }
     } catch {
-      delegate?.scanCoordinator(self, didEncounter: "A detection could not be written to storage.")
+      notifyDelegate {
+        $0.scanCoordinator(self, didEncounter: "A detection could not be written to storage.")
+      }
     }
   }
 

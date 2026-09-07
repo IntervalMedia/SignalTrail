@@ -33,15 +33,18 @@ final class MainTabBarController: UITabBarController {
         scan.tabBarItem = UITabBarItem(title: "Scan", image: UIImage(systemName: "dot.radiowaves.left.and.right"), tag: 0)
 
         let sessions = SessionsViewController(environment: environment)
-        sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 1)
+        sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 2)
+
+        let hunter = HunterViewController(environment: environment)
+        hunter.tabBarItem = UITabBarItem(title: "Hunter", image: UIImage(systemName: "scope"), tag: 1)
 
         let known = KnownDevicesViewController(environment: environment)
-        known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 2)
+        known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 3)
 
         let settings = SettingsViewController(environment: environment)
-        settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gearshape"), tag: 3)
+        settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gearshape"), tag: 4)
 
-        viewControllers = [scan, sessions, known, settings].map {
+        viewControllers = [scan, hunter, sessions, known, settings].map {
             let navigationController = UINavigationController(rootViewController: $0)
             navigationController.navigationBar.prefersLargeTitles = true
             return navigationController

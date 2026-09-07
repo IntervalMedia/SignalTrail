@@ -22,9 +22,9 @@ final class LocalStoreTests: XCTestCase {
     XCTAssertEqual(rules.count, 6)
 
     let axonRule = rules.first { $0.name == "Axon / TASER detected" }
-    XCTAssertEqual(axonRule?.matchType, .manufacturerPrefix)
-    XCTAssertEqual(axonRule?.matchValue, "0025DF")
-    XCTAssertEqual(axonRule?.additionalMatches.count, 3)
+    XCTAssertEqual(axonRule?.matchType, .detectorProfile)
+    XCTAssertEqual(axonRule?.matchValue, BLEDetectorProfile.axonTaser.rawValue)
+    XCTAssertEqual(axonRule?.additionalMatches.count, 0)
     XCTAssertEqual(axonRule?.matchMode, .any)
 
     let detectorProfiles = Set(
@@ -37,6 +37,23 @@ final class LocalStoreTests: XCTestCase {
     XCTAssertEqual(detectorProfiles, Set(BLEDetectorProfile.allCases))
     XCTAssertTrue(rules.allSatisfy(\.isEnabled))
     XCTAssertTrue(rules.allSatisfy(\.notifyOncePerSession))
+  }
+
+  func testOUISpySeedMigrationPreservesSavedRulesAndDisabledState() throws {
+    var rules = store.loadAlertRules()
+    let index = try XCTUnwrap(rules.firstIndex { $0.matchValue == BLEDetectorProfile.axonTaser.rawValue })
+    rules[index].matchType = .manufacturerPrefix
+    rules[index].matchValue = "0025DF"
+    rules[index].isEnabled = false
+    try store.saveAlertRules(rules)
+    try "2026-06-30-marauder-ble-detectors-v1".write(
+      to: directory.appendingPathComponent("alert-rules-seed-version.txt"),
+      atomically: true, encoding: .utf8)
+
+    let reopened = try LocalStore(rootURL: directory)
+    XCTAssertEqual(reopened.loadAlertRules(), rules)
+    let reopenedAgain = try LocalStore(rootURL: directory)
+    XCTAssertEqual(reopenedAgain.loadAlertRules(), rules)
   }
 
   func testSessionRoundTrip() throws {

@@ -31,7 +31,7 @@ final class PeripheralInspector: NSObject {
 
     func connect() {
         connectionState = .connecting
-        delegate?.peripheralInspectorDidUpdate(self)
+        notifyDelegate { $0.peripheralInspectorDidUpdate(self) }
         scanner.connect(peripheral, delegate: self)
     }
 
@@ -90,7 +90,7 @@ final class PeripheralInspector: NSObject {
             return GATTServiceSnapshot(uuid: service.uuid.uuidString, characteristics: characteristics)
         }
         evidence = updatedEvidence
-        delegate?.peripheralInspectorDidUpdate(self)
+        notifyDelegate { $0.peripheralInspectorDidUpdate(self) }
     }
 
     private func descriptorSnapshot(_ descriptor: CBDescriptor) -> GATTDescriptorSnapshot {
@@ -128,6 +128,19 @@ final class PeripheralInspector: NSObject {
         let serviceUUID = characteristic.service?.uuid.uuidString ?? ""
         return "\(serviceUUID)|\(characteristic.uuid.uuidString)"
     }
+
+    private func notifyDelegate(_ callback: @escaping (PeripheralInspectorDelegate) -> Void) {
+        if Thread.isMainThread {
+            if let delegate {
+                callback(delegate)
+            }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let delegate = self.delegate else { return }
+                callback(delegate)
+            }
+        }
+    }
 }
 
 extension PeripheralInspector: PeripheralConnectionDelegate {
@@ -136,25 +149,27 @@ extension PeripheralInspector: PeripheralConnectionDelegate {
         automaticallyRequestedReads.removeAll()
         peripheral.delegate = self
         peripheral.discoverServices(nil)
-        delegate?.peripheralInspectorDidUpdate(self)
+        notifyDelegate { $0.peripheralInspectorDidUpdate(self) }
     }
 
     func peripheralConnection(_ peripheral: CBPeripheral, didFail error: Error?) {
         connectionState = .failed(error?.localizedDescription ?? "Connection failed")
-        delegate?.peripheralInspector(self, didFail: error?.localizedDescription ?? "Connection failed")
+        notifyDelegate {
+            $0.peripheralInspector(self, didFail: error?.localizedDescription ?? "Connection failed")
+        }
     }
 
     func peripheralConnectionDidDisconnect(_ peripheral: CBPeripheral, error: Error?) {
         connectionState = .disconnected
         services = []
-        delegate?.peripheralInspectorDidUpdate(self)
+        notifyDelegate { $0.peripheralInspectorDidUpdate(self) }
     }
 }
 
 extension PeripheralInspector: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error = error {
-            delegate?.peripheralInspector(self, didFail: error.localizedDescription)
+            notifyDelegate { $0.peripheralInspector(self, didFail: error.localizedDescription) }
             return
         }
         peripheral.services?.forEach { peripheral.discoverCharacteristics(nil, for: $0) }
@@ -163,7 +178,7 @@ extension PeripheralInspector: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if let error = error {
-            delegate?.peripheralInspector(self, didFail: error.localizedDescription)
+            notifyDelegate { $0.peripheralInspector(self, didFail: error.localizedDescription) }
             return
         }
         for characteristic in service.characteristics ?? [] {
@@ -187,7 +202,7 @@ extension PeripheralInspector: CBPeripheralDelegate {
                 rebuildSnapshots()
                 return
             }
-            delegate?.peripheralInspector(self, didFail: error.localizedDescription)
+            notifyDelegate { $0.peripheralInspector(self, didFail: error.localizedDescription) }
             return
         }
         rebuildSnapshots()
@@ -217,7 +232,7 @@ extension PeripheralInspector: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            delegate?.peripheralInspector(self, didFail: error.localizedDescription)
+            notifyDelegate { $0.peripheralInspector(self, didFail: error.localizedDescription) }
             return
         }
         rebuildSnapshots()
@@ -225,7 +240,7 @@ extension PeripheralInspector: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            delegate?.peripheralInspector(self, didFail: error.localizedDescription)
+            notifyDelegate { $0.peripheralInspector(self, didFail: error.localizedDescription) }
         }
     }
 }

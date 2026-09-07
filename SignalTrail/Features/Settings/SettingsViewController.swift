@@ -27,15 +27,15 @@ final class SettingsViewController: UITableViewController {
     tableView.reloadData()
   }
 
-  override func numberOfSections(in tableView: UITableView) -> Int { 4 }
+  override func numberOfSections(in tableView: UITableView) -> Int { 5 }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    [3, 3, 2, 3][section]
+    [3, 3, 4, 2, 3][section]
   }
 
   override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String?
   {
-    ["Quick Scan", "Recorded Sessions", "Permissions", "About"][section]
+    ["Quick Scan", "Recorded Sessions", "Hunter Feedback", "Permissions", "About"][section]
   }
 
   override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String?
@@ -46,7 +46,9 @@ final class SettingsViewController: UITableViewController {
     case 1:
       return
         "Record mode alternates short scan bursts and pauses to reduce CPU, battery, and storage use."
-    case 3:
+    case 2:
+      return "Hunter pulses follow the target signal. Faster pulses indicate a stronger received signal."
+    case 4:
       return
         "SignalTrail records the phone location where an advertisement was observed. It cannot determine the BLE device’s actual location or hardware MAC address."
     default: return nil
@@ -101,6 +103,30 @@ final class SettingsViewController: UITableViewController {
       }
 
     case 2:
+      if indexPath.row == 0 {
+        content.text = "Sound"
+        let toggle = UISwitch()
+        toggle.isOn = settings.isHunterSoundEnabled
+        toggle.addTarget(self, action: #selector(hunterSoundChanged(_:)), for: .valueChanged)
+        cell.accessoryView = toggle
+      } else if indexPath.row == 1 {
+        content.text = "Alert tone"
+        content.secondaryText = settings.hunterAlertTone.title
+        cell.accessoryType = .disclosureIndicator
+        cell.selectionStyle = .default
+      } else if indexPath.row == 2 {
+        content.text = "Haptic feedback"
+        content.secondaryText = settings.hunterHapticStyle.title
+        cell.accessoryType = .disclosureIndicator
+        cell.selectionStyle = .default
+      } else {
+        content.text = "Preview feedback"
+        content.image = UIImage(systemName: "speaker.wave.2")
+        content.imageProperties.tintColor = AppTheme.accent
+        cell.selectionStyle = .default
+      }
+
+    case 3:
       content.text = indexPath.row == 0 ? "Location permission" : "Notification permission"
       content.secondaryText = indexPath.row == 0 ? locationStatusText : "Tap to request or review"
       content.image = UIImage(systemName: indexPath.row == 0 ? "location" : "bell")
@@ -108,7 +134,7 @@ final class SettingsViewController: UITableViewController {
       cell.accessoryType = .disclosureIndicator
       cell.selectionStyle = .default
 
-    case 3:
+    case 4:
       if indexPath.row == 0 {
         content.text = "SignalTrail"
         content.secondaryText =
@@ -147,12 +173,15 @@ final class SettingsViewController: UITableViewController {
         title: "Pause", current: settings.recordingPauseDuration,
         options: [5, 10, 12, 15, 30, 60]
       ) { self.settings.recordingPauseDuration = $0 }
-    case (2, 0): environment.locationProvider.requestWhenInUseAuthorization()
-    case (2, 1):
+    case (2, 1): showHunterTonePicker()
+    case (2, 2): showHunterHapticPicker()
+    case (2, 3): environment.hunter.previewFeedback()
+    case (3, 0): environment.locationProvider.requestWhenInUseAuthorization()
+    case (3, 1):
       environment.notificationService.requestAuthorization { [weak self] granted in
         if !granted { self?.openSystemSettings() }
       }
-    case (3, 2): resetSettings()
+    case (4, 2): resetSettings()
     default: break
     }
   }
@@ -198,6 +227,53 @@ final class SettingsViewController: UITableViewController {
     UIApplication.shared.open(url)
   }
 
+  private func showHunterTonePicker() {
+    showPicker(title: "Hunter alert tone", values: HunterAlertTone.allCases,
+               current: settings.hunterAlertTone, titleForValue: \.title) { [weak self] tone in
+      guard let self else { return }
+      self.settings.hunterAlertTone = tone
+      self.saveAndPreviewHunterSettings()
+    }
+  }
+
+  private func showHunterHapticPicker() {
+    showPicker(title: "Hunter haptic feedback", values: HunterHapticStyle.allCases,
+               current: settings.hunterHapticStyle, titleForValue: \.title) { [weak self] style in
+      guard let self else { return }
+      self.settings.hunterHapticStyle = style
+      self.saveAndPreviewHunterSettings()
+    }
+  }
+
+  private func showPicker<Value: Equatable>(
+    title: String,
+    values: [Value],
+    current: Value,
+    titleForValue: @escaping (Value) -> String,
+    update: @escaping (Value) -> Void
+  ) {
+    let alert = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
+    values.forEach { value in
+      let valueTitle = titleForValue(value)
+      alert.addAction(UIAlertAction(
+        title: value == current ? "✓ \(valueTitle)" : valueTitle,
+        style: .default
+      ) { _ in update(value) })
+    }
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    if let popover = alert.popoverPresentationController {
+      popover.sourceView = view
+      popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+    }
+    present(alert, animated: true)
+  }
+
+  private func saveAndPreviewHunterSettings() {
+    environment.settingsStore.settings = settings
+    tableView.reloadSections(IndexSet(integer: 2), with: .none)
+    environment.hunter.previewFeedback()
+  }
+
   private func resetSettings() {
     let alert = UIAlertController(
       title: "Reset Settings?", message: "Recorded sessions and known devices will not be deleted.",
@@ -221,5 +297,11 @@ final class SettingsViewController: UITableViewController {
   @objc private func automaticGATTEnrichmentChanged(_ sender: UISwitch) {
     settings.isAutomaticGATTEnrichmentEnabled = sender.isOn
     environment.settingsStore.settings = settings
+  }
+
+  @objc private func hunterSoundChanged(_ sender: UISwitch) {
+    settings.isHunterSoundEnabled = sender.isOn
+    environment.settingsStore.settings = settings
+    if sender.isOn { environment.hunter.previewFeedback() }
   }
 }

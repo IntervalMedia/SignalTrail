@@ -64,8 +64,6 @@ struct AlertMatcher {
 
 enum BLEAdvertisementDetector {
     private static let flipperServiceIdentifiers: Set<UInt16> = [0x3081, 0x3082, 0x3083]
-    private static let metaIdentifiers: Set<UInt16> = [0xFD5F, 0xFEB7, 0xFEB8, 0x01AB, 0x058E, 0x0D53]
-    private static let blockedMetaIdentifiers: Set<UInt16> = [0xFD5A, 0xFD69, 0x004C, 0x0006, 0xFEF3]
     private static let suspiciousSerialModuleNames: Set<String> = ["HC-03", "HC-05", "HC-06"]
 
     static func matches(profile: BLEDetectorProfile, device: BLEDeviceSnapshot) -> Bool {
@@ -74,6 +72,9 @@ enum BLEAdvertisementDetector {
 
     static func matches(profile: BLEDetectorProfile, advertisement: BLEAdvertisement) -> Bool {
         switch profile {
+        case .axonTaser:
+            return advertisement.companyIdentifier == 0x034D
+                || advertisedServiceIdentifiers(in: advertisement).contains(0xFC81)
         case .appleFindMyOfflineFinding:
             return matchesFindMy(advertisement)
         case .flipperZero:
@@ -126,10 +127,24 @@ enum BLEAdvertisementDetector {
     }
 
     private static func matchesMetaSmartGlasses(_ advertisement: BLEAdvertisement) -> Bool {
-        var identifiers = serviceIdentifiers(in: advertisement)
-        if let companyIdentifier = advertisement.companyIdentifier { identifiers.insert(companyIdentifier) }
-        guard identifiers.isDisjoint(with: blockedMetaIdentifiers) else { return false }
-        return !identifiers.isDisjoint(with: metaIdentifiers)
+        // Thank you to colonelpanichacks/oui-spy and ouispy-detector for their code
+        // and BLE heuristic research (matchesMetaComposite / PRESET_AXON).
+        // Swift implementation of the documented rules; see THIRD_PARTY_NOTICES.md.
+        let name = advertisement.localName?.lowercased() ?? ""
+        if ["ray-ban", "wayfarer", "oakley meta"].contains(where: name.contains) {
+            return true
+        }
+        guard let hex = advertisement.manufacturerDataHex,
+              let data = Data(hexadecimalString: hex),
+              data.starts(with: [0x53, 0x0D]) else { return false }
+        return advertisedServiceIdentifiers(in: advertisement).contains(0xFD5F)
+    }
+
+    private static func advertisedServiceIdentifiers(in advertisement: BLEAdvertisement) -> Set<UInt16> {
+        // Solicited services describe what a device seeks, not what it offers.
+        // Use the full Bluetooth base UUID check, not an arbitrary UUID substring.
+        Set((advertisement.serviceUUIDs + advertisement.overflowServiceUUIDs)
+            .compactMap(identifier16(from:)))
     }
 
     static func serviceIdentifiers(in advertisement: BLEAdvertisement) -> Set<UInt16> {

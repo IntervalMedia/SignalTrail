@@ -14,11 +14,35 @@ final class BackgroundGATTProbeTests: XCTestCase {
         XCTAssertTrue(newSettings.isAutomaticGATTEnrichmentEnabled)
     }
 
+    func testHunterSettingsDefaultsAndBackwardCompatibility() throws {
+        let decoded = try JSONDecoder().decode(
+            AppSettings.self,
+            from: "{\"activeScanDuration\":90}".data(using: .utf8)!
+        )
+        XCTAssertTrue(decoded.isHunterSoundEnabled)
+        XCTAssertEqual(decoded.hunterAlertTone, .sonar)
+        XCTAssertEqual(decoded.hunterHapticStyle, .medium)
+    }
+
+    func testFoxhunterRSSIPulseIntervals() {
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -95), 3.0, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -85), 1.0, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -75), 0.5, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -65), 0.2, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -55), 0.1, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -45), 0.05, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -35), 0.025, accuracy: 0.001)
+        XCTAssertEqual(HunterProximity.pulseInterval(forRSSI: -25), 0.010, accuracy: 0.001)
+    }
+
     func testAppSettingsCodableRoundTrip() throws {
         var settings = AppSettings()
         settings.isAutomaticGATTEnrichmentEnabled = false
         settings.activeScanDuration = 60
         settings.minimumRSSI = -75
+        settings.isHunterSoundEnabled = false
+        settings.hunterAlertTone = .deepPing
+        settings.hunterHapticStyle = .heavy
 
         let encoder = JSONEncoder()
         let data = try encoder.encode(settings)
@@ -30,6 +54,9 @@ final class BackgroundGATTProbeTests: XCTestCase {
         XCTAssertFalse(decoded.isAutomaticGATTEnrichmentEnabled)
         XCTAssertEqual(decoded.activeScanDuration, 60)
         XCTAssertEqual(decoded.minimumRSSI, -75)
+        XCTAssertFalse(decoded.isHunterSoundEnabled)
+        XCTAssertEqual(decoded.hunterAlertTone, .deepPing)
+        XCTAssertEqual(decoded.hunterHapticStyle, .heavy)
     }
 
     func testAppSettingsBackwardCompatibilityFallback() throws {

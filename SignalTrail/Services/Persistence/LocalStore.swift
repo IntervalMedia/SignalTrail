@@ -20,27 +20,13 @@ final class LocalStore {
     UUID(uuidString: "5691C101-C485-4A97-9B80-2029C310E4CF")!
   private static let metaSmartGlassesAlertRuleID =
     UUID(uuidString: "09A4994E-6A31-4BDB-A06E-CA55AEA5A989")!
-  private static let defaultAlertSeedVersion = "2026-06-30-marauder-ble-detectors-v1"
+  private static let defaultAlertSeedVersion = "2026-09-07-oui-spy-detectors-v2"
   private static let defaultAlertRules = [
     AlertRule(
       id: defaultAlertRuleID,
       name: "Axon / TASER detected",
-      matchType: .manufacturerPrefix,
-      matchValue: "0025DF",
-      additionalMatches: [
-        AlertRuleMatch(
-          matchType: .companyName,
-          matchValue: "TASER International, Inc."
-        ),
-        AlertRuleMatch(
-          matchType: .memberServiceName,
-          matchValue: "TASER International, Inc."
-        ),
-        AlertRuleMatch(
-          matchType: .memberServiceName,
-          matchValue: "Axon Enterprise, Inc."
-        ),
-      ],
+      matchType: .detectorProfile,
+      matchValue: BLEDetectorProfile.axonTaser.rawValue,
       matchMode: .any,
       isEnabled: true,
       notifyOncePerSession: true,
@@ -297,11 +283,18 @@ final class LocalStore {
   ) {
     deviceQueue.async { [weak self] in
       guard let self = self else { return }
+      let result: Result<Void, Error>
       do {
         try self.saveDeviceRecord(snapshot)
-        completion?(.success(()))
+        result = .success(())
       } catch {
-        completion?(.failure(error))
+        result = .failure(error)
+      }
+
+      if let completion {
+        DispatchQueue.main.async {
+          completion(result)
+        }
       }
     }
   }

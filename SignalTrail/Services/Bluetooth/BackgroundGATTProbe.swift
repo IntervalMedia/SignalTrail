@@ -114,7 +114,13 @@ class BackgroundGATTProbe: NSObject {
         timeoutTimer = nil
 
         scanner.disconnect(peripheral)
-        completion(result)
+        if Thread.isMainThread {
+            completion(result)
+        } else {
+            DispatchQueue.main.async { [completion] in
+                completion(result)
+            }
+        }
     }
 
     static func isTargetCharacteristic(uuidString: String) -> Bool {

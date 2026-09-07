@@ -106,7 +106,7 @@ final class DeviceDetailViewController: UITableViewController {
         case .dashboards:
             return dashboards.count
         case .actions:
-            return 6
+            return 7
         case .advertisement, .serviceData, .rawValues:
             return expandedSections.contains(section) ? max(rows(for: section).count, 1) : 1
         case .services:
@@ -306,10 +306,12 @@ final class DeviceDetailViewController: UITableViewController {
             } else if indexPath.row == 1 {
                 showAlertTemplates()
             } else if indexPath.row == 2 {
-                toggleConnection()
+                startHunter()
             } else if indexPath.row == 3 {
-                editDisplayNameTapped()
+                toggleConnection()
             } else if indexPath.row == 4 {
+                editDisplayNameTapped()
+            } else if indexPath.row == 5 {
                 let cell = tableView.cellForRow(at: indexPath)
                 exportDeviceJSON(sourceView: cell, barButtonItem: nil)
             } else {
@@ -350,14 +352,19 @@ final class DeviceDetailViewController: UITableViewController {
             content.image = UIImage(systemName: "bell.badge")
             content.imageProperties.tintColor = .systemOrange
         case 2:
+            content.text = "Hunt this device"
+            content.secondaryText = "Track proximity using live signal strength"
+            content.image = UIImage(systemName: "scope")
+            content.imageProperties.tintColor = .systemGreen
+        case 3:
             content.text = connectionActionTitle
             content.image = UIImage(systemName: connectionActionSymbol)
             content.imageProperties.tintColor = inspector?.connectionState == .connected ? .systemRed : AppTheme.accent
-        case 3:
+        case 4:
             content.text = "Edit display name"
             content.image = UIImage(systemName: "pencil")
             content.imageProperties.tintColor = AppTheme.accent
-        case 4:
+        case 5:
             content.text = "Export device JSON"
             content.image = UIImage(systemName: "square.and.arrow.up")
             content.imageProperties.tintColor = AppTheme.accent
@@ -367,6 +374,12 @@ final class DeviceDetailViewController: UITableViewController {
             content.imageProperties.tintColor = .systemRed
             content.textProperties.color = .systemRed
         }
+    }
+
+    private func startHunter() {
+        environment.scanCoordinator.stop()
+        environment.hunter.selectTarget(device)
+        tabBarController?.selectedIndex = 1
     }
 
     private func rows(for section: Section) -> [(title: String, value: String, copyable: Bool)] {
@@ -578,7 +591,7 @@ final class DeviceDetailViewController: UITableViewController {
         })
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         if let popover = alert.popoverPresentationController {
-            if let cell = tableView.cellForRow(at: IndexPath(row: 5, section: Section.actions.rawValue)) {
+            if let cell = tableView.cellForRow(at: IndexPath(row: 6, section: Section.actions.rawValue)) {
                 popover.sourceView = cell
                 popover.sourceRect = cell.bounds
             } else {

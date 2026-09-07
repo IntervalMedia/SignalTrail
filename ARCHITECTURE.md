@@ -15,6 +15,7 @@ UIKit feature controllers
                │
                ├── ScanCoordinator
                ├── BluetoothScanner ── CoreBluetooth
+               ├── HunterController ── RSSI proximity feedback
                ├── PeripheralInspector ── CoreBluetooth GATT
                ├── CoreLocationProvider ── Core Location
                ├── NotificationService ── UserNotifications
@@ -59,6 +60,14 @@ Normalizes CoreBluetooth advertisement dictionaries into `BLEAdvertisement` valu
 
 Manages one connected peripheral and converts GATT services, characteristics, descriptors, and decoded values into UI-safe snapshots. After an explicit user connection, it automatically reads a bounded allowlist of readable GAP, Device Information, Battery, HID metadata, and selected capability characteristics. Those reads enrich the live device with device-reported Appearance, identity, and feature evidence; they never write or enable notifications. Manual read, write, and notification operations remain separate from discovery state. Characteristic writes are surfaced by the UI as Advanced tools and require confirmation before dispatch.
 
+### `HunterController`
+
+Tracks one selected CoreBluetooth peripheral using duplicate advertisement RSSI
+updates. It maps RSSI to the OUI-SPY Foxhunter pulse intervals, stops feedback
+after five seconds without a matching advertisement, and drives generated audio
+and haptic feedback from `AppSettings`. Hunter and normal scan sessions are
+mutually exclusive because they share one `CBCentralManager` scan.
+
 ### `LocalStore`
 
 Provides repository-like methods for sessions, detections, known devices, and rules. Detection files use JSONL append writes, and alert-rule storage also handles one-time seed migrations such as the default Axon/TASER rule. A future `GRDBStore` can implement the same public operations without changing view controllers.
@@ -66,6 +75,7 @@ Provides repository-like methods for sessions, detections, known devices, and ru
 ### Feature modules
 
 - `Scan`: first-run onboarding, readiness checks, Quick Scan, Record Session, live filters, sorting, minimum RSSI, and device search
+- `Hunter`: single-device RSSI direction finding with configurable pulse feedback
 - `Device`: summary-first advertisement and GATT inspection with collapsed technical sections
 - `Sessions`: map/timeline replay and export
 - `KnownDevices`: Library tab, saved devices, alert templates, rule preview/testing, and rule editing

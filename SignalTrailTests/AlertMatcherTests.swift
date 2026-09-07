@@ -121,10 +121,10 @@ final class AlertMatcherTests: XCTestCase {
     )
   }
 
-  func testMetaDetectorMatchesServiceDataIdentifier() {
+  func testMetaDetectorRejectsServiceDataIdentifierAlone() {
     let metaDevice = makeDevice(serviceData: ["FD5F": "0102"])
 
-    XCTAssertTrue(
+    XCTAssertFalse(
       AlertMatcher.matches(rule: makeProfileRule(.metaSmartGlasses), device: metaDevice)
     )
   }
@@ -139,6 +139,63 @@ final class AlertMatcherTests: XCTestCase {
     XCTAssertFalse(
       AlertMatcher.matches(rule: makeProfileRule(.metaSmartGlasses), device: blockedMetaDevice)
     )
+  }
+
+  func testOUISpyMetaCompositeRequiresBothSignals() {
+    let rule = makeProfileRule(.metaSmartGlasses)
+    for uuid in ["FD5F", "0000fd5f-0000-1000-8000-00805f9b34fb"] {
+      XCTAssertTrue(AlertMatcher.matches(rule: rule, device: makeDevice(
+        manufacturerDataHex: "530D01", companyIdentifier: 0x0D53, serviceUUIDs: [uuid])))
+    }
+    for sample in [
+      makeDevice(manufacturerDataHex: "530D", companyIdentifier: 0x0D53),
+      makeDevice(serviceUUIDs: ["FD5F"]),
+      makeDevice(manufacturerDataHex: "53", serviceUUIDs: ["FD5F"]),
+      makeDevice(manufacturerDataHex: "530D", solicitedServiceUUIDs: ["FD5F"]),
+      makeDevice(manufacturerDataHex: "530D", serviceData: ["FD5F": "00"]),
+      makeDevice(manufacturerDataHex: "530D", serviceUUIDs: ["0000FD5F-1234-5678-8000-00805F9B34FB"])
+    ] {
+      XCTAssertFalse(AlertMatcher.matches(rule: rule, device: sample))
+    }
+  }
+
+  func testOUISpyMetaNamesAndEnableToggle() {
+    var rule = makeProfileRule(.metaSmartGlasses)
+    for name in ["My RAY-BAN", "Wayfarer", "Oakley Meta 123"] {
+      let sample = makeDevice(localName: name)
+      rule.isEnabled = true
+      XCTAssertTrue(AlertMatcher.matches(rule: rule, device: sample))
+      rule.isEnabled = false
+      XCTAssertFalse(AlertMatcher.matches(rule: rule, device: sample))
+    }
+    rule.isEnabled = true
+    XCTAssertFalse(AlertMatcher.matches(rule: rule, device: makeDevice(localName: "Meta speaker")))
+  }
+
+  func testOUISpyAxonCompanyAndServicePaths() {
+    var rule = makeProfileRule(.axonTaser)
+    for sample in [
+      makeDevice(companyIdentifier: 0x034D),
+      makeDevice(serviceUUIDs: ["FC81"]),
+      makeDevice(serviceUUIDs: ["0000FC81-0000-1000-8000-00805F9B34FB"]),
+      makeDevice(overflowServiceUUIDs: ["FC81"])
+    ] {
+      rule.isEnabled = true
+      XCTAssertTrue(AlertMatcher.matches(rule: rule, device: sample))
+      rule.isEnabled = false
+      XCTAssertFalse(AlertMatcher.matches(rule: rule, device: sample))
+    }
+    rule.isEnabled = true
+    XCTAssertFalse(AlertMatcher.matches(rule: rule, device: makeDevice(manufacturerDataHex: "0025DF")))
+    XCTAssertFalse(AlertMatcher.matches(rule: rule, device: makeDevice(memberServiceUUIDs: ["FC81"])))
+    XCTAssertFalse(AlertMatcher.matches(rule: rule, device: makeDevice(solicitedServiceUUIDs: ["FC81"])))
+  }
+
+  func testOUISpyProfilesAppearInDeviceIntelligence() {
+    let axon = makeDevice(serviceUUIDs: ["FC81"])
+    let glasses = makeDevice(localName: "Oakley Meta")
+    XCTAssertTrue(DeviceIntelligenceEngine().analyze(axon.advertisement).detectorMatches.contains(.axonTaser))
+    XCTAssertTrue(DeviceIntelligenceEngine().analyze(glasses.advertisement).detectorMatches.contains(.metaSmartGlasses))
   }
 
   func testDisabledRuleDoesNotMatch() {

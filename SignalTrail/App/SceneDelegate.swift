@@ -22,6 +22,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
+        environment?.hunter.stop()
         environment?.scanCoordinator.stop(reason: .enteredBackground)
     }
 }

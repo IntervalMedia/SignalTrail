@@ -370,6 +370,7 @@ struct KnownDevice: Codable, Hashable, Identifiable {
 }
 
 enum BLEDetectorProfile: String, Codable, CaseIterable {
+    case axonTaser
     case appleFindMyOfflineFinding
     case flipperZero
     case flockPenguinBattery
@@ -378,6 +379,8 @@ enum BLEDetectorProfile: String, Codable, CaseIterable {
 
     var title: String {
         switch self {
+        case .axonTaser:
+            return "Axon / TASER"
         case .appleFindMyOfflineFinding:
             return "Apple Find My Offline Finding"
         case .flipperZero:
@@ -393,6 +396,8 @@ enum BLEDetectorProfile: String, Codable, CaseIterable {
 
     var guidance: String {
         switch self {
+        case .axonTaser:
+            return "Matches company ID 034D or advertised service FC81. This suggests an Axon/TASER device family, not a verified camera or weapon model."
         case .appleFindMyOfflineFinding:
             return "Matches Apple manufacturer data beginning 4C001219. This identifies Find My-shaped broadcasts, not authenticated AirTags."
         case .flipperZero:
@@ -402,7 +407,7 @@ enum BLEDetectorProfile: String, Codable, CaseIterable {
         case .serialBluetoothModuleSkimmer:
             return "Matches the exact advertised names HC-03, HC-05, or HC-06. These modules are common and are not proof of a payment-card skimmer."
         case .metaSmartGlasses:
-            return "Matches the Meta/Luxottica manufacturer, service, or service-data identifiers used by ESP32Marauder while rejecting its blocked identifiers."
+            return "Matches Luxottica manufacturer data 530D together with advertised service FD5F, or a name containing Ray-Ban, Wayfarer, or Oakley Meta. These are unverified device claims."
         }
     }
 }
@@ -593,6 +598,9 @@ struct AppSettings: Codable, Equatable {
     var minimumRSSI: Int = -100
     var keepScreenAwakeDuringRecording = true
     var requestNotificationPermissionOnRuleCreation = true
+    var isHunterSoundEnabled = true
+    var hunterAlertTone: HunterAlertTone = .sonar
+    var hunterHapticStyle: HunterHapticStyle = .medium
 
     static let `default` = AppSettings()
 
@@ -603,7 +611,10 @@ struct AppSettings: Codable, Equatable {
         recordingPauseDuration: TimeInterval = 5,
         minimumRSSI: Int = -100,
         keepScreenAwakeDuringRecording: Bool = true,
-        requestNotificationPermissionOnRuleCreation: Bool = true
+        requestNotificationPermissionOnRuleCreation: Bool = true,
+        isHunterSoundEnabled: Bool = true,
+        hunterAlertTone: HunterAlertTone = .sonar,
+        hunterHapticStyle: HunterHapticStyle = .medium
     ) {
         self.activeScanDuration = activeScanDuration
         self.isAutomaticGATTEnrichmentEnabled = isAutomaticGATTEnrichmentEnabled
@@ -612,6 +623,9 @@ struct AppSettings: Codable, Equatable {
         self.minimumRSSI = minimumRSSI
         self.keepScreenAwakeDuringRecording = keepScreenAwakeDuringRecording
         self.requestNotificationPermissionOnRuleCreation = requestNotificationPermissionOnRuleCreation
+        self.isHunterSoundEnabled = isHunterSoundEnabled
+        self.hunterAlertTone = hunterAlertTone
+        self.hunterHapticStyle = hunterHapticStyle
     }
 
     init(from decoder: Decoder) throws {
@@ -623,7 +637,33 @@ struct AppSettings: Codable, Equatable {
         minimumRSSI = try container.decodeIfPresent(Int.self, forKey: .minimumRSSI) ?? -100
         keepScreenAwakeDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .keepScreenAwakeDuringRecording) ?? true
         requestNotificationPermissionOnRuleCreation = try container.decodeIfPresent(Bool.self, forKey: .requestNotificationPermissionOnRuleCreation) ?? true
+        isHunterSoundEnabled = try container.decodeIfPresent(Bool.self, forKey: .isHunterSoundEnabled) ?? true
+        hunterAlertTone = try container.decodeIfPresent(HunterAlertTone.self, forKey: .hunterAlertTone) ?? .sonar
+        hunterHapticStyle = try container.decodeIfPresent(HunterHapticStyle.self, forKey: .hunterHapticStyle) ?? .medium
     }
+}
+
+enum HunterAlertTone: String, Codable, CaseIterable {
+    case sonar
+    case deepPing
+    case brightPing
+
+    var title: String {
+        switch self {
+        case .sonar: return "Sonar"
+        case .deepPing: return "Deep ping"
+        case .brightPing: return "Bright ping"
+        }
+    }
+}
+
+enum HunterHapticStyle: String, Codable, CaseIterable {
+    case off
+    case light
+    case medium
+    case heavy
+
+    var title: String { rawValue.capitalized }
 }
 
 // MARK: - GATT

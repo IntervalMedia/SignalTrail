@@ -7,6 +7,7 @@ final class AppEnvironment {
     let locationProvider: LocationProviding
     let bluetoothScanner: BluetoothScanner
     let scanCoordinator: ScanCoordinator
+    let hunter: HunterController
 
     init() {
         do {
@@ -26,5 +27,11 @@ final class AppEnvironment {
             settingsStore: settingsStore,
             notificationService: notificationService
         )
+        hunter = HunterController(
+            scanner: bluetoothScanner,
+            settingsStore: settingsStore,
+            scanCoordinator: scanCoordinator
+        )
+        scanCoordinator.onWillStart = { [weak hunter] in hunter?.stop() }
     }
 }

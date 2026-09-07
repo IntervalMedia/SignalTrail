@@ -189,6 +189,9 @@ struct DeviceIntelligenceEngine {
 
         for profile in detectorMatches {
             switch profile {
+            case .axonTaser:
+                add(.camera, score: 85, kind: .detectorProfile,
+                    description: "Axon/TASER company or advertised service match", modelFamily: "Axon / TASER device")
             case .appleFindMyOfflineFinding:
                 add(.tracker, score: 97, kind: .detectorProfile,
                     description: "Apple Find My Offline Finding payload", modelFamily: "Find My accessory")
@@ -203,7 +206,7 @@ struct DeviceIntelligenceEngine {
                     description: "HC serial Bluetooth module name", modelFamily: "HC serial module")
             case .metaSmartGlasses:
                 add(.smartWatch, score: 94, kind: .detectorProfile,
-                    description: "Meta smart-glasses identifier", modelFamily: "Meta / Ray-Ban smart glasses")
+                    description: "Meta smart-glasses advertisement heuristic", modelFamily: "Meta / Ray-Ban smart glasses")
             }
         }
 

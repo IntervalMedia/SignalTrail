@@ -30,11 +30,12 @@ final class BluetoothScanner: NSObject, BluetoothScanning {
     private lazy var centralManager = CBCentralManager(delegate: self, queue: .main)
     private var peripherals: [UUID: CBPeripheral] = [:]
     private var connectionDelegates: [UUID: WeakConnectionDelegate] = [:]
+    private var observers: [WeakScannerDelegate] = []
 
     private(set) var isScanning = false
     var stateOverride: CBManagerState? {
         didSet {
-            delegate?.bluetoothScannerDidChangeState(self)
+            notifyDelegate { $0.bluetoothScannerDidChangeState(self) }
         }
     }
 
@@ -53,14 +54,14 @@ final class BluetoothScanner: NSObject, BluetoothScanning {
             options: [CBCentralManagerScanOptionAllowDuplicatesKey: allowDuplicates]
         )
         isScanning = true
-        delegate?.bluetoothScannerDidChangeState(self)
+        notifyDelegate { $0.bluetoothScannerDidChangeState(self) }
     }
 
     func stopScanning() {
         guard isScanning else { return }
         centralManager.stopScan()
         isScanning = false
-        delegate?.bluetoothScannerDidChangeState(self)
+        notifyDelegate { $0.bluetoothScannerDidChangeState(self) }
     }
 
     func peripheral(for identifier: UUID) -> CBPeripheral? {
@@ -80,6 +81,15 @@ final class BluetoothScanner: NSObject, BluetoothScanning {
         peripherals.removeAll()
     }
 
+    func addObserver(_ observer: BluetoothScannerDelegate) {
+        observers.removeAll { $0.value == nil || $0.value === observer }
+        observers.append(WeakScannerDelegate(observer))
+    }
+
+    func removeObserver(_ observer: BluetoothScannerDelegate) {
+        observers.removeAll { $0.value == nil || $0.value === observer }
+    }
+
     func connect(_ peripheral: CBPeripheral, delegate: PeripheralConnectionDelegate) {
         connectionDelegates[peripheral.identifier] = WeakConnectionDelegate(delegate)
         centralManager.connect(peripheral, options: nil)
@@ -88,6 +98,43 @@ final class BluetoothScanner: NSObject, BluetoothScanning {
     func disconnect(_ peripheral: CBPeripheral) {
         centralManager.cancelPeripheralConnection(peripheral)
     }
+
+    private func notifyConnectionDelegate(
+        for peripheral: CBPeripheral,
+        _ callback: @escaping (PeripheralConnectionDelegate) -> Void
+    ) {
+        if Thread.isMainThread {
+            if let delegate = connectionDelegates[peripheral.identifier]?.value {
+                callback(delegate)
+            }
+        } else {
+            DispatchQueue.main.async { [weak self, weak peripheral] in
+                guard let self,
+                      let peripheral,
+                      let delegate = self.connectionDelegates[peripheral.identifier]?.value else {
+                    return
+                }
+                callback(delegate)
+            }
+        }
+    }
+
+    private func notifyDelegate(_ callback: @escaping (BluetoothScannerDelegate) -> Void) {
+        if Thread.isMainThread {
+            if let delegate {
+                callback(delegate)
+            }
+            observers.removeAll { $0.value == nil }
+            observers.compactMap(\.value).forEach(callback)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if let delegate = self.delegate { callback(delegate) }
+                self.observers.removeAll { $0.value == nil }
+                self.observers.compactMap(\.value).forEach(callback)
+            }
+        }
+    }
 }
 
 extension BluetoothScanner: CBCentralManagerDelegate {
@@ -95,7 +142,7 @@ extension BluetoothScanner: CBCentralManagerDelegate {
         if central.state != .poweredOn {
             isScanning = false
         }
-        delegate?.bluetoothScannerDidChangeState(self)
+        notifyDelegate { $0.bluetoothScannerDidChangeState(self) }
     }
 
     func centralManager(
@@ -107,29 +154,44 @@ extension BluetoothScanner: CBCentralManagerDelegate {
         let rssi = RSSI.intValue
         guard rssi != 127 else { return }
         peripherals[peripheral.identifier] = peripheral
-        delegate?.bluetoothScanner(
-            self,
-            didDiscover: peripheral,
-            advertisement: AdvertisementParser.parse(advertisementData),
-            rssi: rssi,
-            timestamp: Date()
-        )
+        let advertisement = AdvertisementParser.parse(advertisementData)
+        let timestamp = Date()
+        notifyDelegate {
+            $0.bluetoothScanner(
+                self,
+                didDiscover: peripheral,
+                advertisement: advertisement,
+                rssi: rssi,
+                timestamp: timestamp
+            )
+        }
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        connectionDelegates[peripheral.identifier]?.value?.peripheralConnectionDidConnect(peripheral)
+        notifyConnectionDelegate(for: peripheral) {
+            $0.peripheralConnectionDidConnect(peripheral)
+        }
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        connectionDelegates[peripheral.identifier]?.value?.peripheralConnection(peripheral, didFail: error)
+        notifyConnectionDelegate(for: peripheral) {
+            $0.peripheralConnection(peripheral, didFail: error)
+        }
     }
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        connectionDelegates[peripheral.identifier]?.value?.peripheralConnectionDidDisconnect(peripheral, error: error)
+        notifyConnectionDelegate(for: peripheral) {
+            $0.peripheralConnectionDidDisconnect(peripheral, error: error)
+        }
     }
 }
 
 private final class WeakConnectionDelegate {
     weak var value: PeripheralConnectionDelegate?
     init(_ value: PeripheralConnectionDelegate) { self.value = value }
+}
+
+private final class WeakScannerDelegate {
+    weak var value: BluetoothScannerDelegate?
+    init(_ value: BluetoothScannerDelegate) { self.value = value }
 }

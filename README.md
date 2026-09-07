@@ -46,6 +46,7 @@ The iOS Simulator cannot perform normal nearby BLE scans. Use a physical device 
 - Live search, filters, sorting, minimum RSSI thresholds, and signal-strength indicators
 - Session maps with clustered observation markers, the phone's route, timeline scrubbing, and playback
 - Session export in JSON or CSV format
+- A Hunter tab for tracking one selected device by live RSSI, with faster sound and haptic pulses as its signal grows stronger
 
 ### Devices and Bluetooth data
 
@@ -57,6 +58,19 @@ The iOS Simulator cannot perform normal nearby BLE scans. Use a physical device 
 - Read-only enrichment after connection using GAP Appearance and Device Information values, including structured PnP ID decoding
 - Decoding for selected Bluetooth SIG characteristics, including identity strings, Battery Level, Heart Rate, HID metadata, cycling, running, Fitness Machine, and environmental data. Raw bytes remain available.
 - GATT navigation that clearly separates observed advertisements, values reported by the device, and inferred categories
+- A **Hunt this device** action in device details that assigns the device to Hunter and starts proximity tracking
+
+### Hunter feedback
+
+- A generated sonar-style alert tone with deep and bright alternatives
+- Independent sound on/off and haptic strength controls in Settings
+- Duplicate-advertisement scanning and the RSSI-to-pulse timing from OUI-SPY Foxhunter
+- A five-second signal timeout so stale readings stop feedback
+
+Hunter uses the CoreBluetooth peripheral UUID because iOS does not expose a BLE
+hardware MAC address. RSSI is useful for relative direction finding, but walls,
+reflections, phone orientation, device transmit power, and antenna placement all
+affect it. Physical-device testing is required.
 
 ### Library and alerts
 
@@ -120,3 +134,17 @@ xcodebuild -project SignalTrail.xcodeproj -scheme SignalTrail -destination 'plat
 ```
 
 Note any required on-device BLE verification in the pull request.
+
+## OUI-SPY device heuristics
+
+Device summaries and built-in alerts now include the OUI-SPY Axon/TASER BLE
+heuristic (`axonTaser`). Meta/Ray-Ban detection requires Luxottica manufacturer
+data together with the Meta advertised service, or a matching Ray-Ban,
+Wayfarer, or Oakley Meta name. Single Meta identifiers no longer trigger this
+profile. These matches suggest a device family; they do not verify a model.
+
+New installations use the Axon profile in the default alert. Saved alert rules
+and enable/disable choices are preserved. To use the new Axon profile in an
+existing installation, set an alert's built-in detector criterion to `axonTaser`.
+See [OUI-SPY attribution and review](THIRD_PARTY_NOTICES.md) for the source
+revisions, license status, and iOS limitations.
