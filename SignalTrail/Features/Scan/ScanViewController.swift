@@ -193,16 +193,21 @@ final class ScanViewController: UIViewController {
 
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    guard let header = tableView.tableHeaderView else { return }
+    resizeTableSupplementaryView(tableView.tableHeaderView, assign: { tableView.tableHeaderView = $0 })
+    resizeTableSupplementaryView(tableView.tableFooterView, assign: { tableView.tableFooterView = $0 })
+  }
+
+  private func resizeTableSupplementaryView(_ supplementaryView: UIView?, assign: (UIView) -> Void) {
+    guard let supplementaryView else { return }
     let width = tableView.bounds.width
-    let target = header.systemLayoutSizeFitting(
+    let target = supplementaryView.systemLayoutSizeFitting(
       CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
       withHorizontalFittingPriority: .required,
       verticalFittingPriority: .fittingSizeLevel
     )
-    if abs(header.frame.height - target.height) > 1 {
-      header.frame.size = CGSize(width: width, height: target.height)
-      tableView.tableHeaderView = header
+    if abs(supplementaryView.frame.height - target.height) > 1 {
+      supplementaryView.frame.size = CGSize(width: width, height: target.height)
+      assign(supplementaryView)
     }
   }
 
@@ -225,10 +230,22 @@ final class ScanViewController: UIViewController {
 
     navigationItem.rightBarButtonItem?.isEnabled =
       !viewModel.isRunning && !viewModel.devices.isEmpty
-    emptyState.removeFromSuperview()
     tableView.reloadData()
+    tableView.backgroundView = nil
+    tableView.tableFooterView = viewModel.devices.isEmpty ? emptyStateFooter() : UIView()
+  }
 
-    tableView.backgroundView = viewModel.devices.isEmpty ? emptyState : nil
+  private func emptyStateFooter() -> UIView {
+    let container = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 220))
+    container.addSubview(emptyState)
+    emptyState.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      emptyState.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+      emptyState.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+      emptyState.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
+      emptyState.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16),
+    ])
+    return container
   }
 
   private func renderFilterButtons() {
