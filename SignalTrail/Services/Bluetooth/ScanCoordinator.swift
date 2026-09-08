@@ -651,6 +651,15 @@ final class ScanCoordinator {
       return "name-model|\(manufacturerName)|\(modelNumber)|\(deviceName)"
     }
 
+    let observedName = normalizedIdentityValue(
+      snapshot.advertisement.localName ?? snapshot.displayName
+    )
+    if let deviceName, let manufacturerName,
+       observedName == deviceName,
+       isEstablishedDeviceName(deviceName, modelNumber: nil) {
+      return "name-manufacturer|\(manufacturerName)|\(deviceName)"
+    }
+
     return "peripheral|\(snapshot.peripheralIdentifier.uuidString)"
   }
 
