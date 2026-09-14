@@ -79,12 +79,53 @@ final class LocalStoreTests: XCTestCase {
       latitude: -27.47,
       longitude: 153.02,
       horizontalAccuracy: 5,
+      locationTimestamp: now.addingTimeInterval(-2),
       advertisement: .empty
     )
     try store.appendDetection(detection)
 
     XCTAssertEqual(try store.loadSessions().first?.id, session.id)
     XCTAssertEqual(try store.loadDetections(sessionID: session.id), [detection])
+  }
+
+  func testCSVExportPreservesLocationTimestampSeparatelyFromObservationTime() throws {
+    let observationTime = Date(timeIntervalSince1970: 1_700_000_030)
+    let locationTime = observationTime.addingTimeInterval(-20)
+    let session = ScanSession(
+      id: UUID(),
+      startedAt: observationTime.addingTimeInterval(-30),
+      endedAt: observationTime,
+      mode: .recording,
+      name: "Location timestamp",
+      detectionCount: 1,
+      uniqueDeviceCount: 1
+    )
+    let detection = BLEDetection(
+      id: UUID(),
+      sessionID: session.id,
+      peripheralIdentifier: UUID(),
+      displayName: "Sensor",
+      rssi: -70,
+      timestamp: observationTime,
+      latitude: -27.47,
+      longitude: 153.02,
+      horizontalAccuracy: 5,
+      locationTimestamp: locationTime,
+      advertisement: .empty
+    )
+
+    let url = try SessionExporter.makeTemporaryExport(
+      session: session,
+      detections: [detection],
+      format: .csv
+    )
+    defer { try? FileManager.default.removeItem(at: url) }
+    let csv = try String(contentsOf: url, encoding: .utf8)
+    let formatter = ISO8601DateFormatter()
+
+    XCTAssertTrue(csv.contains("timestamp,location_timestamp"))
+    XCTAssertTrue(csv.contains(formatter.string(from: observationTime)))
+    XCTAssertTrue(csv.contains(formatter.string(from: locationTime)))
   }
 
   func testDeviceSnapshotCodableRoundTrip() throws {

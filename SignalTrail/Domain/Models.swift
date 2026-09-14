@@ -325,7 +325,34 @@ struct BLEDetection: Codable, Hashable, Identifiable {
     let latitude: Double?
     let longitude: Double?
     let horizontalAccuracy: Double?
+    let locationTimestamp: Date?
     let advertisement: BLEAdvertisement
+
+    init(
+        id: UUID,
+        sessionID: UUID,
+        peripheralIdentifier: UUID,
+        displayName: String,
+        rssi: Int,
+        timestamp: Date,
+        latitude: Double?,
+        longitude: Double?,
+        horizontalAccuracy: Double?,
+        locationTimestamp: Date? = nil,
+        advertisement: BLEAdvertisement
+    ) {
+        self.id = id
+        self.sessionID = sessionID
+        self.peripheralIdentifier = peripheralIdentifier
+        self.displayName = displayName
+        self.rssi = rssi
+        self.timestamp = timestamp
+        self.latitude = latitude
+        self.longitude = longitude
+        self.horizontalAccuracy = horizontalAccuracy
+        self.locationTimestamp = locationTimestamp
+        self.advertisement = advertisement
+    }
 
     var coordinate: CLLocationCoordinate2D? {
         guard let latitude = latitude, let longitude = longitude else { return nil }

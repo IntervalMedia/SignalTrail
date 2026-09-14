@@ -16,6 +16,8 @@ final class ScanCoordinator {
   private static let minimumMeaningfulRSSIChange = 4
   private static let minimumVisibleUpdateInterval: TimeInterval = 0.75
   private static let minimumRecordingObservationIntervalFloor: TimeInterval = 5
+  private static let maximumRecordingLocationAge: TimeInterval = 30
+  private static let maximumRecordingLocationAccuracy: CLLocationAccuracy = 100
 
   struct SnapshotMergeResult {
     let snapshot: BLEDeviceSnapshot
@@ -211,6 +213,7 @@ final class ScanCoordinator {
       return
     }
 
+    locationProvider.clearLocation()
     locationProvider.startUpdating()
     UIApplication.shared.isIdleTimerDisabled = settingsStore.settings.keepScreenAwakeDuringRecording
     state =
@@ -234,6 +237,7 @@ final class ScanCoordinator {
     persistenceTimer = nil
     flushPendingDevicePersistences()
     locationProvider.stopUpdating()
+    locationProvider.clearLocation()
     UIApplication.shared.isIdleTimerDisabled = false
 
     if var session = activeSession {
@@ -512,6 +516,24 @@ final class ScanCoordinator {
     }
 
     return Dictionary(uniqueKeysWithValues: retained.map { ($0.peripheralIdentifier, $0) })
+  }
+
+  static func usableRecordingLocation(
+    _ location: CLLocation?,
+    mode: ScanMode?,
+    recordingStartedAt: Date?,
+    at timestamp: Date,
+    maximumAge: TimeInterval = maximumRecordingLocationAge,
+    maximumHorizontalAccuracy: CLLocationAccuracy = maximumRecordingLocationAccuracy
+  ) -> CLLocation? {
+    guard mode == .recording, let recordingStartedAt, let location else { return nil }
+    let age = timestamp.timeIntervalSince(location.timestamp)
+    guard age >= 0, age <= maximumAge else { return nil }
+    guard location.timestamp >= recordingStartedAt else { return nil }
+    guard location.horizontalAccuracy >= 0,
+      location.horizontalAccuracy <= maximumHorizontalAccuracy
+    else { return nil }
+    return location
   }
 
   static func mergeSnapshot(
@@ -1044,12 +1066,18 @@ extension ScanCoordinator: BluetoothScannerDelegate {
       timestamp: timestamp
     )
     var snapshot = mergeResult.snapshot
-    if let location = locationProvider.currentLocation {
-      snapshot.lastLocation = DeviceLocationMetadata(
+    let location = Self.usableRecordingLocation(
+      locationProvider.currentLocation,
+      mode: state.mode,
+      recordingStartedAt: activeSession?.startedAt,
+      at: timestamp
+    )
+    snapshot.lastLocation = location.map { location in
+      DeviceLocationMetadata(
         latitude: location.coordinate.latitude,
         longitude: location.coordinate.longitude,
         horizontalAccuracy: location.horizontalAccuracy,
-        timestamp: timestamp
+        timestamp: location.timestamp
       )
     }
     snapshot.rssiHistory.append(DeviceRSSISample(timestamp: timestamp, rssi: rssi))
@@ -1089,7 +1117,6 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     )
     guard shouldRecordObservation else { return }
 
-    let location = locationProvider.currentLocation
     let detection = BLEDetection(
       id: UUID(),
       sessionID: session.id,
@@ -1100,6 +1127,7 @@ extension ScanCoordinator: BluetoothScannerDelegate {
       latitude: location?.coordinate.latitude,
       longitude: location?.coordinate.longitude,
       horizontalAccuracy: location?.horizontalAccuracy,
+      locationTimestamp: location?.timestamp,
       advertisement: advertisement
     )
 
