@@ -113,6 +113,176 @@ final class ScanCoordinatorTests: XCTestCase {
     )
   }
 
+  func testUsableRecordingLocationRejectsNonRecordingStaleAndInaccurateSamples() {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let recordingStartedAt = now.addingTimeInterval(-10)
+    let fresh = CLLocation(
+      coordinate: CLLocationCoordinate2D(latitude: 27.4698, longitude: 153.0251),
+      altitude: 0,
+      horizontalAccuracy: 8,
+      verticalAccuracy: -1,
+      timestamp: now.addingTimeInterval(-5)
+    )
+    let stale = CLLocation(
+      coordinate: fresh.coordinate,
+      altitude: 0,
+      horizontalAccuracy: 8,
+      verticalAccuracy: -1,
+      timestamp: now.addingTimeInterval(-31)
+    )
+    let inaccurate = CLLocation(
+      coordinate: fresh.coordinate,
+      altitude: 0,
+      horizontalAccuracy: 101,
+      verticalAccuracy: -1,
+      timestamp: now
+    )
+
+    XCTAssertNil(
+      ScanCoordinator.usableRecordingLocation(
+        fresh,
+        mode: .active,
+        recordingStartedAt: recordingStartedAt,
+        at: now
+      )
+    )
+    XCTAssertNil(
+      ScanCoordinator.usableRecordingLocation(
+        stale,
+        mode: .recording,
+        recordingStartedAt: recordingStartedAt,
+        at: now
+      )
+    )
+    XCTAssertNil(
+      ScanCoordinator.usableRecordingLocation(
+        inaccurate,
+        mode: .recording,
+        recordingStartedAt: recordingStartedAt,
+        at: now
+      )
+    )
+
+    let accepted = ScanCoordinator.usableRecordingLocation(
+      fresh,
+      mode: .recording,
+      recordingStartedAt: recordingStartedAt,
+      at: now
+    )
+    XCTAssertEqual(accepted?.timestamp, fresh.timestamp)
+    XCTAssertEqual(accepted?.coordinate.latitude, fresh.coordinate.latitude)
+    XCTAssertEqual(accepted?.coordinate.longitude, fresh.coordinate.longitude)
+  }
+
+  func testUsableRecordingLocationRejectsPriorSessionAndFutureSamples() {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let recordingStartedAt = now.addingTimeInterval(-5)
+    let priorSession = CLLocation(
+      coordinate: CLLocationCoordinate2D(latitude: 27.4698, longitude: 153.0251),
+      altitude: 0,
+      horizontalAccuracy: 8,
+      verticalAccuracy: -1,
+      timestamp: recordingStartedAt.addingTimeInterval(-1)
+    )
+    let future = CLLocation(
+      coordinate: priorSession.coordinate,
+      altitude: 0,
+      horizontalAccuracy: 8,
+      verticalAccuracy: -1,
+      timestamp: now.addingTimeInterval(1)
+    )
+
+    XCTAssertNil(
+      ScanCoordinator.usableRecordingLocation(
+        priorSession,
+        mode: .recording,
+        recordingStartedAt: recordingStartedAt,
+        at: now
+      )
+    )
+    XCTAssertNil(
+      ScanCoordinator.usableRecordingLocation(
+        future,
+        mode: .recording,
+        recordingStartedAt: recordingStartedAt,
+        at: now
+      )
+    )
+  }
+
+  func testRecordingClearsLocationAtStartAndStopBoundaries() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let store = try LocalStore(rootURL: tempDir)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let locationProvider = MockLocationProvider()
+    locationProvider.currentLocation = CLLocation(latitude: 27.4698, longitude: 153.0251)
+    let coordinator = ScanCoordinator(
+      scanner: BluetoothScanner(),
+      locationProvider: locationProvider,
+      store: store,
+      settingsStore: SettingsStore(),
+      notificationService: NotificationService()
+    )
+
+    coordinator.startRecording()
+
+    XCTAssertEqual(locationProvider.clearLocationCallCount, 1)
+    XCTAssertNil(locationProvider.currentLocation)
+
+    coordinator.stop()
+
+    XCTAssertEqual(locationProvider.clearLocationCallCount, 2)
+    XCTAssertNil(locationProvider.currentLocation)
+  }
+
+  func testQuickScanDiscoveryDoesNotReuseLocationFromStoredSnapshot() throws {
+    let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let store = try LocalStore(rootURL: tempDir)
+    defer { try? FileManager.default.removeItem(at: tempDir) }
+
+    let scanner = BluetoothScanner()
+    scanner.stateOverride = .poweredOn
+    let coordinator = ScanCoordinator(
+      scanner: scanner,
+      locationProvider: MockLocationProvider(),
+      store: store,
+      settingsStore: SettingsStore(),
+      notificationService: NotificationService()
+    )
+    let identifier = UUID()
+    let priorLocation = DeviceLocationMetadata(
+      latitude: -27.4698,
+      longitude: 153.0251,
+      horizontalAccuracy: 8,
+      timestamp: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let storedSnapshot = BLEDeviceSnapshot(
+      peripheralIdentifier: identifier,
+      displayName: "Stored beacon",
+      latestRSSI: -60,
+      strongestRSSI: -60,
+      firstSeen: Date(timeIntervalSince1970: 1_700_000_000),
+      lastSeen: Date(timeIntervalSince1970: 1_700_000_000),
+      sightingCount: 1,
+      advertisement: .empty,
+      lastLocation: priorLocation
+    )
+    try store.saveDeviceRecord(storedSnapshot)
+
+    coordinator.startActive()
+    let peripheral = FakeCBPeripheral(identifier: identifier, name: "Stored beacon")
+    coordinator.bluetoothScanner(
+      scanner,
+      didDiscover: peripheral.asCBPeripheral,
+      advertisement: .empty,
+      rssi: -55,
+      timestamp: Date(timeIntervalSince1970: 1_700_000_100)
+    )
+
+    XCTAssertNil(coordinator.device(for: identifier)?.lastLocation)
+  }
+
   func testPruneSnapshotsDropsDevicesOutsideRetentionWindow() {
     let now = Date()
     let recent = makeSnapshot(name: "Recent", lastSeen: now.addingTimeInterval(-10), rssi: -55)
@@ -1189,8 +1359,13 @@ final class MockLocationProvider: LocationProviding {
   var currentLocation: CLLocation?
   var authorizationStatus: CLAuthorizationStatus = .authorizedWhenInUse
   var onAuthorizationChanged: ((CLAuthorizationStatus) -> Void)?
+  private(set) var clearLocationCallCount = 0
 
   func requestWhenInUseAuthorization() {}
   func startUpdating() {}
   func stopUpdating() {}
+  func clearLocation() {
+    clearLocationCallCount += 1
+    currentLocation = nil
+  }
 }

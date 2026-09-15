@@ -25,7 +25,7 @@ struct SessionExporter {
     case .csv:
       let url = directory.appendingPathComponent("SignalTrail-\(session.id.uuidString).csv")
       var rows = [
-        "timestamp,device_name,peripheral_identifier,rssi,latitude,longitude,horizontal_accuracy,company_identifier,manufacturer_data,service_uuids"
+        "timestamp,location_timestamp,device_name,peripheral_identifier,rssi,latitude,longitude,horizontal_accuracy,company_identifier,manufacturer_data,service_uuids"
       ]
       let formatter = ISO8601DateFormatter()
       for detection in detections {
@@ -39,6 +39,7 @@ struct SessionExporter {
         let serviceUUIDs = escape(detection.advertisement.serviceUUIDs.joined(separator: "|"))
         let values: [String] = [
           formatter.string(from: detection.timestamp),
+          detection.locationTimestamp.map { formatter.string(from: $0) } ?? "",
           escape(detection.displayName),
           detection.peripheralIdentifier.uuidString,
           String(detection.rssi),

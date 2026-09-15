@@ -9,4 +9,5 @@ protocol LocationProviding: AnyObject {
     func requestWhenInUseAuthorization()
     func startUpdating()
     func stopUpdating()
+    func clearLocation()
 }
