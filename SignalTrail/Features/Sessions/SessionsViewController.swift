@@ -4,14 +4,14 @@ final class SessionsViewController: UITableViewController {
     private let environment: AppEnvironment
     private var sessions: [ScanSession] = []
     private let emptyState = EmptyStateView(
-        symbol: "map",
-        title: "No recorded sessions",
-        message: "Use Record mode on the Scan tab to save timestamped BLE observations and phone locations."
+        symbol: "point.topleft.down.to.point.bottomright.curvepath",
+        title: "No trail yet",
+        message: "Record a field session from GHOSTS to build a timestamped trail of Bluetooth sightings."
     )
 
     init(environment: AppEnvironment) {
         self.environment = environment
-        super.init(style: .insetGrouped)
+        super.init(style: .plain)
     }
 
     @available(*, unavailable)
@@ -19,8 +19,12 @@ final class SessionsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Sessions"
+        title = "Trail"
+        view.backgroundColor = AppTheme.groupedBackground
+        tableView.backgroundColor = AppTheme.groupedBackground
+        tableView.separatorColor = AppTheme.separator
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        installBustAction(environment: environment)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -34,21 +38,28 @@ final class SessionsViewController: UITableViewController {
             tableView.backgroundView = sessions.isEmpty ? emptyState : nil
             tableView.reloadData()
         } catch {
-            presentError("Unable to load sessions: \(error.localizedDescription)")
+            presentError("Unable to load trail sessions: \(error.localizedDescription)")
         }
     }
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { sessions.count }
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        sessions.count
+    }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let session = sessions[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         var content = cell.defaultContentConfiguration()
         content.text = session.name
-        content.secondaryText = "\(session.duration.clockString) • \(session.uniqueDeviceCount) devices • \(session.detectionCount) observations"
-        content.secondaryTextProperties.numberOfLines = 2
-        content.image = UIImage(systemName: "map.fill")
+        content.secondaryText = [
+            session.duration.clockString,
+            "\(session.uniqueDeviceCount) devices",
+            "\(session.detectionCount) sightings"
+        ].joined(separator: "  ·  ")
+        content.secondaryTextProperties.color = AppTheme.secondaryText
+        content.image = UIImage(systemName: "location.north.line")
         content.imageProperties.tintColor = AppTheme.accent
+        cell.backgroundColor = AppTheme.groupedBackground
         cell.contentConfiguration = content
         cell.accessoryType = .disclosureIndicator
         return cell
@@ -62,7 +73,10 @@ final class SessionsViewController: UITableViewController {
         )
     }
 
-    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+    override func tableView(
+        _ tableView: UITableView,
+        trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+    ) -> UISwipeActionsConfiguration? {
         let session = sessions[indexPath.row]
         let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
             do {
