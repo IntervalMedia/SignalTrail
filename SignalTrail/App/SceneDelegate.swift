@@ -15,6 +15,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.environment = environment
 
         let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = .dark
         window.rootViewController = MainTabBarController(environment: environment)
         window.tintColor = AppTheme.accent
         window.makeKeyAndVisible()

@@ -21,32 +21,61 @@ final class MainTabBarController: UITabBarController {
 
     private func configureAppearance() {
         let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = AppTheme.surface
+        appearance.shadowColor = AppTheme.separator
+        appearance.stackedLayoutAppearance.normal.iconColor = AppTheme.secondaryText
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: AppTheme.secondaryText
+        ]
+        appearance.stackedLayoutAppearance.selected.iconColor = AppTheme.accent
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: AppTheme.accent
+        ]
         tabBar.standardAppearance = appearance
-        if #available(iOS 15.0, *) {
-            tabBar.scrollEdgeAppearance = appearance
-        }
+        tabBar.scrollEdgeAppearance = appearance
+        tabBar.itemPositioning = .fill
     }
 
     private func configureTabs() {
-        let scan = ScanViewController(environment: environment)
-        scan.tabBarItem = UITabBarItem(title: "Scan", image: UIImage(systemName: "dot.radiowaves.left.and.right"), tag: 0)
-
-        let sessions = SessionsViewController(environment: environment)
-        sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 2)
-
-        let hunter = HunterViewController(environment: environment)
-        hunter.tabBarItem = UITabBarItem(title: "Hunter", image: UIImage(systemName: "scope"), tag: 1)
+        let ghosts = ScanViewController(environment: environment)
+        ghosts.tabBarItem = UITabBarItem(
+            title: "GHOSTS",
+            image: UIImage(systemName: "wave.3.right"),
+            selectedImage: UIImage(systemName: "wave.3.right.circle.fill")
+        )
 
         let known = KnownDevicesViewController(environment: environment)
-        known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 3)
+        known.tabBarItem = UITabBarItem(
+            title: "KNOWN",
+            image: UIImage(systemName: "checkmark.seal"),
+            selectedImage: UIImage(systemName: "checkmark.seal.fill")
+        )
 
-        let settings = SettingsViewController(environment: environment)
-        settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gearshape"), tag: 4)
+        let haunts = HunterViewController(environment: environment)
+        haunts.tabBarItem = UITabBarItem(
+            title: "HAUNTS",
+            image: UIImage(systemName: "scope"),
+            selectedImage: UIImage(systemName: "scope")
+        )
 
-        viewControllers = [scan, hunter, sessions, known, settings].map {
+        let trail = SessionsViewController(environment: environment)
+        trail.tabBarItem = UITabBarItem(
+            title: "TRAIL",
+            image: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath"),
+            selectedImage: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+        )
+
+        let intel = IntelViewController(environment: environment)
+        intel.tabBarItem = UITabBarItem(
+            title: "INTEL",
+            image: UIImage(systemName: "doc.text.magnifyingglass"),
+            selectedImage: UIImage(systemName: "doc.text.magnifyingglass")
+        )
+
+        viewControllers = [ghosts, known, haunts, trail, intel].map {
             let navigationController = UINavigationController(rootViewController: $0)
-            navigationController.navigationBar.prefersLargeTitles = true
+            navigationController.navigationBar.prefersLargeTitles = false
             return navigationController
         }
     }
