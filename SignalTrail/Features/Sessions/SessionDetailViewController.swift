@@ -58,10 +58,9 @@ final class SessionDetailViewController: UIViewController {
     }
 
     private func configureLayout() {
-        let configuration = MKStandardMapConfiguration(elevationStyle: .flat)
-        configuration.pointOfInterestFilter = .excludingAll
-        mapView.preferredConfiguration = configuration
         mapView.delegate = self
+        mapView.mapType = .standard
+        mapView.pointOfInterestFilter = .excludingAll
         mapView.overrideUserInterfaceStyle = .dark
         mapView.showsCompass = true
         mapView.showsScale = true
@@ -267,7 +266,7 @@ extension SessionDetailViewController: MKMapViewDelegate {
         view.annotation = annotation
         view.canShowCallout = false
         view.displayPriority = sighting.sequenceNumber == nil ? .defaultHigh : .required
-        view.glyphText = sighting.sequenceNumber.map(String.init)
+        view.glyphText = sighting.sequenceNumber.map { String($0) }
         view.glyphImage = sighting.sequenceNumber == nil ? UIImage(systemName: "wave.3.right") : nil
 
         switch SignalLevel(rssi: sighting.rssi) {
