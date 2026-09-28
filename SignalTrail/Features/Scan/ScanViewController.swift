@@ -27,7 +27,7 @@ final class ScanViewController: UIViewController {
     symbol: "dot.radiowaves.left.and.right",
     title: "No devices yet",
     message:
-      "Start a Quick Scan for nearby devices or Record Session to save repeated observations with the phone's route."
+      "Tap BUST to scan nearby devices or Record Session to save repeated observations with the phone's route."
   )
 
   init(environment: AppEnvironment) {
@@ -40,8 +40,8 @@ final class ScanViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    title = "Scan"
-    navigationItem.title = "SignalTrail"
+    title = "Ghosts"
+    navigationItem.title = "Ghosts"
     view.backgroundColor = AppTheme.groupedBackground
     viewModel.delegate = self
     configureNavigation()
@@ -74,12 +74,13 @@ final class ScanViewController: UIViewController {
     searchController.searchResultsUpdater = self
     searchController.obscuresBackgroundDuringPresentation = false
 
-    navigationItem.rightBarButtonItem = UIBarButtonItem(
+    let clearItem = UIBarButtonItem(
       title: "Clear",
       style: .plain,
       target: self,
       action: #selector(clearTapped)
     )
+    installBustAction(environment: environment, additionalItems: [clearItem])
   }
 
   private func configureTable() {

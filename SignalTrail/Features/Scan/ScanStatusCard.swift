@@ -129,7 +129,7 @@ final class ScanStatusCard: CardView {
 
     var configuration = actionButton.configuration
     configuration?.title =
-      running ? "Stop" : (mode == .active ? "Start Quick Scan" : "Start Recording")
+      running ? "Stop" : (mode == .active ? "BUST" : "Record Trail")
     configuration?.image = UIImage(
       systemName: running ? "stop.fill" : (mode == .active ? "bolt.fill" : "record.circle"))
     configuration?.baseBackgroundColor = running ? .systemRed : AppTheme.accent
