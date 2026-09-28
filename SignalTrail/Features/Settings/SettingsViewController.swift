@@ -2,6 +2,89 @@ import CoreBluetooth
 import CoreLocation
 import UIKit
 
+final class IntelViewController: UITableViewController {
+    private let environment: AppEnvironment
+    private var devices: [BLEDeviceSnapshot] = []
+    private let emptyState = EmptyStateView(
+        symbol: "doc.text.magnifyingglass",
+        title: "No device intel yet",
+        message: "BUST nearby devices first. GhostBusta keeps local device records here for evidence-led analysis."
+    )
+
+    init(environment: AppEnvironment) {
+        self.environment = environment
+        super.init(style: .plain)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Intel"
+        tableView.backgroundColor = AppTheme.groupedBackground
+        tableView.separatorColor = AppTheme.separator
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "IntelCell")
+
+        let settings = UIBarButtonItem(
+            image: UIImage(systemName: "gearshape"),
+            style: .plain,
+            target: self,
+            action: #selector(openSettings)
+        )
+        settings.accessibilityLabel = "Settings"
+        installBustAction(environment: environment, additionalItems: [settings])
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        devices = environment.store.loadAllDeviceRecords().values
+            .sorted { $0.lastSeen > $1.lastSeen }
+        tableView.backgroundView = devices.isEmpty ? emptyState : nil
+        tableView.reloadData()
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        devices.count
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let device = devices[indexPath.row]
+        let intelligence = device.intelligence
+        let cell = tableView.dequeueReusableCell(withIdentifier: "IntelCell", for: indexPath)
+        var content = cell.defaultContentConfiguration()
+        content.text = device.presentationName
+        content.secondaryText = [
+            intelligence.categoryTitle,
+            intelligence.category == .unknown ? nil : intelligence.confidenceLabel,
+            device.signalDescription
+        ].compactMap { $0 }.joined(separator: "  ·  ")
+        content.secondaryTextProperties.numberOfLines = 2
+        content.secondaryTextProperties.color = AppTheme.secondaryText
+        content.image = UIImage(systemName: intelligence.category == .unknown ? "questionmark.circle" : "wave.3.right")
+        content.imageProperties.tintColor = intelligence.category == .unknown ? .secondaryLabel : AppTheme.accent
+        cell.backgroundColor = AppTheme.groupedBackground
+        cell.contentConfiguration = content
+        cell.accessoryType = .disclosureIndicator
+        return cell
+    }
+
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        navigationController?.pushViewController(
+            DeviceDetailViewController(device: devices[indexPath.row], environment: environment),
+            animated: true
+        )
+    }
+
+    @objc private func openSettings() {
+        navigationController?.pushViewController(
+            SettingsViewController(environment: environment),
+            animated: true
+        )
+    }
+}
+
 final class SettingsViewController: UITableViewController {
   private enum Section: Int, CaseIterable {
     case quickScan
