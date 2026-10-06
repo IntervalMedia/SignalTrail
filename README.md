@@ -1,6 +1,6 @@
 # SignalTrail
 
-SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.0 or later and is written in Swift, built with UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications.
+SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.0 or later and is written in Swift, built with SwiftUI, UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications. The five main screens use SwiftUI, with native Liquid Glass controls on iOS 26 and standard controls on earlier systems. Device inspection, session maps, and editors remain UIKit flows.
 
 SignalTrail is pre-configured to identify and alert the user to the presence of:
 - Police & Military issued body worn camera's and handheld Taser Weapons manufactured by Axon Inc / Taser International
@@ -17,7 +17,7 @@ The app was written to investigate passive surviellence technique's, the concept
 
 ## Build requirements
 
-- Xcode 14.0 or later
+- Xcode 26.0 or later (required to compile the native Liquid Glass APIs)
 - iOS or iPadOS 15.0 deployment target
 - A physical iPhone or iPad for BLE scanning
 - An Apple development team selected under `Signing & Capabilities`
@@ -112,9 +112,10 @@ Settings are stored separately in `UserDefaults` under the app's `SignalTrail.Ap
 
 ## App structure
 
-The app presents four tabs:
+The app presents five tabs:
 
 - `Scan` provides Quick Scan, Record Session, permission checks, filters, sorting, minimum RSSI controls, and device search.
+- `Hunter` provides live signal guidance for a selected device.
 - `Sessions` provides recorded-session replay, map playback, and export.
 - `Library` contains saved devices and detection alerts.
 - `Settings` contains scan timing, permissions, and reset actions.

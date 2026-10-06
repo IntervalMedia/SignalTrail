@@ -71,6 +71,14 @@
 		M3GROUP00000000000000002 /* ServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */; };
 		M3PERMIT00000000000000002 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */; };
 		M4DASH00000000000000002 /* ProfileDashboardBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */; };
+		89A419B4ABE2065BE8CF44E4 /* SwiftUIPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3111BFC690C3684FAFFCACE4 /* SwiftUIPresentationTests.swift */; };
+		90C69E8DD58878B2D33CB160 /* HunterScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B112535C23719BBE7134E392 /* HunterScreen.swift */; };
+		8A9BD52CA07DB0F17A26BBA0 /* LibraryHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76107CA69CC93C08EF26C70B /* LibraryHostingController.swift */; };
+		96A68B1B8D9F2F6BCBC6546C /* ScanScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A911CB009F8F680466C6126E /* ScanScreen.swift */; };
+		241BE186D128EB85395A8A49 /* ScanScreenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F61A646433F089649E4AB33 /* ScanScreenModel.swift */; };
+		EEE2D3918C890D5EAC34F8FD /* SessionsHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 665C7389664814352BE18A1F /* SessionsHostingController.swift */; };
+		0464C98A2A1A24E742CFC5CE /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC11FAED86EC21EAEE2932AC /* SettingsScreen.swift */; };
+		A8FE80B669B6CA6023002391 /* TrailDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A140737A8ABBD8D92A64EF /* TrailDesign.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -152,6 +160,14 @@
 		M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewModel.swift; sourceTree = "<group>"; };
 		M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothPermittedCharacteristicsLookup.swift; sourceTree = "<group>"; };
 		M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDashboardBuilder.swift; sourceTree = "<group>"; };
+		3111BFC690C3684FAFFCACE4 /* SwiftUIPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrailTests/SwiftUIPresentationTests.swift"; sourceTree = SOURCE_ROOT; };
+		B112535C23719BBE7134E392 /* HunterScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Hunter/HunterScreen.swift"; sourceTree = SOURCE_ROOT; };
+		76107CA69CC93C08EF26C70B /* LibraryHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/KnownDevices/LibraryHostingController.swift"; sourceTree = SOURCE_ROOT; };
+		A911CB009F8F680466C6126E /* ScanScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Scan/ScanScreen.swift"; sourceTree = SOURCE_ROOT; };
+		3F61A646433F089649E4AB33 /* ScanScreenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Scan/ScanScreenModel.swift"; sourceTree = SOURCE_ROOT; };
+		665C7389664814352BE18A1F /* SessionsHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Sessions/SessionsHostingController.swift"; sourceTree = SOURCE_ROOT; };
+		FC11FAED86EC21EAEE2932AC /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Settings/SettingsScreen.swift"; sourceTree = SOURCE_ROOT; };
+		82A140737A8ABBD8D92A64EF /* TrailDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Shared/TrailDesign.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,6 +199,7 @@
 		164FED426FDD7F16A0ED422D /* Sessions */ = {
 			isa = PBXGroup;
 			children = (
+				665C7389664814352BE18A1F /* SessionsHostingController.swift */,
 				6C123BD702985C10B91B7D26 /* ObservationAnnotation.swift */,
 				DDC49AA48921D1182CE2CE91 /* SessionDetailViewController.swift */,
 				FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */,
@@ -235,6 +252,7 @@
 		HUNTER000000000000000005 /* Hunter */ = {
 			isa = PBXGroup;
 			children = (
+				B112535C23719BBE7134E392 /* HunterScreen.swift */,
 				HUNTER000000000000000001 /* HunterViewController.swift */,
 			);
 			path = Hunter;
@@ -294,6 +312,7 @@
 		96F1FC8B8EA52C89D0C02C2D /* SignalTrailTests */ = {
 			isa = PBXGroup;
 			children = (
+				3111BFC690C3684FAFFCACE4 /* SwiftUIPresentationTests.swift */,
 				B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */,
 				M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */,
 				12A4E6B8C0D2F41526374858 /* BluetoothIntelligenceTests.swift */,
@@ -308,6 +327,7 @@
 		98674C16EEF687151DFC10A2 /* KnownDevices */ = {
 			isa = PBXGroup;
 			children = (
+				76107CA69CC93C08EF26C70B /* LibraryHostingController.swift */,
 				1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */,
 				0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */,
 				0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */,
@@ -337,6 +357,7 @@
 		B222BF881FF723248ED7BC85 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				FC11FAED86EC21EAEE2932AC /* SettingsScreen.swift */,
 				7801BE461E8F249F1D363AFD /* SettingsViewController.swift */,
 			);
 			path = Settings;
@@ -388,6 +409,7 @@
 		D8DACD1D75CDA2DCC9570415 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				82A140737A8ABBD8D92A64EF /* TrailDesign.swift */,
 				4970DEF9EBEB61495D1EAFC2 /* AppTheme.swift */,
 				53CBA177C3C573B57B09002F /* CardView.swift */,
 				DA54D2402F73B87E1E05112C /* DeviceCell.swift */,
@@ -400,6 +422,8 @@
 		DF9F02E1FCB4B09A45B9E9F4 /* Scan */ = {
 			isa = PBXGroup;
 			children = (
+				3F61A646433F089649E4AB33 /* ScanScreenModel.swift */,
+				A911CB009F8F680466C6126E /* ScanScreen.swift */,
 				CE53DFD96B51CFA73A666B21 /* ScanStatusCard.swift */,
 				C952E68E615189215E71FBF1 /* ScanViewController.swift */,
 				563E030791557F1C713EC5D9 /* ScanViewModel.swift */,
@@ -522,6 +546,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				89A419B4ABE2065BE8CF44E4 /* SwiftUIPresentationTests.swift in Sources */,
 				9C46EEE2E4ED4F6EBF834446 /* AlertMatcherTests.swift in Sources */,
 				M2AUTO000000000000000002 /* AutoProbeQueueTests.swift in Sources */,
 				12A4E6B8C0D2F41526374859 /* BluetoothIntelligenceTests.swift in Sources */,
@@ -536,6 +561,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8FE80B669B6CA6023002391 /* TrailDesign.swift in Sources */,
+				0464C98A2A1A24E742CFC5CE /* SettingsScreen.swift in Sources */,
+				EEE2D3918C890D5EAC34F8FD /* SessionsHostingController.swift in Sources */,
+				241BE186D128EB85395A8A49 /* ScanScreenModel.swift in Sources */,
+				96A68B1B8D9F2F6BCBC6546C /* ScanScreen.swift in Sources */,
+				8A9BD52CA07DB0F17A26BBA0 /* LibraryHostingController.swift in Sources */,
+				90C69E8DD58878B2D33CB160 /* HunterScreen.swift in Sources */,
 				HUNTER000000000000000002 /* HunterViewController.swift in Sources */,
 				88C05BDED24819E9E8CB5C55 /* AppDelegate.swift in Sources */,
 				D7A3C56F583F92F390D2564F /* AppEnvironment.swift in Sources */,

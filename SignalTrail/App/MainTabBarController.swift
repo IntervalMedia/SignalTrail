@@ -29,19 +29,19 @@ final class MainTabBarController: UITabBarController {
     }
 
     private func configureTabs() {
-        let scan = ScanViewController(environment: environment)
+        let scan = ScanHostingController(environment: environment)
         scan.tabBarItem = UITabBarItem(title: "Scan", image: UIImage(systemName: "dot.radiowaves.left.and.right"), tag: 0)
 
-        let sessions = SessionsViewController(environment: environment)
+        let sessions = SessionsHostingController(environment: environment)
         sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 2)
 
-        let hunter = HunterViewController(environment: environment)
+        let hunter = HunterHostingController(environment: environment)
         hunter.tabBarItem = UITabBarItem(title: "Hunter", image: UIImage(systemName: "scope"), tag: 1)
 
-        let known = KnownDevicesViewController(environment: environment)
+        let known = LibraryHostingController(environment: environment)
         known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 3)
 
-        let settings = SettingsViewController(environment: environment)
+        let settings = SettingsHostingController(environment: environment)
         settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gearshape"), tag: 4)
 
         viewControllers = [scan, hunter, sessions, known, settings].map {

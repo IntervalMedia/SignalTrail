@@ -5,8 +5,8 @@ This document tracks what should be verified for the current SignalTrail impleme
 ## Current implementation summary
 
 - App target deployment target: **iOS/iPadOS 15.2**
-- Test target deployment target: **iOS/iPadOS 16.0**
-- UI structure: **Scan**, **Sessions**, **Library**, and **Settings** tabs
+- Test target deployment target: **iOS/iPadOS 15.2**
+- UI structure: SwiftUI **Scan**, **Hunter**, **Sessions**, **Library**, and **Settings** roots in UIKit navigation stacks
 - Persistence: JSON and JSONL files in Application Support, plus a single Codable settings object in `UserDefaults`
 - Bluetooth assigned numbers:
   - company identifiers loaded at runtime from bundled `company_identifiers.yaml`
@@ -19,7 +19,7 @@ This document tracks what should be verified for the current SignalTrail impleme
 
 ## Recommended verification on macOS
 
-1. Open `SignalTrail.xcodeproj` in Xcode 14 or newer.
+1. Open `SignalTrail.xcodeproj` in Xcode 26 or newer.
 2. Select a development team and build the `SignalTrail` target.
 3. Run on a physical iPhone or iPad, not the Simulator.
 4. Confirm the main flows:
@@ -54,6 +54,15 @@ This document tracks what should be verified for the current SignalTrail impleme
 
 The generic iOS device build can fail at signing if the configured provisioning profile is expired or does not match the selected team and bundle identifier.
 
+## SwiftUI redesign checks
+
+- Build with the iOS 15.2 deployment target and an iOS 26+ SDK to validate API availability.
+- Check light/dark appearance and accessibility text sizes on iPhone and iPad.
+- Confirm the fixed Scan/Hunter action bars stay above the tab bar and keyboard; only fixed chrome uses native Liquid Glass.
+- Verify Settings pickers open menus, preserve RSSI changes from Scan, and reset without deleting saved data.
+- Verify alert toggles persist, saved-device alert creation opens its editor, and device detail still switches to Hunter.
+- Simulator tests cover signal freshness and settings preservation; live radio behavior requires physical-device checks.
+
 ## Review date
 
-Reviewed against the current source layout and implementation on **2026-07-11**.
+Reviewed against the current source layout and implementation on **2026-10-07**.
