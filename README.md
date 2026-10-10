@@ -38,6 +38,14 @@ The app was written to investigate passive surveillance techniques, digital fing
 
 The iOS Simulator cannot perform normal nearby BLE scans. Use a physical device for scanning; the Simulator is still suitable for unit tests.
 
+Xcode may write the selected development team or signing identity into `project.pbxproj`. These values are intentionally local-only. Configure the repository hook once per checkout:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Before every commit, the hook removes personal team, certificate, and provisioning-profile values from Xcode project files and stages the sanitized project file. The same check can be run manually with `scripts/sanitize-xcode-signing.sh --stage`.
+
 ## Features
 
 ### Scanning and sessions

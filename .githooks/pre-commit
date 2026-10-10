@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -eu
+
+repository_root=$(git rev-parse --show-toplevel)
+"$repository_root/scripts/sanitize-xcode-signing.sh" --stage
+
+if git -C "$repository_root" grep --cached -n -E \
+    '^[[:space:]]*(DEVELOPMENT_TEAM|DevelopmentTeam|PROVISIONING_PROFILE|PROVISIONING_PROFILE_SPECIFIER|CODE_SIGN_IDENTITY|EXPANDED_CODE_SIGN_IDENTITY)[[:space:]]*=' \
+    -- '*.pbxproj'
+then
+    echo "Commit blocked: personal Xcode signing information remains staged." >&2
+    exit 1
+fi
+
