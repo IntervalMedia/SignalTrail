@@ -3,12 +3,10 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		HUNTER000000000000000002 /* HunterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000001 /* HunterViewController.swift */; };
-		HUNTER000000000000000004 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000003 /* AVFoundation.framework */; };
 		0AE9E1423E10DC422B096FDC /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B90024DE9123A79F2FB2A /* SettingsStore.swift */; };
 		0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */; };
 		0C063BD30F921412E2513D79 /* AlertRuleEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */; };
@@ -51,6 +49,67 @@
 		A1B2C3D4E5F60718293A4B5C /* BluetoothMemberUUIDLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* BluetoothMemberUUIDLookup.swift */; };
 		AB75B3ED9CBE815210B3B4C6 /* SessionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7860F65CE65EDF9D5AA0F9C8 /* SessionsViewController.swift */; };
 		C507BD781F5F404F802A9684 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4970DEF9EBEB61495D1EAFC2 /* AppTheme.swift */; };
+		C5E554983075C64000950404 /* HunterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000001 /* HunterViewController.swift */; };
+		C5E554993075C64000950404 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED16157A68FD7EC7F8FF2BDB /* AppDelegate.swift */; };
+		C5E5549A3075C64000950404 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04598C1B29B648B91A5710D2 /* AppEnvironment.swift */; };
+		C5E5549B3075C64000950404 /* MainTabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15497D607024CAB8BDE01C45 /* MainTabBarController.swift */; };
+		C5E5549C3075C64000950404 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C548170A7A9CCC2431219A /* SceneDelegate.swift */; };
+		C5E5549D3075C64000950404 /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6CEEEBC1A1DDC7FFB1B0D7 /* Formatting.swift */; };
+		C5E5549E3075C64000950404 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A07B2FB684B67EF6D446685 /* Models.swift */; };
+		C5E5549F3075C64000950404 /* CharacteristicViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B73A64E133060BC1BD4254 /* CharacteristicViewController.swift */; };
+		C5E554A03075C64000950404 /* DeviceDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370D3344276D5DCA0E4B1575 /* DeviceDetailViewController.swift */; };
+		C5E554A13075C64000950404 /* ServiceDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0110D71A7A9346455AC01154 /* ServiceDetailViewController.swift */; };
+		C5E554A23075C64000950404 /* ServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */; };
+		C5E554A33075C64000950404 /* ProfileDashboardBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */; };
+		C5E554A43075C64000950404 /* AlertRuleEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */; };
+		C5E554A53075C64000950404 /* AlertRulesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */; };
+		C5E554A63075C64000950404 /* BluetoothCompanyPickerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */; };
+		C5E554A73075C64000950404 /* KnownDeviceEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16798DFE297EA7915205C79D /* KnownDeviceEditorViewController.swift */; };
+		C5E554A83075C64000950404 /* KnownDevicesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46922F384A71DFF31C02BF9 /* KnownDevicesViewController.swift */; };
+		C5E554A93075C64000950404 /* ScanStatusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE53DFD96B51CFA73A666B21 /* ScanStatusCard.swift */; };
+		C5E554AA3075C64000950404 /* ScanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C952E68E615189215E71FBF1 /* ScanViewController.swift */; };
+		C5E554AB3075C64000950404 /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 563E030791557F1C713EC5D9 /* ScanViewModel.swift */; };
+		C5E554AC3075C64000950404 /* ObservationAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C123BD702985C10B91B7D26 /* ObservationAnnotation.swift */; };
+		C5E554AD3075C64000950404 /* SessionDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC49AA48921D1182CE2CE91 /* SessionDetailViewController.swift */; };
+		C5E554AE3075C64000950404 /* SessionDeviceCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */; };
+		C5E554AF3075C64000950404 /* SessionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7860F65CE65EDF9D5AA0F9C8 /* SessionsViewController.swift */; };
+		C5E554B03075C64000950404 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7801BE461E8F249F1D363AFD /* SettingsViewController.swift */; };
+		C5E554B13075C64000950404 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4970DEF9EBEB61495D1EAFC2 /* AppTheme.swift */; };
+		C5E554B23075C64000950404 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53CBA177C3C573B57B09002F /* CardView.swift */; };
+		C5E554B33075C64000950404 /* DeviceCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA54D2402F73B87E1E05112C /* DeviceCell.swift */; };
+		C5E554B43075C64000950404 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F510BC9A45766C9BAC4B1E /* EmptyStateView.swift */; };
+		C5E554B53075C64000950404 /* SignalBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF4D7ECEE1A29CCA243FFF7 /* SignalBadgeView.swift */; };
+		C5E554B63075C64000950404 /* AdvertisementParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18538C05A0E717CC3988D19 /* AdvertisementParser.swift */; };
+		C5E554B73075C64000950404 /* BluetoothAssignedUUIDLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B6D8F0A2C435465768798A /* BluetoothAssignedUUIDLookup.swift */; };
+		C5E554B83075C64000950404 /* BluetoothCompanyLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51D5965AF835BF2C4D453E6 /* BluetoothCompanyLookup.swift */; };
+		C5E554B93075C64000950404 /* BluetoothMemberUUIDLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* BluetoothMemberUUIDLookup.swift */; };
+		C5E554BA3075C64000950404 /* GATTValueDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B6D8F0A2C435465768798C /* GATTValueDecoder.swift */; };
+		C5E554BB3075C64000950404 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */; };
+		C5E554BC3075C64000950404 /* BluetoothScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4F79B8371398FC3DF90258 /* BluetoothScanner.swift */; };
+		C5E554BD3075C64000950404 /* PeripheralInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40F94770FACA46D4116AD7F /* PeripheralInspector.swift */; };
+		C5E554BE3075C64000950404 /* BackgroundGATTProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40F94770FACA46D4116AD80 /* BackgroundGATTProbe.swift */; };
+		C5E554BF3075C64000950404 /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D544AA7CE1B41AC4A419E64E /* ScanCoordinator.swift */; };
+		C5E554C03075C64000950404 /* SessionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B85706D01B3864F13FA85A /* SessionExporter.swift */; };
+		C5E554C13075C64000950404 /* CoreLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901ACF033E726F2FFC8AF5F9 /* CoreLocationProvider.swift */; };
+		C5E554C23075C64000950404 /* LocationProviding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFF20EB8ACF3E3B1E9E5566 /* LocationProviding.swift */; };
+		C5E554C33075C64000950404 /* AlertMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB16AAA22CFA257611470B5 /* AlertMatcher.swift */; };
+		C5E554C43075C64000950404 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AAB452E39A985385FBF6C77 /* NotificationService.swift */; };
+		C5E554C53075C64000950404 /* LocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFE40CBD2E19AF6B6F1AEFD /* LocalStore.swift */; };
+		C5E554C63075C64000950404 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B90024DE9123A79F2FB2A /* SettingsStore.swift */; };
+		C5E554C83075C64000950404 /* System/Library/Frameworks/AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000003 /* System/Library/Frameworks/AVFoundation.framework */; };
+		C5E554C93075C64000950404 /* System/Library/Frameworks/CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6C393B78E8DC75181D745D0F /* System/Library/Frameworks/CoreBluetooth.framework */; };
+		C5E554CA3075C64000950404 /* System/Library/Frameworks/CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */; };
+		C5E554CB3075C64000950404 /* System/Library/Frameworks/MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 727F06E2C087B5C5F443A680 /* System/Library/Frameworks/MapKit.framework */; };
+		C5E554CC3075C64000950404 /* System/Library/Frameworks/UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3CCE2358183C218C7886F75 /* System/Library/Frameworks/UserNotifications.framework */; };
+		C5E554CD3075C64000950404 /* System/Library/Frameworks/UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FC1727F809709DA7E3073E6 /* System/Library/Frameworks/UIKit.framework */; };
+		C5E554CE3075C64000950404 /* System/Library/Frameworks/Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CAE8BC91301AA5EC27043000 /* System/Library/Frameworks/Foundation.framework */; };
+		C5E554D03075C64000950404 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B6D8B9AABCF1A050417C423E /* Assets.xcassets */; };
+		C5E554D13075C64000950404 /* company_identifiers.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 6F7A8B9C0D1E2F3041526375 /* company_identifiers.yaml */; };
+		C5E554DD3079E06500950404 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5E554DC3079E06500950404 /* WidgetKit.framework */; };
+		C5E554DF3079E06500950404 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5E554DE3079E06500950404 /* SwiftUI.framework */; };
+		C5E554EA3079E06800950404 /* SignalTrailWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C5E554DB3079E06500950404 /* SignalTrailWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C5E554F33079E0A300950404 /* WidgetSummaryPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E554F23079E0A300950404 /* WidgetSummaryPublisher.swift */; };
+		C5E554F43079E0A300950404 /* WidgetSummaryPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E554F23079E0A300950404 /* WidgetSummaryPublisher.swift */; };
 		CDC5C78263E083A9C50F6FEE /* AdvertisementParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18538C05A0E717CC3988D19 /* AdvertisementParser.swift */; };
 		D7A3C56F583F92F390D2564F /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04598C1B29B648B91A5710D2 /* AppEnvironment.swift */; };
 		D8C05234F4363991727B29AD /* SessionDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC49AA48921D1182CE2CE91 /* SessionDetailViewController.swift */; };
@@ -67,6 +126,8 @@
 		F879151D32F3DF2D774F1C08 /* System/Library/Frameworks/CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */; };
 		FB7BAF0B7D626BC93B00B896 /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D544AA7CE1B41AC4A419E64E /* ScanCoordinator.swift */; };
 		FC8C6F02E2E43E7FB3E5BBF5 /* KnownDeviceEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16798DFE297EA7915205C79D /* KnownDeviceEditorViewController.swift */; };
+		HUNTER000000000000000002 /* HunterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000001 /* HunterViewController.swift */; };
+		HUNTER000000000000000004 /* System/Library/Frameworks/AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000003 /* System/Library/Frameworks/AVFoundation.framework */; };
 		M2AUTO000000000000000002 /* AutoProbeQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */; };
 		M3GROUP00000000000000002 /* ServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */; };
 		M3PERMIT00000000000000002 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */; };
@@ -81,11 +142,30 @@
 			remoteGlobalIDString = 0352A6A2FCE048894C87B37E;
 			remoteInfo = SignalTrail;
 		};
+		C5E554E83079E06800950404 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9E88446A3F44B57E975BE17B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C5E554DA3079E06500950404;
+			remoteInfo = SignalTrailWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		C5E554EB3079E06800950404 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C5E554EA3079E06800950404 /* SignalTrailWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		HUNTER000000000000000001 /* HunterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HunterViewController.swift; sourceTree = "<group>"; };
-		HUNTER000000000000000003 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		0110D71A7A9346455AC01154 /* ServiceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewController.swift; sourceTree = "<group>"; };
 		04598C1B29B648B91A5710D2 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		04D153B3B382D28999B59DD4 /* ScanCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinatorTests.swift; sourceTree = "<group>"; };
@@ -130,6 +210,14 @@
 		B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertMatcherTests.swift; sourceTree = "<group>"; };
 		B6D8B9AABCF1A050417C423E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C2B6AF95E5FB6AF04547C8EA /* SignalTrail.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SignalTrail.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5E554D53075C64000950404 /* SignalTrail copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SignalTrail copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5E554D63075C64900950404 /* SignalTrail copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "SignalTrail copy-Info.plist"; path = "/Users/cashies/RemoteRepos/SignalTrail/SignalTrail copy-Info.plist"; sourceTree = "<absolute>"; };
+		C5E554DB3079E06500950404 /* SignalTrailWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SignalTrailWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5E554DC3079E06500950404 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
+		C5E554DE3079E06500950404 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
+		C5E554F03079E08400950404 /* SignalTrailWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalTrailWidgetExtension.entitlements; sourceTree = "<group>"; };
+		C5E554F13079E08400950404 /* SignalTrail.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SignalTrail.entitlements; sourceTree = "<group>"; };
+		C5E554F23079E0A300950404 /* WidgetSummaryPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSummaryPublisher.swift; sourceTree = "<group>"; };
 		C87B90024DE9123A79F2FB2A /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		C8B85706D01B3864F13FA85A /* SessionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionExporter.swift; sourceTree = "<group>"; };
 		C952E68E615189215E71FBF1 /* ScanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewController.swift; sourceTree = "<group>"; };
@@ -148,11 +236,27 @@
 		F51D5965AF835BF2C4D453E6 /* BluetoothCompanyLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCompanyLookup.swift; sourceTree = "<group>"; };
 		FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStoreTests.swift; sourceTree = "<group>"; };
 		FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDeviceCell.swift; sourceTree = "<group>"; };
+		HUNTER000000000000000001 /* HunterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HunterViewController.swift; sourceTree = "<group>"; };
+		HUNTER000000000000000003 /* System/Library/Frameworks/AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoProbeQueueTests.swift; sourceTree = "<group>"; };
 		M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewModel.swift; sourceTree = "<group>"; };
 		M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothPermittedCharacteristicsLookup.swift; sourceTree = "<group>"; };
 		M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDashboardBuilder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C5E554EE3079E06800950404 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C5E554DA3079E06500950404 /* SignalTrailWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C5E554E03079E06500950404 /* SignalTrailWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5E554EE3079E06800950404 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SignalTrailWidget; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		886B5237A86E40F7CEE16FDA /* Frameworks */ = {
@@ -163,11 +267,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C5E554C73075C64000950404 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5E554C83075C64000950404 /* System/Library/Frameworks/AVFoundation.framework in Frameworks */,
+				C5E554C93075C64000950404 /* System/Library/Frameworks/CoreBluetooth.framework in Frameworks */,
+				C5E554CA3075C64000950404 /* System/Library/Frameworks/CoreLocation.framework in Frameworks */,
+				C5E554CB3075C64000950404 /* System/Library/Frameworks/MapKit.framework in Frameworks */,
+				C5E554CC3075C64000950404 /* System/Library/Frameworks/UserNotifications.framework in Frameworks */,
+				C5E554CD3075C64000950404 /* System/Library/Frameworks/UIKit.framework in Frameworks */,
+				C5E554CE3075C64000950404 /* System/Library/Frameworks/Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5E554D83079E06500950404 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5E554DF3079E06500950404 /* SwiftUI.framework in Frameworks */,
+				C5E554DD3079E06500950404 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EC3C14F47376EB7E71633A8A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				HUNTER000000000000000004 /* AVFoundation.framework in Frameworks */,
+				HUNTER000000000000000004 /* System/Library/Frameworks/AVFoundation.framework in Frameworks */,
 				6194BA80F3AAB3CF1B2A7713 /* System/Library/Frameworks/CoreBluetooth.framework in Frameworks */,
 				F879151D32F3DF2D774F1C08 /* System/Library/Frameworks/CoreLocation.framework in Frameworks */,
 				DEF1A3395646EE3A2599B5A2 /* System/Library/Frameworks/MapKit.framework in Frameworks */,
@@ -210,6 +337,8 @@
 			children = (
 				C2B6AF95E5FB6AF04547C8EA /* SignalTrail.app */,
 				77EB3AD38D803EC3C3DF9309 /* SignalTrailTests.xctest */,
+				C5E554D53075C64000950404 /* SignalTrail copy.app */,
+				C5E554DB3079E06500950404 /* SignalTrailWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -232,14 +361,6 @@
 			path = Bluetooth;
 			sourceTree = "<group>";
 		};
-		HUNTER000000000000000005 /* Hunter */ = {
-			isa = PBXGroup;
-			children = (
-				HUNTER000000000000000001 /* HunterViewController.swift */,
-			);
-			path = Hunter;
-			sourceTree = "<group>";
-		};
 		22439119B8550EF45D57C96E /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -252,9 +373,12 @@
 		2EB2D8158FC6EF9EB19CB439 = {
 			isa = PBXGroup;
 			children = (
+				C5E554F03079E08400950404 /* SignalTrailWidgetExtension.entitlements */,
 				D60EF11B69B4F803499490D3 /* SignalTrail */,
 				96F1FC8B8EA52C89D0C02C2D /* SignalTrailTests */,
+				C5E554E03079E06500950404 /* SignalTrailWidget */,
 				F465BF3375806184831A4FA4 /* Frameworks */,
+				C5E554D63075C64900950404 /* SignalTrail copy-Info.plist */,
 				1E78B559816E575FC0BDB29C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -359,6 +483,7 @@
 			children = (
 				1DFE40CBD2E19AF6B6F1AEFD /* LocalStore.swift */,
 				C87B90024DE9123A79F2FB2A /* SettingsStore.swift */,
+				C5E554F23079E0A300950404 /* WidgetSummaryPublisher.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -375,6 +500,7 @@
 		D60EF11B69B4F803499490D3 /* SignalTrail */ = {
 			isa = PBXGroup;
 			children = (
+				C5E554F13079E08400950404 /* SignalTrail.entitlements */,
 				498A453A43F402E07B8CE159 /* App */,
 				CB29EC954F0556D5BBE73E9E /* Domain */,
 				1E53494B27FB35994453C6CA /* Features */,
@@ -410,7 +536,7 @@
 		F465BF3375806184831A4FA4 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				HUNTER000000000000000003 /* AVFoundation.framework */,
+				HUNTER000000000000000003 /* System/Library/Frameworks/AVFoundation.framework */,
 				6C393B78E8DC75181D745D0F /* System/Library/Frameworks/CoreBluetooth.framework */,
 				30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */,
 				727F06E2C087B5C5F443A680 /* System/Library/Frameworks/MapKit.framework */,
@@ -418,8 +544,18 @@
 				3FC1727F809709DA7E3073E6 /* System/Library/Frameworks/UIKit.framework */,
 				CAE8BC91301AA5EC27043000 /* System/Library/Frameworks/Foundation.framework */,
 				3A000BE7FA6F7394B2ACA22A /* System/Library/Frameworks/XCTest.framework */,
+				C5E554DC3079E06500950404 /* WidgetKit.framework */,
+				C5E554DE3079E06500950404 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		HUNTER000000000000000005 /* Hunter */ = {
+			isa = PBXGroup;
+			children = (
+				HUNTER000000000000000001 /* HunterViewController.swift */,
+			);
+			path = Hunter;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -432,10 +568,12 @@
 				E0EED16BA7BB22DAA0B70867 /* Sources */,
 				EC3C14F47376EB7E71633A8A /* Frameworks */,
 				F8D3CB95EE9051CF7F9077B0 /* Resources */,
+				C5E554EB3079E06800950404 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C5E554E93079E06800950404 /* PBXTargetDependency */,
 			);
 			name = SignalTrail;
 			productName = SignalTrail;
@@ -460,6 +598,45 @@
 			productReference = 77EB3AD38D803EC3C3DF9309 /* SignalTrailTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C5E554963075C64000950404 /* SignalTrail copy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C5E554D23075C64000950404 /* Build configuration list for PBXNativeTarget "SignalTrail copy" */;
+			buildPhases = (
+				C5E554973075C64000950404 /* Sources */,
+				C5E554C73075C64000950404 /* Frameworks */,
+				C5E554CF3075C64000950404 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SignalTrail copy";
+			productName = SignalTrail;
+			productReference = C5E554D53075C64000950404 /* SignalTrail copy.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C5E554DA3079E06500950404 /* SignalTrailWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C5E554EF3079E06800950404 /* Build configuration list for PBXNativeTarget "SignalTrailWidgetExtension" */;
+			buildPhases = (
+				C5E554D73079E06500950404 /* Sources */,
+				C5E554D83079E06500950404 /* Frameworks */,
+				C5E554D93079E06500950404 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C5E554E03079E06500950404 /* SignalTrailWidget */,
+			);
+			name = SignalTrailWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SignalTrailWidgetExtension;
+			productReference = C5E554DB3079E06500950404 /* SignalTrailWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -467,8 +644,8 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastSwiftUpdateCheck = 1400;
-				LastUpgradeCheck = 2660;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					0352A6A2FCE048894C87B37E = {
 						CreatedOnToolsVersion = 14.0;
@@ -476,6 +653,9 @@
 					C24B2138018A654E3D8BE775 = {
 						CreatedOnToolsVersion = 14.0;
 						TestTargetID = 0352A6A2FCE048894C87B37E;
+					};
+					C5E554DA3079E06500950404 = {
+						CreatedOnToolsVersion = 27.0;
 					};
 				};
 			};
@@ -494,12 +674,30 @@
 			targets = (
 				0352A6A2FCE048894C87B37E /* SignalTrail */,
 				C24B2138018A654E3D8BE775 /* SignalTrailTests */,
+				C5E554963075C64000950404 /* SignalTrail copy */,
+				C5E554DA3079E06500950404 /* SignalTrailWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		483FC11965B39C9C87DBA5DE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5E554CF3075C64000950404 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5E554D03075C64000950404 /* Assets.xcassets in Resources */,
+				C5E554D13075C64000950404 /* company_identifiers.yaml in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5E554D93079E06500950404 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -529,6 +727,68 @@
 				0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */,
 				E2E000000000000000000002 /* E2EIntelligenceTests.swift in Sources */,
 				0F90A814A4A5A59FB3D76210 /* ScanCoordinatorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5E554973075C64000950404 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5E554983075C64000950404 /* HunterViewController.swift in Sources */,
+				C5E554993075C64000950404 /* AppDelegate.swift in Sources */,
+				C5E5549A3075C64000950404 /* AppEnvironment.swift in Sources */,
+				C5E5549B3075C64000950404 /* MainTabBarController.swift in Sources */,
+				C5E5549C3075C64000950404 /* SceneDelegate.swift in Sources */,
+				C5E5549D3075C64000950404 /* Formatting.swift in Sources */,
+				C5E5549E3075C64000950404 /* Models.swift in Sources */,
+				C5E5549F3075C64000950404 /* CharacteristicViewController.swift in Sources */,
+				C5E554A03075C64000950404 /* DeviceDetailViewController.swift in Sources */,
+				C5E554A13075C64000950404 /* ServiceDetailViewController.swift in Sources */,
+				C5E554A23075C64000950404 /* ServiceDetailViewModel.swift in Sources */,
+				C5E554A33075C64000950404 /* ProfileDashboardBuilder.swift in Sources */,
+				C5E554A43075C64000950404 /* AlertRuleEditorViewController.swift in Sources */,
+				C5E554A53075C64000950404 /* AlertRulesViewController.swift in Sources */,
+				C5E554A63075C64000950404 /* BluetoothCompanyPickerViewController.swift in Sources */,
+				C5E554A73075C64000950404 /* KnownDeviceEditorViewController.swift in Sources */,
+				C5E554A83075C64000950404 /* KnownDevicesViewController.swift in Sources */,
+				C5E554A93075C64000950404 /* ScanStatusCard.swift in Sources */,
+				C5E554AA3075C64000950404 /* ScanViewController.swift in Sources */,
+				C5E554AB3075C64000950404 /* ScanViewModel.swift in Sources */,
+				C5E554AC3075C64000950404 /* ObservationAnnotation.swift in Sources */,
+				C5E554AD3075C64000950404 /* SessionDetailViewController.swift in Sources */,
+				C5E554AE3075C64000950404 /* SessionDeviceCell.swift in Sources */,
+				C5E554AF3075C64000950404 /* SessionsViewController.swift in Sources */,
+				C5E554B03075C64000950404 /* SettingsViewController.swift in Sources */,
+				C5E554B13075C64000950404 /* AppTheme.swift in Sources */,
+				C5E554B23075C64000950404 /* CardView.swift in Sources */,
+				C5E554B33075C64000950404 /* DeviceCell.swift in Sources */,
+				C5E554B43075C64000950404 /* EmptyStateView.swift in Sources */,
+				C5E554B53075C64000950404 /* SignalBadgeView.swift in Sources */,
+				C5E554B63075C64000950404 /* AdvertisementParser.swift in Sources */,
+				C5E554B73075C64000950404 /* BluetoothAssignedUUIDLookup.swift in Sources */,
+				C5E554B83075C64000950404 /* BluetoothCompanyLookup.swift in Sources */,
+				C5E554B93075C64000950404 /* BluetoothMemberUUIDLookup.swift in Sources */,
+				C5E554BA3075C64000950404 /* GATTValueDecoder.swift in Sources */,
+				C5E554BB3075C64000950404 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */,
+				C5E554BC3075C64000950404 /* BluetoothScanner.swift in Sources */,
+				C5E554BD3075C64000950404 /* PeripheralInspector.swift in Sources */,
+				C5E554BE3075C64000950404 /* BackgroundGATTProbe.swift in Sources */,
+				C5E554F43079E0A300950404 /* WidgetSummaryPublisher.swift in Sources */,
+				C5E554BF3075C64000950404 /* ScanCoordinator.swift in Sources */,
+				C5E554C03075C64000950404 /* SessionExporter.swift in Sources */,
+				C5E554C13075C64000950404 /* CoreLocationProvider.swift in Sources */,
+				C5E554C23075C64000950404 /* LocationProviding.swift in Sources */,
+				C5E554C33075C64000950404 /* AlertMatcher.swift in Sources */,
+				C5E554C43075C64000950404 /* NotificationService.swift in Sources */,
+				C5E554C53075C64000950404 /* LocalStore.swift in Sources */,
+				C5E554C63075C64000950404 /* SettingsStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5E554D73079E06500950404 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -575,6 +835,7 @@
 				4EFD5BAA28B3290B944C101B /* BluetoothScanner.swift in Sources */,
 				83EF7D6B30B86E81C26F6FBA /* PeripheralInspector.swift in Sources */,
 				83EF7D6B30B86E81C26F6FBB /* BackgroundGATTProbe.swift in Sources */,
+				C5E554F33079E0A300950404 /* WidgetSummaryPublisher.swift in Sources */,
 				FB7BAF0B7D626BC93B00B896 /* ScanCoordinator.swift in Sources */,
 				3A71B20F64DB8F5B7528833D /* SessionExporter.swift in Sources */,
 				ED84ABAB8E829780C8723E38 /* CoreLocationProvider.swift in Sources */,
@@ -594,6 +855,11 @@
 			target = 0352A6A2FCE048894C87B37E /* SignalTrail */;
 			targetProxy = 70EC37A362B7FC3157383575 /* PBXContainerItemProxy */;
 		};
+		C5E554E93079E06800950404 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C5E554DA3079E06500950404 /* SignalTrailWidgetExtension */;
+			targetProxy = C5E554E83079E06800950404 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -604,17 +870,18 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=iphoneos*]" = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = SignalTrail/SignalTrail.entitlements;
 				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SignalTrail/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DiscoveraBLE;
+				INFOPLIST_KEY_CFBundleDisplayName = GhostHunter;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				"MARKETING_VERSION[sdk=iphoneos*]" = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.intervalmedia.DiscoveraBLE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -628,6 +895,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -686,17 +954,18 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=iphoneos*]" = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = SignalTrail/SignalTrail.entitlements;
 				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SignalTrail/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DiscoveraBLE;
+				INFOPLIST_KEY_CFBundleDisplayName = GhostHunter;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				"MARKETING_VERSION[sdk=iphoneos*]" = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.intervalmedia.DiscoveraBLE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -711,7 +980,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.SignalTrailTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -727,6 +996,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -779,12 +1049,170 @@
 			};
 			name = Debug;
 		};
+		C5E554D33075C64000950404 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=iphoneos*]" = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 3;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "SignalTrail copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DiscoveraBLE;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 1.0;
+				"MARKETING_VERSION[sdk=iphoneos*]" = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.intervalmedia.DiscoveraBLE;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C5E554D43075C64000950404 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=iphoneos*]" = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 3;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "SignalTrail copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DiscoveraBLE;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 1.0;
+				"MARKETING_VERSION[sdk=iphoneos*]" = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.intervalmedia.DiscoveraBLE;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C5E554EC3079E06800950404 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_ENTITLEMENTS = SignalTrailWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SignalTrailWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SignalTrailWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.intervalmedia.DiscoveraBLE.SignalTrailWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		C5E554ED3079E06800950404 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CODE_SIGN_ENTITLEMENTS = SignalTrailWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SignalTrailWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SignalTrailWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.intervalmedia.DiscoveraBLE.SignalTrailWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
 		EE6A2E9A9B1D3B003A794EA3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.2;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.SignalTrailTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -813,6 +1241,24 @@
 			buildConfigurations = (
 				7BD7682982285BB9BBB9EA6A /* Debug */,
 				EE6A2E9A9B1D3B003A794EA3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C5E554D23075C64000950404 /* Build configuration list for PBXNativeTarget "SignalTrail copy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C5E554D33075C64000950404 /* Debug */,
+				C5E554D43075C64000950404 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C5E554EF3079E06800950404 /* Build configuration list for PBXNativeTarget "SignalTrailWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C5E554EC3079E06800950404 /* Debug */,
+				C5E554ED3079E06800950404 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
