@@ -122,7 +122,7 @@ final class E2EIntelligenceTests: XCTestCase {
 
     func testTier1_F2_ProbeIsStrictlyReadOnlyWithZeroWritesOrNotifications() {
         let probe = TestBackgroundGATTProbeSimulator()
-        probe.executeMockProbe(
+        _ = probe.executeMockProbe(
             services: [0x1800, 0x180A, 0x180F],
             characteristics: [0x2A00: Data("Beacon-X".utf8), 0x2A19: Data([90])]
         )
@@ -675,7 +675,7 @@ final class E2EIntelligenceTests: XCTestCase {
     }
 
     func testTier2_F1_Boundary_SettingsStateEqualityAndHashing() {
-        var s1 = TestSettingsHarness()
+        let s1 = TestSettingsHarness()
         var s2 = TestSettingsHarness()
         XCTAssertEqual(s1, s2)
         XCTAssertEqual(s1.hashValue, s2.hashValue)
@@ -1088,7 +1088,7 @@ final class E2EIntelligenceTests: XCTestCase {
             ]
         )
 
-        var snapshot = BLEDeviceSnapshot(
+        let snapshot = BLEDeviceSnapshot(
             peripheralIdentifier: UUID(),
             displayName: "PowerMeter",
             latestRSSI: -55,
@@ -2022,7 +2022,7 @@ enum TestGATTReconciler {
                 mergedServices.append(contentsOf: item.exploredServices)
             }
 
-            var merged = BLEDeviceSnapshot(
+            let merged = BLEDeviceSnapshot(
                 peripheralIdentifier: first.peripheralIdentifier,
                 displayName: first.displayName,
                 latestRSSI: list.last?.latestRSSI ?? first.latestRSSI,

@@ -443,7 +443,14 @@ final class ScanCoordinator {
         in: snapshots
       ) {
         peripheralAliases[removedIdentifier] = retainedIdentifier
+        if let retainedSnapshot = snapshots[retainedIdentifier] {
+          deviceCache[retainedIdentifier] = retainedSnapshot
+          try? store.saveDeviceRecord(retainedSnapshot)
+        }
       }
+      deviceCache.removeValue(forKey: removedIdentifier)
+      pendingPersistenceIdentifiers.remove(removedIdentifier)
+      try? store.purgeDeviceRecord(for: removedIdentifier)
       dirtyVisibleSnapshotIdentifiers.remove(removedIdentifier)
       lastVisibleUpdateDates.removeValue(forKey: removedIdentifier)
       recordedObservationStates.removeValue(forKey: removedIdentifier)
@@ -652,7 +659,74 @@ final class ScanCoordinator {
       reconciled[retained.peripheralIdentifier] = retained
     }
 
+    let modelGroups = Dictionary(grouping: reconciled.values, by: gattModelIdentityKey)
+    for group in modelGroups.values where group.count > 1 {
+      let sorted = group.sorted { lhs, rhs in
+        let lhsScore = gattMergePreferenceScore(lhs, preferredIdentifier: preferredIdentifier)
+        let rhsScore = gattMergePreferenceScore(rhs, preferredIdentifier: preferredIdentifier)
+        if lhsScore == rhsScore { return lhs.lastSeen > rhs.lastSeen }
+        return lhsScore > rhsScore
+      }
+      guard var retained = sorted.first else { continue }
+
+      for duplicate in sorted.dropFirst()
+      where observationsAreCorrelated(retained, duplicate) {
+        retained = mergedGATTDuplicate(retained, duplicate)
+        reconciled.removeValue(forKey: duplicate.peripheralIdentifier)
+      }
+      reconciled[retained.peripheralIdentifier] = retained
+    }
+
     return reconciled
+  }
+
+  private static func gattModelIdentityKey(for snapshot: BLEDeviceSnapshot) -> String {
+    guard let identity = snapshot.gattEvidence?.identity,
+          let manufacturerName = normalizedIdentityValue(identity.manufacturerName),
+          let modelNumber = normalizedIdentityValue(identity.modelNumber),
+          normalizedIdentityValue(identity.serialNumber) == nil,
+          normalizedIdentityValue(identity.systemID) == nil,
+          identity.pnpIdentifier == nil else {
+      return "peripheral|\(snapshot.peripheralIdentifier.uuidString)"
+    }
+
+    return "model|\(manufacturerName)|\(modelNumber)"
+  }
+
+  private static func observationsAreCorrelated(
+    _ lhs: BLEDeviceSnapshot,
+    _ rhs: BLEDeviceSnapshot
+  ) -> Bool {
+    let shorter: [DeviceRSSISample]
+    let longer: [DeviceRSSISample]
+    if lhs.rssiHistory.count <= rhs.rssiHistory.count {
+      shorter = lhs.rssiHistory
+      longer = rhs.rssiHistory
+    } else {
+      shorter = rhs.rssiHistory
+      longer = lhs.rssiHistory
+    }
+
+    guard shorter.count >= 3 else { return false }
+    var unmatchedIndices = Set(longer.indices)
+    var matchingCount = 0
+
+    for sample in shorter {
+      let closest = unmatchedIndices
+        .filter { abs(longer[$0].timestamp.timeIntervalSince(sample.timestamp)) <= 0.075 }
+        .filter { abs(longer[$0].rssi - sample.rssi) <= 3 }
+        .min { lhsIndex, rhsIndex in
+          abs(longer[lhsIndex].timestamp.timeIntervalSince(sample.timestamp))
+            < abs(longer[rhsIndex].timestamp.timeIntervalSince(sample.timestamp))
+        }
+      if let closest {
+        unmatchedIndices.remove(closest)
+        matchingCount += 1
+      }
+    }
+
+    return matchingCount >= 3
+      && Double(matchingCount) / Double(shorter.count) >= 0.6
   }
 
   private static func gattIdentityKey(for snapshot: BLEDeviceSnapshot) -> String {
