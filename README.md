@@ -1,24 +1,28 @@
 # SignalTrail
 
-SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.0 or later and is written in Swift, built with SwiftUI, UIKit, CoreBluetooth, Core Location, MapKit, and UserNotifications. The five main screens use SwiftUI, with native Liquid Glass controls on iOS 26 and standard controls on earlier systems. Device inspection, session maps, and editors remain UIKit flows.
+SignalTrail is a Bluetooth Low Energy scanner and observation logger for iPhone and iPad. It supports iOS and iPadOS 15.2 or later and is written in Swift, built with SwiftUI, UIKit, CoreBluetooth, Core Location, MapKit, WidgetKit, and UserNotifications. The five main screens use SwiftUI, with native Liquid Glass controls on iOS 26 and standard controls on earlier systems. Device inspection, session maps, and editors remain UIKit flows.
 
-SignalTrail is pre-configured to identify and alert the user to the presence of:
-- Police & Military issued body worn camera's and handheld Taser Weapons manufactured by Axon Inc / Taser International
-- Meta/Rayban smart glasses
-- Apple's 'Find My' compatible tracking devices
-- Credit Card skimmers used to steal payment-card details from payment terminals or ATMS (generic chinese models)
-- Flock Safety surviellance cameras that are misconfigured or have not been upgraded (This uses the battery infomation vulnerabilty which has largelt been patched as of August 2026) 
+SignalTrail includes configurable heuristic alert profiles for broadcasts resembling:
+
+- Axon/TASER devices
+- Meta/Ray-Ban smart glasses
+- Apple Find My Offline Finding accessories
+- Flipper Zero devices
+- HC-03/HC-05/HC-06 serial modules sometimes associated with payment-card skimmers
+- Flock/Penguin devices exposing the historical battery-service pattern
+
+These are evidence-based matches, not authenticated device identities. A matching broadcast can be incomplete, spoofed, reused by another product, or affected by firmware changes.
 
 
 ![SignalTrail app icon](SignalTrail/Resources/SignalTrail-AppIcon-1024.png)
 
 
-The app was written to investigate passive surviellence technique's, the concept of digital fingerprinting and identification, and to explore the hidden environment that connects our "smart" cities, homes, and workplaces.
+The app was written to investigate passive surveillance techniques, digital fingerprinting and identification, and the hidden wireless environment connecting smart cities, homes, and workplaces.
 
 ## Build requirements
 
 - Xcode 26.0 or later (required to compile the native Liquid Glass APIs)
-- iOS or iPadOS 15.0 deployment target
+- iOS or iPadOS 15.2 deployment target
 - A physical iPhone or iPad for BLE scanning
 - An Apple development team selected under `Signing & Capabilities`
 
@@ -46,7 +50,9 @@ The iOS Simulator cannot perform normal nearby BLE scans. Use a physical device 
 - Live search, filters, sorting, minimum RSSI thresholds, and signal-strength indicators
 - Session maps with clustered observation markers, the phone's route, timeline scrubbing, and playback
 - Session export in JSON or CSV format
+- Automatic recovery of interrupted session counts and end times from valid JSONL records on the next launch
 - A Hunter tab for tracking one selected device by live RSSI, with faster sound and haptic pulses as its signal grows stronger
+- A WidgetKit summary for recent sessions, device counts, signal counts, and active-recording state
 
 ### Devices and Bluetooth data
 
@@ -55,7 +61,8 @@ The iOS Simulator cannot perform normal nearby BLE scans. Use a physical device 
 - Device connections, service discovery, characteristic reads and writes, and notifications
 - Bluetooth SIG company-name lookup using the bundled `company_identifiers.yaml`
 - Context-aware names for Bluetooth SIG services, characteristics, descriptors, units, member UUIDs, and standards-organization UUIDs
-- Read-only enrichment after connection using GAP Appearance and Device Information values, including structured PnP ID decoding
+- Optional automatic, read-only GATT enrichment during Quick Scan for a bounded number of connectable devices, plus explicit user-driven inspection
+- Enrichment using GAP Appearance, Device Information, Battery, HID, and selected capability values, including structured PnP ID decoding
 - Decoding for selected Bluetooth SIG characteristics, including identity strings, Battery Level, Heart Rate, HID metadata, cycling, running, Fitness Machine, and environmental data. Raw bytes remain available.
 - GATT navigation that clearly separates observed advertisements, values reported by the device, and inferred categories
 - A **Hunt this device** action in device details that assigns the device to Hunter and starts proximity tracking
@@ -79,6 +86,8 @@ affect it. Physical-device testing is required.
 - Alert enable and disable controls, status counts, recent matches, plain-language previews, and a test action before saving
 - Alert templates available from live scan results, device details, recorded sessions, and saved devices
 - Default alerts for Axon/TASER identifiers and names, Apple Find My Offline Finding-like broadcasts, Flipper Zero service UUIDs, Flock/Penguin battery-like broadcasts, HC-03/HC-05/HC-06 serial-module names, and Meta/Ray-Ban identifiers
+- Alert edits, enable/disable changes, and deletions take effect during an active scan without resetting notification cooldown history
+- Versioned default-alert migrations add new bundled rules without restoring rules the user deleted or overwriting rules the user modified
 
 All data stays on the device. Unit tests cover alert matching and session persistence.
 
@@ -90,8 +99,10 @@ All data stays on the device. Unit tests cover alert matching and session persis
 - The MVP deliberately stops scanning when the app enters the background. This avoids implying reliable continuous monitoring that iOS does not guarantee for an unrestricted device scan.
 - Company identifier and company-name alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
 - Company identifiers, member UUIDs, names, Appearance values, and GATT identity values come from the device or an assigned namespace. They do not prove who made the device or identify its exact product model.
-- Post-connection enrichment begins only after the user taps Connect. SignalTrail reads a limited set of standard, readable identification characteristics. This process never writes to characteristics or enables notifications.
+- Automatic enrichment is limited to Quick Scan, connectable peripherals, one connection at a time, and a per-scan device cap. Recording sessions do not automatically probe GATT devices.
+- Automatic enrichment reads only a limited allowlist of standard readable characteristics and never writes or enables notifications. Manual inspection can read, write, or subscribe when the characteristic supports it.
 - GATT writes can alter device behavior, so characteristic writes are grouped under Advanced tools and require confirmation.
+- A device opened from session replay cannot reconnect from stored data alone. Connection controls become available only after the same peripheral identifier is observed again in a live scan.
 
 ## Data storage
 
@@ -100,6 +111,9 @@ Application Support contains:
 ```text
 SignalTrail/
 ├── alert-rules.json
+├── alert-rules-seed-state.json
+├── devices/
+│   └── <peripheral-id>.json
 ├── known-devices.json
 └── sessions/
     ├── <session-id>.session.json
@@ -108,7 +122,11 @@ SignalTrail/
 
 SignalTrail appends each observation as one JSON object per line. This avoids rewriting a large JSON array whenever it receives an advertisement and leaves a clear migration path to GRDB or SQLite.
 
-Settings are stored separately in `UserDefaults` under the app's `SignalTrail.AppSettings` key.
+Settings are stored separately in `UserDefaults` under the app's `SignalTrail.AppSettings` key using a versioned Codable envelope. Legacy unversioned settings migrate when read; data from an unknown future schema is not overwritten.
+
+At launch, the store performs a best-effort, idempotent recovery pass over session metadata. Valid detections repair stale counts and close interrupted sessions at the last valid detection timestamp. Malformed, truncated, and foreign-session JSONL records are ignored.
+
+The app also publishes a compact recent-session snapshot to the `group.com.intervalmedia.DiscoveraBLE` App Group for the WidgetKit extension. The widget does not scan independently.
 
 ## App structure
 
@@ -122,7 +140,19 @@ The app presents five tabs:
 
 ## Project layout
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for responsibilities, data flow, extension points, and known MVP trade-offs.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for responsibilities, data flow, completed MVP remediation, and the detailed improvement backlog.
+
+## Current improvement backlog
+
+- [ ] TODO: Move all `LocalStore` file I/O behind a serial worker or actor so large-session recovery, exports, and metadata reads cannot block the main thread.
+- [ ] TODO: Introduce repository and scanner protocols throughout `AppEnvironment` so view models and UI flows can use deterministic fakes.
+- [ ] TODO: Add UI tests for onboarding, permission states, active-scan alert edits, session replay, and replay-device rediscovery.
+- [ ] TODO: Add physical-device regression coverage for simultaneous GATT observers, connection cancellation, notification subscriptions, and replay reconnection.
+- [ ] TODO: Add session rename, tags, notes, retention controls, and bulk deletion.
+- [ ] TODO: Move session indexing and cross-session queries to SQLite/GRDB when real-world data volumes exceed the JSONL design envelope.
+- [ ] TODO: Add an in-app storage-health and recovery report instead of silently ignoring every malformed persistence record.
+- [ ] TODO: Localize user-facing strings and add accessibility audits for VoiceOver, Dynamic Type, and sufficient contrast.
+- [ ] TODO: Add widget deep links and explicit empty/error states when App Group data is unavailable or stale.
 
 ## Contributing
 

@@ -20,7 +20,8 @@ SwiftUI hosting controllers / UIKit detail flows
                ├── CoreLocationProvider ── Core Location
                ├── NotificationService ── UserNotifications
                ├── LocalStore ── JSON + JSONL files
-               └── SettingsStore ── UserDefaults
+               ├── SettingsStore ── versioned UserDefaults payload
+               └── WidgetSummaryPublisher ── App Group / WidgetKit
 ```
 
 The five tab roots are SwiftUI views hosted in the existing UIKit navigation stacks. `ScanScreenModel` adapts `ScanViewModel` delegate updates, `HunterScreenModel` observes the shared Hunter controller, and `TrailSettingsModel` persists edits against the latest settings snapshot. Keeping the navigation stacks preserves device inspection, alert editors, session replay, and the existing Hunter tab handoff. Native iOS 26 Liquid Glass is restricted to fixed action controls; scrolling cards use solid adaptive system colors and older systems use standard button styles.
@@ -60,7 +61,7 @@ Normalizes CoreBluetooth advertisement dictionaries into `BLEAdvertisement` valu
 
 ### `PeripheralInspector`
 
-Manages one connected peripheral and converts GATT services, characteristics, descriptors, and decoded values into UI-safe snapshots. After an explicit user connection, it automatically reads a bounded allowlist of readable GAP, Device Information, Battery, HID metadata, and selected capability characteristics. Those reads enrich the live device with device-reported Appearance, identity, and feature evidence; they never write or enable notifications. Manual read, write, and notification operations remain separate from discovery state. Characteristic writes are surfaced by the UI as Advanced tools and require confirmation before dispatch.
+Manages one connected peripheral and converts GATT services, characteristics, descriptors, and decoded values into UI-safe snapshots. Weak multicast observers allow the device, service, and characteristic screens to receive the same connection updates without replacing one another. After connection, it automatically reads a bounded allowlist of readable GAP, Device Information, Battery, HID metadata, and selected capability characteristics. Those reads enrich the live device with device-reported Appearance, identity, and feature evidence; they never write or enable notifications. Manual read, write, and notification operations remain separate from discovery state. Characteristic writes are surfaced by the UI as Advanced tools and require confirmation before dispatch.
 
 ### `HunterController`
 
@@ -72,7 +73,15 @@ mutually exclusive because they share one `CBCentralManager` scan.
 
 ### `LocalStore`
 
-Provides repository-like methods for sessions, detections, known devices, and rules. Detection files use JSONL append writes, and alert-rule storage also handles one-time seed migrations such as the default Axon/TASER rule. A future `GRDBStore` can implement the same public operations without changing view controllers.
+Provides repository-like methods for sessions, detections, cached device records, known devices, and alert rules. Detection files use JSONL append writes. Launch-time recovery derives interrupted-session counts, unique devices, and end times from valid detection records. Alert defaults use append-only migrations and an offered-rule ledger so user-modified or deleted rules remain user-owned. A future `GRDBStore` should sit behind a repository protocol before replacing these operations.
+
+### `SettingsStore`
+
+Persists `AppSettings` in a versioned Codable envelope in `UserDefaults`. It migrates the legacy raw settings payload, preserves fallback defaults for corrupt data, and refuses to overwrite an unknown future schema until the app understands it.
+
+### `WidgetSummaryPublisher`
+
+Projects recent session metadata into a compact App Group payload and asks WidgetKit to reload the summary widget. The extension reads only this projection; it does not access the main JSONL store or initiate Bluetooth work.
 
 ### Feature modules
 
@@ -82,6 +91,7 @@ Provides repository-like methods for sessions, detections, known devices, and ru
 - `Sessions`: map/timeline replay and export
 - `KnownDevices`: Library tab, saved devices, alert templates, rule preview/testing, and rule editing
 - `Settings`: scan timing, permissions, and defaults
+- `SignalTrailWidget`: small through extra-large summaries of recent sessions and counts from the shared App Group snapshot
 
 ### Assigned-number lookups
 
@@ -92,28 +102,33 @@ Provides repository-like methods for sessions, detections, known devices, and ru
 - Lookup presentation distinguishes an assigned namespace from a device-reported claim and from an inference. Company/member allocation is not presented as authenticated manufacturer identity.
 - Class of Device, Classic SDP/service-class tables, and generic Mesh Device Properties are deliberately excluded from the BLE inspection path.
 
-## Extension points
+## Improvement backlog
 
-Recommended next steps:
-
-1. Introduce repository protocols and inject mock implementations for view-model tests.
-2. Replace JSONL indexing with GRDB when sessions become large or require cross-session queries.
-3. Expand curated GSS decoders only where length, flags, units, and optional fields can be validated deterministically.
-4. Add separately sourced vendor decoders for documented formats such as Nordic UART without treating arbitrary vendor UUIDs as Bluetooth SIG data.
-5. Add CoreBluetooth state restoration only for explicitly supported service UUIDs; unrestricted background discovery remains constrained by iOS.
-6. Add session naming, tags, notes, data-retention controls, and a bulk-delete workflow.
-7. Add deterministic UI tests with an injected Bluetooth scanner protocol and fixture advertisements.
+- [ ] TODO: Introduce repository, notification, location, and scanner protocols at `AppEnvironment` boundaries and inject deterministic test doubles.
+- [ ] TODO: Move `LocalStore` reads, JSONL recovery, and exports behind a serial worker or actor; retain atomic replacement for metadata files.
+- [ ] TODO: Replace JSONL indexing with SQLite/GRDB when sessions require pagination, cross-session queries, or measured data volumes make launch recovery expensive.
+- [ ] TODO: Add structured persistence diagnostics and surface recoverable corruption to the user instead of relying exclusively on best-effort fallbacks.
+- [ ] TODO: Expand curated GSS decoders only where length, flags, units, and optional fields can be validated deterministically.
+- [ ] TODO: Add separately sourced vendor decoders for documented formats without presenting vendor UUIDs as Bluetooth SIG assignments.
+- [ ] TODO: Evaluate CoreBluetooth state restoration only for explicitly supported service UUIDs; unrestricted background discovery remains constrained by iOS.
+- [ ] TODO: Add session rename, tags, notes, retention controls, and bulk deletion.
+- [ ] TODO: Add deterministic UI tests using fixture advertisements, including active-scan rule refresh and replay rediscovery.
+- [ ] TODO: Add physical-device integration checks for multicast GATT observers, disconnect/error paths, characteristic subscriptions, and replay reconnection.
+- [ ] TODO: Add widget deep links, stale-snapshot messaging, and tests for unavailable App Group storage.
+- [ ] TODO: Localize user-facing strings and complete VoiceOver, Dynamic Type, and contrast audits across SwiftUI and UIKit flows.
 
 ## Concurrency
 
-CoreBluetooth, `ScanCoordinator`, and UIKit updates run on the main queue. `LocalStore` uses an `NSRecursiveLock` around file access and appends JSONL detections directly to disk. This is adequate for the current single-process app flow, but high-volume development should move persistence behind a serial worker queue or actor.
+CoreBluetooth, `ScanCoordinator`, and UIKit updates run on the main queue. `LocalStore` uses an `NSRecursiveLock` for coordinated file access and a utility serial queue for cached-device writes, while session JSONL and metadata operations remain synchronous. This is adequate for the current single-process app flow, but high-volume work should move the full persistence boundary behind a serial worker or actor.
 
-## Known MVP trade-offs
+## MVP trade-off remediation
 
-- A single `PeripheralInspectorDelegate` is sufficient for the pushed navigation flow, but a multicast observer or publisher would better support multiple simultaneous inspectors.
-- Settings are stored as one Codable object in `UserDefaults`; schema migration should be introduced before settings become complex.
-- Session metadata updates every 25 detections and at normal stop. An abrupt process termination can leave a session open or its count slightly stale; a recovery pass should infer final metadata from JSONL on the next launch.
-- Alerts are loaded at scan start for efficiency. Changes made while a scan is already running apply to the next scan.
-- Default alert seeds are migration-driven. Changes to bundled defaults should advance the seed version rather than rewriting user-managed rules in place.
-- Device-detail inspection depends on the peripheral still being retained by the live scanner; replayed sessions cannot reconnect unless the device is observed again in realtime.
-- Notification permission prompts are requested contextually after alert creation and must be presented from a stable visible controller, not from a disappearing editor during a navigation transition.
+- `PeripheralInspector` uses weak multicast observers so device, service, and characteristic screens can receive simultaneous inspection updates without replacing one another.
+- Settings are stored in a versioned Codable envelope. Legacy unversioned settings migrate on read, while unknown future schema versions are preserved rather than overwritten.
+- `LocalStore` performs an idempotent launch-time recovery pass over session JSONL. Valid detections repair stale counts and close interrupted sessions at their latest detection timestamp; malformed or truncated records are ignored.
+- Successful alert creation, editing, enable/disable, and deletion refresh the coordinator's in-memory rules immediately. Cooldown and once-per-session histories remain intact during the refresh.
+- Bundled alert defaults use ordered, append-only seed migrations and a ledger of previously offered rule identifiers. New defaults can be added without restoring deleted defaults or replacing user-modified rules.
+- Replayed device details require a fresh matching realtime observation before exposing connection actions. The screen adopts the newly observed peripheral and live snapshot when it reappears.
+- Notification permission remains contextual after alert creation. Presentation is deferred until the navigation transition completes and is anchored to a stable visible controller.
+
+The Bluetooth observer and replay-reconnection flows still require physical-device verification because CoreBluetooth discovery and GATT behavior are not represented by the Simulator.

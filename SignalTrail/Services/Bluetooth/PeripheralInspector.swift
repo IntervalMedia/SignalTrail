@@ -14,14 +14,13 @@ final class PeripheralInspector: NSObject {
         case failed(String)
     }
 
-    weak var delegate: PeripheralInspectorDelegate?
-
     private let scanner: BluetoothScanner
     let peripheral: CBPeripheral
     private(set) var connectionState: ConnectionState = .disconnected
     private(set) var services: [GATTServiceSnapshot] = []
     private(set) var evidence = GATTDeviceEvidence()
     private var automaticallyRequestedReads = Set<String>()
+    private var observers: [WeakPeripheralInspectorDelegate] = []
 
     init(scanner: BluetoothScanner, peripheral: CBPeripheral) {
         self.scanner = scanner
@@ -33,6 +32,15 @@ final class PeripheralInspector: NSObject {
         connectionState = .connecting
         notifyDelegate { $0.peripheralInspectorDidUpdate(self) }
         scanner.connect(peripheral, delegate: self)
+    }
+
+    func addObserver(_ observer: PeripheralInspectorDelegate) {
+        observers.removeAll { $0.value == nil || $0.value === observer }
+        observers.append(WeakPeripheralInspectorDelegate(observer))
+    }
+
+    func removeObserver(_ observer: PeripheralInspectorDelegate) {
+        observers.removeAll { $0.value == nil || $0.value === observer }
     }
 
     func disconnect() {
@@ -131,15 +139,23 @@ final class PeripheralInspector: NSObject {
 
     private func notifyDelegate(_ callback: @escaping (PeripheralInspectorDelegate) -> Void) {
         if Thread.isMainThread {
-            if let delegate {
-                callback(delegate)
-            }
+            observers.removeAll { $0.value == nil }
+            observers.compactMap(\.value).forEach(callback)
         } else {
             DispatchQueue.main.async { [weak self] in
-                guard let self, let delegate = self.delegate else { return }
-                callback(delegate)
+                guard let self else { return }
+                self.observers.removeAll { $0.value == nil }
+                self.observers.compactMap(\.value).forEach(callback)
             }
         }
+    }
+}
+
+private final class WeakPeripheralInspectorDelegate {
+    weak var value: PeripheralInspectorDelegate?
+
+    init(_ value: PeripheralInspectorDelegate) {
+        self.value = value
     }
 }
 

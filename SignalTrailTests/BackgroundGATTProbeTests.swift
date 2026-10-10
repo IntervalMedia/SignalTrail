@@ -105,6 +105,35 @@ final class BackgroundGATTProbeTests: XCTestCase {
         XCTAssertTrue(store.settings.isAutomaticGATTEnrichmentEnabled)
     }
 
+    func testSettingsStoreMigratesLegacyPayloadToVersionedEnvelope() throws {
+        let suite = "SignalTrailTests.SettingsStore.LegacyMigration.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { userDefaults.removePersistentDomain(forName: suite) }
+
+        let legacy = AppSettings(activeScanDuration: 45, minimumRSSI: -72)
+        userDefaults.set(try JSONEncoder().encode(legacy), forKey: "SignalTrail.AppSettings")
+
+        let migrated = SettingsStore(defaults: userDefaults).settings
+        XCTAssertEqual(migrated, legacy)
+
+        let data = try XCTUnwrap(userDefaults.data(forKey: "SignalTrail.AppSettings"))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["schemaVersion"] as? Int, 1)
+        XCTAssertNotNil(object["settings"] as? [String: Any])
+    }
+
+    func testSettingsStoreDoesNotOverwriteFutureSchema() throws {
+        let suite = "SignalTrailTests.SettingsStore.FutureSchema.\(UUID().uuidString)"
+        let userDefaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { userDefaults.removePersistentDomain(forName: suite) }
+
+        let futureData = try XCTUnwrap("{\"schemaVersion\":999,\"settings\":{\"activeScanDuration\":45}}".data(using: .utf8))
+        userDefaults.set(futureData, forKey: "SignalTrail.AppSettings")
+
+        XCTAssertEqual(SettingsStore(defaults: userDefaults).settings, .default)
+        XCTAssertEqual(userDefaults.data(forKey: "SignalTrail.AppSettings"), futureData)
+    }
+
     func testAppSettingsDecodesEmptyJSONWithAllDefaults() throws {
         let emptyJSON = "{}".data(using: .utf8)!
         let decoded = try JSONDecoder().decode(AppSettings.self, from: emptyJSON)

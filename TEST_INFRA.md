@@ -1,5 +1,7 @@
 # SignalTrail Test Infrastructure & E2E Testing Strategy
 
+> Historical scope document: the counts and device profiles below describe the Bluetooth-intelligence E2E suite when it was introduced, not the complete current test target. Use [VALIDATION.md](VALIDATION.md) for current verification status. The current target also includes persistence, alert, scan-coordinator, settings-migration, seed-migration, and session-recovery coverage.
+
 ## 1. Executive Summary
 SignalTrail's test infrastructure provides comprehensive, deterministic, opaque-box testing for all Bluetooth SIG device intelligence capabilities (Features F1 through F8). The testing architecture enforces strict separation of concerns, zero network/hardware flake, progressive testability across implementation milestones, and automated verification through native `XCTest`, `xcodebuild`, and `plutil`.
 

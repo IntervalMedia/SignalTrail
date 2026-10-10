@@ -78,6 +78,10 @@ final class ScanCoordinator {
   private var notificationHistory: [UUID: Date] = [:]
   private var notifiedRulesForSession = Set<UUID>()
   private var alertRules: [AlertRule] = []
+
+  func refreshAlertRules() {
+    alertRules = store.loadAlertRules()
+  }
   private var dirtyVisibleSnapshotIdentifiers = Set<UUID>()
   private var lastVisibleUpdateDates: [UUID: Date] = [:]
   private var recordedObservationStates: [UUID: RecordedObservationState] = [:]

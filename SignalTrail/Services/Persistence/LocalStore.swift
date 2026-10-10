@@ -79,6 +79,23 @@ final class LocalStore {
     )
   ]
 
+  private struct AlertSeedMigration {
+    let version: Int
+    let rules: [AlertRule]
+  }
+
+  private struct AlertSeedState: Codable {
+    var version: Int
+    var offeredRuleIDs: Set<UUID>
+  }
+
+  // Seed migrations are append-only. Existing IDs must never be reused for a
+  // changed default because any rule with an offered ID belongs to the user.
+  private static let defaultAlertSeedMigrations = [
+    AlertSeedMigration(version: 1, rules: Array(defaultAlertRules.prefix(5))),
+    AlertSeedMigration(version: 2, rules: Array(defaultAlertRules.dropFirst(5)))
+  ]
+
   enum StoreError: LocalizedError {
     case unableToCreateDirectory
 
@@ -96,6 +113,7 @@ final class LocalStore {
   private let knownDevicesURL: URL
   private let alertRulesURL: URL
   private let alertRuleSeedVersionURL: URL
+  private let alertRuleSeedStateURL: URL
   private let encoder: JSONEncoder
   private let lineEncoder: JSONEncoder
   private let decoder: JSONDecoder
@@ -123,6 +141,7 @@ final class LocalStore {
     knownDevicesURL = rootURL.appendingPathComponent("known-devices.json")
     alertRulesURL = rootURL.appendingPathComponent("alert-rules.json")
     alertRuleSeedVersionURL = rootURL.appendingPathComponent("alert-rules-seed-version.txt")
+    alertRuleSeedStateURL = rootURL.appendingPathComponent("alert-rules-seed-state.json")
 
     encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -134,6 +153,7 @@ final class LocalStore {
     decoder.dateDecodingStrategy = Self.dateDecodingStrategy
 
     try createDirectories()
+    recoverSessionMetadata()
     try applyDefaultAlertSeedIfNeeded()
     publishWidgetSummary()
   }
@@ -197,6 +217,49 @@ final class LocalStore {
       .compactMap { Data($0.utf8) }
       .compactMap { try? decoder.decode(BLEDetection.self, from: $0) }
       .sorted { $0.timestamp < $1.timestamp }
+  }
+
+  private func recoverSessionMetadata() {
+    lock.lock()
+    defer { lock.unlock() }
+
+    guard
+      let urls = try? fileManager.contentsOfDirectory(
+        at: sessionsURL,
+        includingPropertiesForKeys: nil
+      )
+    else { return }
+
+    for metadataURL in urls where metadataURL.lastPathComponent.hasSuffix(".session.json") {
+      guard var session = try? read(ScanSession.self, from: metadataURL) else { continue }
+      let detectionURL = detectionsURL(for: session.id)
+      guard
+        let data = try? Data(contentsOf: detectionURL),
+        let text = String(data: data, encoding: .utf8)
+      else { continue }
+
+      let detections = text
+        .split(separator: "\n")
+        .compactMap { try? decoder.decode(BLEDetection.self, from: Data($0.utf8)) }
+        .filter { $0.sessionID == session.id }
+
+      guard !detections.isEmpty else { continue }
+
+      let detectionCount = detections.count
+      let uniqueDeviceCount = Set(detections.map(\.peripheralIdentifier)).count
+      let inferredEnd = detections.map(\.timestamp).max()
+      let recoveredEnd = session.endedAt ?? inferredEnd
+      guard
+        session.detectionCount != detectionCount
+          || session.uniqueDeviceCount != uniqueDeviceCount
+          || session.endedAt != recoveredEnd
+      else { continue }
+
+      session.detectionCount = detectionCount
+      session.uniqueDeviceCount = uniqueDeviceCount
+      session.endedAt = recoveredEnd
+      try? write(session, to: metadataURL)
+    }
   }
 
   func deleteSession(_ session: ScanSession) throws {
@@ -364,16 +427,59 @@ final class LocalStore {
   }
 
   private func applyDefaultAlertSeedIfNeeded() throws {
-    let currentSeedVersion = try? String(contentsOf: alertRuleSeedVersionURL, encoding: .utf8)
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    guard currentSeedVersion != Self.defaultAlertSeedVersion else { return }
-
     var rules = loadAlertRules()
-    let existingRuleIDs = Set(rules.map(\.id))
-    rules.append(contentsOf: Self.defaultAlertRules.filter { !existingRuleIDs.contains($0.id) })
+    var state = loadAlertSeedState(existingRules: rules)
 
-    try write(rules, to: alertRulesURL)
+    for migration in Self.defaultAlertSeedMigrations where migration.version > state.version {
+      var existingRuleIDs = Set(rules.map(\.id))
+      for rule in migration.rules where !state.offeredRuleIDs.contains(rule.id) {
+        if !existingRuleIDs.contains(rule.id) {
+          rules.append(rule)
+          existingRuleIDs.insert(rule.id)
+        }
+        state.offeredRuleIDs.insert(rule.id)
+      }
+
+      // Persist rules before advancing the ledger. If the second write fails,
+      // retrying is idempotent because rule IDs are stable.
+      try write(rules, to: alertRulesURL)
+      state.version = migration.version
+      try write(state, to: alertRuleSeedStateURL)
+    }
+
+    // Keep the legacy marker for compatibility with released builds that do
+    // not understand the structured ledger.
     try Self.defaultAlertSeedVersion.write(to: alertRuleSeedVersionURL, atomically: true, encoding: .utf8)
+  }
+
+  private func loadAlertSeedState(existingRules: [AlertRule]) -> AlertSeedState {
+    if let state = try? read(AlertSeedState.self, from: alertRuleSeedStateURL) {
+      return state
+    }
+
+    if fileManager.fileExists(atPath: alertRuleSeedVersionURL.path) {
+      let legacyVersion = try? String(contentsOf: alertRuleSeedVersionURL, encoding: .utf8)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      let appliedMigrations = legacyVersion == Self.defaultAlertSeedVersion
+        ? Self.defaultAlertSeedMigrations
+        : Self.defaultAlertSeedMigrations.filter { $0.version == 1 }
+      return AlertSeedState(
+        version: appliedMigrations.last?.version ?? 0,
+        offeredRuleIDs: Set(appliedMigrations.flatMap(\.rules).map(\.id))
+      )
+    }
+
+    // A rules file without seed metadata predates migration tracking. Treat
+    // every bundled ID as already offered so deleted defaults stay deleted.
+    if fileManager.fileExists(atPath: alertRulesURL.path) {
+      let allSeedIDs = Set(Self.defaultAlertRules.map(\.id))
+      return AlertSeedState(
+        version: Self.defaultAlertSeedMigrations.last?.version ?? 0,
+        offeredRuleIDs: allSeedIDs.union(existingRules.map(\.id))
+      )
+    }
+
+    return AlertSeedState(version: 0, offeredRuleIDs: [])
   }
 
   private func metadataURL(for id: UUID) -> URL {

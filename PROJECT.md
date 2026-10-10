@@ -1,74 +1,52 @@
-# Project: SignalTrail Bluetooth SIG Device Intelligence Capabilities
+# SignalTrail project status
 
-## Architecture
-SignalTrail is a UIKit-first iOS application for Bluetooth Low Energy (BLE) scanning, inspection, logging, and device intelligence.
-The codebase is structured into clear layers:
-- `App/`: Application delegate, scene wiring, coordinator bootstrapping.
-- `Domain/`: Shared models (`Models.swift`), data formatting, and heuristic categorization (`Formatting.swift`, `DeviceIntelligenceEngine`).
-- `Services/`:
-  - `Bluetooth/`: `BluetoothScanner`, `BluetoothService`, `PeripheralInspector`, `BackgroundGATTProbe`, `ScanCoordinator`, `GATTValueDecoder`, `BluetoothAssignedUUIDLookup`, `BluetoothPermittedCharacteristicsLookup`.
-  - `Persistence/`: `LocalStore`, JSON disk caching for device snapshots and sessions.
-  - `Settings/`: `SettingsStore`, user preferences.
-- `Features/`:
-  - `Scan/`: `ScanViewController`, `ScanCoordinator`.
-  - `Device/`: `DeviceDetailViewController`, `ServiceDetailViewController`, `CharacteristicViewController`, `ProfileDashboardBuilder`.
-  - `Settings/`: `SettingsViewController`.
-- `SignalTrailTests/`: XCTest unit testing suite covering scan coordination, intelligence classification, persistence, alert matching, and dashboard building.
+SignalTrail is a local-first iOS/iPadOS Bluetooth Low Energy scanner, observation logger, GATT inspector, heuristic device-intelligence tool, and RSSI hunter. The deployment target is iOS/iPadOS 15.2. Xcode 26 or newer is required because the app conditionally adopts native Liquid Glass APIs on iOS 26.
 
-## Feature Inventory
-| # | Feature | Description | Milestone | Source |
-|---|---------|-------------|-----------|--------|
-| 1 | F1-SettingsToggle | `isAutomaticGATTEnrichmentEnabled` setting in `AppSettings` + UI toggle in `SettingsViewController` Section 0 | M1 | Survey R1 |
-| 2 | F2-BackgroundGATTProbe | Dedicated read-only `BackgroundGATTProbe` service reading 0x180A, 0x2A00, 0x2A01, 0x2A19 with 0 writes/notifications | M1 | Survey R1 |
-| 3 | F3-AutoProbeQueue | Sequential queue in `ScanCoordinator` (1 concurrent connection, 20 device cap, 5s timeout, deduplication, scan stop cancel) | M2 | Survey R1 |
-| 4 | F4-LiveIntelligenceEnrichment | Dynamic snapshot, disk cache, presentation name, and classification enrichment (e.g. AppleTV14,1 -> .television) | M2 | Survey R1 |
-| 5 | F5-PermittedCharacteristicsLookup | `BluetoothPermittedCharacteristicsLookup` with SIG definitions for ESS, UDS, IMDS, CWS, etc. | M3 | Survey R2 |
-| 6 | F6-SemanticServiceGrouping | `ServiceDetailViewController` semantic grouping ("Standard Permitted" vs "Additional / Custom") + neutral absent handling | M3 | Survey R2 |
-| 7 | F7-GATTValueDecoders | Decoders for Pressure (0x2A6D), Sensor Location (0x2A5D), and Audio/Hearing characteristics | M4 | Survey R3 |
-| 8 | F8-ProfileDashboards | Summary cards in `DeviceDetailViewController` for Fitness/Cycling, Environmental, HID, Audio/Hearing + raw hex | M4 | Survey R3 |
-| 9 | F9-FullVerification | Comprehensive unit tests in `SignalTrailTests/`, 100% test pass via `xcodebuild`, `plutil` validation | M5 | Survey R4 |
+For user-facing setup and capabilities, see [README.md](README.md). For service boundaries and design decisions, see [ARCHITECTURE.md](ARCHITECTURE.md). For current verification guidance, see [VALIDATION.md](VALIDATION.md).
 
-## Milestones
-| # | Name | Scope | Dependencies | Status |
-|---|------|-------|-------------|--------|
-| 1 | M1-GATTProbeInfra | AppSettings toggle, SettingsViewController toggle, BackgroundGATTProbe service | none | DONE |
-| 2 | M2-AutoProbeQueue | ScanCoordinator queue mechanics, live snapshot merge, persistent cache, dynamic classification | M1 | DONE |
-| 3 | M3-PermittedCharacteristics | BluetoothPermittedCharacteristicsLookup, ServiceDetailViewModel, ServiceDetailViewController semantic grouping | none | DONE |
-| 4 | M4-ProfileDashboards | Extended GATT decoders, ProfileDashboardBuilder, DeviceDetailViewController dashboard UI + raw hex | none | DONE |
-| 5 | M5-FinalAcceptance | End-to-end integration, full test suite pass, plutil verification, coverage hardening | M1, M2, M3, M4 | IN_PROGRESS |
+## Current architecture
 
-## Interface Contracts
-### AppSettings ↔ SettingsStore & SettingsViewController
-- `AppSettings.isAutomaticGATTEnrichmentEnabled: Bool` (default: `true`, Codable)
-- `SettingsViewController`: Section 0 toggle updates `settingsStore.settings.isAutomaticGATTEnrichmentEnabled`
+- `App/` owns application and scene wiring, the shared `AppEnvironment`, and five-tab navigation.
+- `Domain/` contains Codable models, formatting, Bluetooth evidence, and device-intelligence classification.
+- `Features/` contains SwiftUI tab roots for Scan, Hunter, Sessions, Library, and Settings, hosted in UIKit navigation stacks. Device inspection, GATT navigation, editors, and session-map detail remain UIKit.
+- `Services/Bluetooth/` owns scanning, advertisement parsing, scan coordination, bounded automatic GATT probes, manual peripheral inspection, assigned-number lookup, and value decoding.
+- `Services/Persistence/` owns versioned settings, JSON/JSONL application data, session recovery, device snapshots, alert seed migrations, and the widget summary projection.
+- `Services/Location/`, `Notifications/`, and `Export/` isolate their platform responsibilities.
+- `SignalTrailWidget/` displays recent session summaries from an App Group snapshot and performs no Bluetooth work.
+- `SignalTrailTests/` contains XCTest coverage for persistence, alerts, scan coordination, automatic probing, assigned-number intelligence, and decoder behavior.
 
-### BackgroundGATTProbe ↔ ScanCoordinator
-- `BackgroundGATTProbe(peripheral: CBPeripheral, scanner: BluetoothScanning, timeout: TimeInterval = 5.0, completion: @escaping (Result<GATTDeviceEvidence, Error>) -> Void)`
-- Strictly read-only: discovers services, reads 0x1800 (0x2A00, 0x2A01), 0x180A (0x2A23..0x2A29, 0x2A50), 0x180F (0x2A19).
-- Cancels connection immediately upon timeout or when `cancel()` is called.
+## Capability inventory
 
-### ScanCoordinator ↔ Device Store & Intelligence
-- `ScanCoordinator.enrichDevice(_:with:exploredServices:)`
-- Updates `snapshots`, `deviceCache`, `visibleSnapshots`, persists to disk via `LocalStore`, calls `reconcileGATTDuplicates`, triggers delegate update.
+| Area | Current capability |
+|---|---|
+| Scanning | Timed Quick Scan, burst/pause recording, Bluetooth readiness, live search/filter/sort, minimum RSSI, and bounded result retention |
+| Recording | Timestamped JSONL detections with advertisement data, RSSI, phone location, metadata summaries, crash recovery, replay, map timeline, and JSON/CSV export |
+| Device intelligence | Bluetooth SIG company/member/adopted-number lookup, heuristic profiles, device-reported GATT identity, structured PnP ID, selected standard decoders, and profile dashboards |
+| Automatic enrichment | Optional Quick Scan probing with one active connection, per-scan deduplication/cap, timeout/cancellation, and a read-only characteristic allowlist |
+| Manual GATT | Connect/disconnect, services, characteristics, descriptors, reads, confirmed writes, and notification subscriptions |
+| Hunter | One-device duplicate-advertisement RSSI tracking with generated audio, haptics, and stale-signal timeout |
+| Library | Saved devices, notes, nicknames, alert templates, compound any/all criteria, previews, current-result testing, toggles, and live-scan rule refresh |
+| Persistence | Versioned settings, append-only alert seed migrations, cached device snapshots, atomic metadata writes, and idempotent session recovery |
+| Widget | Small, medium, large, and extra-large recent-session summaries from the shared App Group |
+| Compatibility | iOS/iPadOS 15.2+, with conditional iOS 26 Liquid Glass controls |
 
-### BluetoothPermittedCharacteristicsLookup ↔ ServiceDetailViewModel
-- `BluetoothPermittedCharacteristicsLookup.permittedCharacteristicUUIDs(forServiceUUIDString serviceUUID: String) -> Set<UInt16>?`
-- `ServiceDetailViewModel.Section`: `.standardPermitted(characteristics: [GATTCharacteristicSnapshot])`, `.additionalCustom(characteristics: [GATTCharacteristicSnapshot])`, `.allDiscovered(characteristics: [GATTCharacteristicSnapshot])`
+## Important constraints
 
-### ProfileDashboardBuilder ↔ DeviceDetailViewController
-- `ProfileDashboardBuilder.buildCards(for snapshot: BLEDeviceSnapshot) -> [ProfileDashboardCard]`
-- `ProfileDashboardCard`: `title: String`, `iconName: String`, `accentColor: UIColor`, `metrics: [ProfileDashboardMetric]`
-- `ProfileDashboardMetric`: `title: String`, `value: String`, `unit: String?`, `rawHex: String?`, `iconName: String?`
+- CoreBluetooth does not expose BLE MAC addresses on iOS; peripheral identifiers are app-scoped.
+- Classification and alert profiles are heuristic and must not be treated as authenticated identity.
+- Map coordinates are the phone's observation location, not a verified device location.
+- Unrestricted BLE scanning stops when the app backgrounds.
+- Session-replay connections require a fresh matching realtime observation.
+- Simulator tests cannot validate real radio discovery, RSSI behavior, or GATT interoperability.
 
-## Code Layout
-- `SignalTrail/Domain/Models.swift`: `AppSettings`, `GATTDeviceIdentity`, `GATTDecodedValue`, `ProfileDashboardCard`, `ProfileDashboardMetric`
-- `SignalTrail/Domain/Formatting.swift`: `DeviceIntelligenceEngine` classification rules
-- `SignalTrail/Services/Bluetooth/BackgroundGATTProbe.swift`: Background probing service
-- `SignalTrail/Services/Bluetooth/ScanCoordinator.swift`: Auto-probe queue & snapshot enrichment
-- `SignalTrail/Services/Bluetooth/BluetoothPermittedCharacteristicsLookup.swift`: SIG permitted-characteristic registry
-- `SignalTrail/Services/Bluetooth/GATTValueDecoder.swift`: Extended decoders (Pressure, Sensor Location, Audio/Hearing)
-- `SignalTrail/Features/Device/ProfileDashboardBuilder.swift`: Profile dashboard aggregator
-- `SignalTrail/Features/Device/DeviceDetailViewController.swift`: Profile dashboard UI section
-- `SignalTrail/Features/Device/ServiceDetailViewController.swift`: Semantic table sections
-- `SignalTrail/Features/Settings/SettingsViewController.swift`: Auto-probe settings switch
-- `SignalTrailTests/`: Comprehensive test suites
+## Current TODOs
+
+- [ ] TODO: Introduce protocols for persistence, scanning, location, and notifications at the composition boundary.
+- [ ] TODO: Move all persistence and recovery work off the main thread behind a serial worker or actor.
+- [ ] TODO: Add deterministic UI automation and physical-device BLE integration coverage.
+- [ ] TODO: Add session rename, tags, notes, retention policies, and bulk deletion.
+- [ ] TODO: Add structured storage corruption/recovery reporting.
+- [ ] TODO: Evaluate SQLite/GRDB after measuring large-session launch, replay, and query performance.
+- [ ] TODO: Add localization and complete VoiceOver, Dynamic Type, and contrast audits.
+- [ ] TODO: Add widget deep links and explicit stale/unavailable-data states.
+

@@ -56,6 +56,44 @@ final class LocalStoreTests: XCTestCase {
     XCTAssertEqual(reopenedAgain.loadAlertRules(), rules)
   }
 
+  func testSeedMigrationAddsOnlyNewDefaults() throws {
+    let rules = store.loadAlertRules()
+    let metaRule = try XCTUnwrap(rules.first { $0.matchValue == BLEDetectorProfile.metaSmartGlasses.rawValue })
+    let versionOneRules = rules.filter { $0.id != metaRule.id }
+    try store.saveAlertRules(versionOneRules)
+    try writeSeedState(version: 1, offeredRuleIDs: Set(versionOneRules.map(\.id)))
+
+    let reopened = try LocalStore(rootURL: directory)
+    let migrated = reopened.loadAlertRules()
+
+    XCTAssertEqual(migrated.count, rules.count)
+    XCTAssertEqual(migrated.filter { $0.id == metaRule.id }, [metaRule])
+  }
+
+  func testSeedMigrationPreservesModifiedAndDeletedDefaults() throws {
+    var rules = store.loadAlertRules()
+    let deletedRule = rules.removeFirst()
+    rules[0].name = "My customised alert"
+    rules[0].isEnabled = false
+    try store.saveAlertRules(rules)
+    try writeSeedState(version: 1, offeredRuleIDs: Set((rules + [deletedRule]).map(\.id)))
+
+    let reopened = try LocalStore(rootURL: directory)
+    let migrated = reopened.loadAlertRules()
+
+    XCTAssertFalse(migrated.contains { $0.id == deletedRule.id })
+    XCTAssertEqual(migrated.first { $0.id == rules[0].id }, rules[0])
+  }
+
+  private func writeSeedState(version: Int, offeredRuleIDs: Set<UUID>) throws {
+    let object: [String: Any] = [
+      "version": version,
+      "offeredRuleIDs": offeredRuleIDs.map(\.uuidString)
+    ]
+    let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+    try data.write(to: directory.appendingPathComponent("alert-rules-seed-state.json"), options: .atomic)
+  }
+
   func testSessionRoundTrip() throws {
     let now = Date(timeIntervalSince1970: 1_700_000_000)
     let session = ScanSession(
@@ -86,6 +124,143 @@ final class LocalStoreTests: XCTestCase {
 
     XCTAssertEqual(try store.loadSessions().first?.id, session.id)
     XCTAssertEqual(try store.loadDetections(sessionID: session.id), [detection])
+  }
+
+  func testSessionRecoveryRepairsStaleCountsAndPreservesExistingEndDate() throws {
+    let startedAt = Date(timeIntervalSince1970: 1_700_000_000)
+    let endedAt = startedAt.addingTimeInterval(120)
+    let session = ScanSession(
+      id: UUID(),
+      startedAt: startedAt,
+      endedAt: endedAt,
+      mode: .recording,
+      name: "Completed session",
+      detectionCount: 25,
+      uniqueDeviceCount: 1
+    )
+    try store.createSession(session)
+
+    let firstDevice = UUID()
+    for (offset, device) in [(10.0, firstDevice), (20.0, firstDevice), (30.0, UUID())] {
+      try store.appendDetection(BLEDetection(
+        id: UUID(),
+        sessionID: session.id,
+        peripheralIdentifier: device,
+        displayName: "Sensor",
+        rssi: -70,
+        timestamp: startedAt.addingTimeInterval(offset),
+        latitude: nil,
+        longitude: nil,
+        horizontalAccuracy: nil,
+        locationTimestamp: nil,
+        advertisement: .empty
+      ))
+    }
+
+    let reopened = try LocalStore(rootURL: directory)
+    let recovered = try XCTUnwrap(reopened.loadSessions().first { $0.id == session.id })
+    XCTAssertEqual(recovered.detectionCount, 3)
+    XCTAssertEqual(recovered.uniqueDeviceCount, 2)
+    XCTAssertEqual(recovered.endedAt, endedAt)
+  }
+
+  func testSessionRecoveryClosesOpenSessionAtLatestValidDetection() throws {
+    let startedAt = Date(timeIntervalSince1970: 1_700_000_000)
+    let session = ScanSession(
+      id: UUID(),
+      startedAt: startedAt,
+      endedAt: nil,
+      mode: .recording,
+      name: "Interrupted session",
+      detectionCount: 0,
+      uniqueDeviceCount: 0
+    )
+    try store.createSession(session)
+    for offset in [10.0, 40.0] {
+      try store.appendDetection(BLEDetection(
+        id: UUID(),
+        sessionID: session.id,
+        peripheralIdentifier: UUID(),
+        displayName: "Sensor",
+        rssi: -70,
+        timestamp: startedAt.addingTimeInterval(offset),
+        latitude: nil,
+        longitude: nil,
+        horizontalAccuracy: nil,
+        locationTimestamp: nil,
+        advertisement: .empty
+      ))
+    }
+
+    let reopened = try LocalStore(rootURL: directory)
+    let recovered = try XCTUnwrap(reopened.loadSessions().first { $0.id == session.id })
+    XCTAssertEqual(recovered.detectionCount, 2)
+    XCTAssertEqual(recovered.uniqueDeviceCount, 2)
+    XCTAssertEqual(recovered.endedAt, startedAt.addingTimeInterval(40))
+
+    let reopenedAgain = try LocalStore(rootURL: directory)
+    XCTAssertEqual(
+      try reopenedAgain.loadSessions().first { $0.id == session.id },
+      recovered
+    )
+  }
+
+  func testSessionRecoveryIgnoresTruncatedJSONLRecord() throws {
+    let startedAt = Date(timeIntervalSince1970: 1_700_000_000)
+    let session = ScanSession(
+      id: UUID(),
+      startedAt: startedAt,
+      endedAt: nil,
+      mode: .recording,
+      name: "Truncated session",
+      detectionCount: 0,
+      uniqueDeviceCount: 0
+    )
+    try store.createSession(session)
+    try store.appendDetection(BLEDetection(
+      id: UUID(),
+      sessionID: session.id,
+      peripheralIdentifier: UUID(),
+      displayName: "Sensor",
+      rssi: -70,
+      timestamp: startedAt.addingTimeInterval(10),
+      latitude: nil,
+      longitude: nil,
+      horizontalAccuracy: nil,
+      locationTimestamp: nil,
+      advertisement: .empty
+    ))
+    let detectionURL = directory.appendingPathComponent("sessions")
+      .appendingPathComponent("\(session.id.uuidString).detections.jsonl")
+    let handle = try FileHandle(forWritingTo: detectionURL)
+    try handle.seekToEnd()
+    try handle.write(contentsOf: Data("{\"id\":\"truncated".utf8))
+    try handle.close()
+
+    let reopened = try LocalStore(rootURL: directory)
+    let recovered = try XCTUnwrap(reopened.loadSessions().first { $0.id == session.id })
+    XCTAssertEqual(recovered.detectionCount, 1)
+    XCTAssertEqual(recovered.uniqueDeviceCount, 1)
+    XCTAssertEqual(recovered.endedAt, startedAt.addingTimeInterval(10))
+  }
+
+  func testSessionRecoveryLeavesOpenMetadataUnchangedWithoutValidDetections() throws {
+    let session = ScanSession(
+      id: UUID(),
+      startedAt: Date(timeIntervalSince1970: 1_700_000_000),
+      endedAt: nil,
+      mode: .recording,
+      name: "Empty session",
+      detectionCount: 0,
+      uniqueDeviceCount: 0
+    )
+    try store.createSession(session)
+    let detectionURL = directory.appendingPathComponent("sessions")
+      .appendingPathComponent("\(session.id.uuidString).detections.jsonl")
+    try Data("not-json\n{\"partial\":".utf8).write(to: detectionURL)
+
+    let reopened = try LocalStore(rootURL: directory)
+    XCTAssertEqual(try reopened.loadSessions().first { $0.id == session.id }, session)
   }
 
   func testCSVExportPreservesLocationTimestampSeparatelyFromObservationTime() throws {

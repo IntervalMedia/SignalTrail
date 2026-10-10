@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0464C98A2A1A24E742CFC5CE /* SignalTrail/Features/Settings/SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC11FAED86EC21EAEE2932AC /* SignalTrail/Features/Settings/SettingsScreen.swift */; };
 		0AE9E1423E10DC422B096FDC /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C87B90024DE9123A79F2FB2A /* SettingsStore.swift */; };
 		0BE9CA4E20D36F9E25EEC50C /* LocalStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */; };
 		0C063BD30F921412E2513D79 /* AlertRuleEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */; };
@@ -19,6 +20,7 @@
 		14B6D8F0A2C435465768798B /* BluetoothAssignedUUIDLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B6D8F0A2C435465768798A /* BluetoothAssignedUUIDLookup.swift */; };
 		14B6D8F0A2C435465768798D /* GATTValueDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B6D8F0A2C435465768798C /* GATTValueDecoder.swift */; };
 		1B2173EE9FA2E17D96FF353B /* KnownDevicesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46922F384A71DFF31C02BF9 /* KnownDevicesViewController.swift */; };
+		241BE186D128EB85395A8A49 /* SignalTrail/Features/Scan/ScanScreenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F61A646433F089649E4AB33 /* SignalTrail/Features/Scan/ScanScreenModel.swift */; };
 		24CA0870F247C57730345120 /* CharacteristicViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B73A64E133060BC1BD4254 /* CharacteristicViewController.swift */; };
 		354BD4DC858D40B346B823AA /* SignalBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF4D7ECEE1A29CCA243FFF7 /* SignalBadgeView.swift */; };
 		3A71B20F64DB8F5B7528833D /* SessionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B85706D01B3864F13FA85A /* SessionExporter.swift */; };
@@ -39,14 +41,19 @@
 		83EF7D6B30B86E81C26F6FBB /* BackgroundGATTProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40F94770FACA46D4116AD80 /* BackgroundGATTProbe.swift */; };
 		88C05BDED24819E9E8CB5C55 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED16157A68FD7EC7F8FF2BDB /* AppDelegate.swift */; };
 		88CE3840D7C9B2D86A25F5DB /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 563E030791557F1C713EC5D9 /* ScanViewModel.swift */; };
+		89A419B4ABE2065BE8CF44E4 /* SignalTrailTests/SwiftUIPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3111BFC690C3684FAFFCACE4 /* SignalTrailTests/SwiftUIPresentationTests.swift */; };
 		89E1C5C79F174AB4DF62F892 /* System/Library/Frameworks/XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A000BE7FA6F7394B2ACA22A /* System/Library/Frameworks/XCTest.framework */; };
+		8A9BD52CA07DB0F17A26BBA0 /* SignalTrail/Features/KnownDevices/LibraryHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76107CA69CC93C08EF26C70B /* SignalTrail/Features/KnownDevices/LibraryHostingController.swift */; };
 		8D06FA1E27F4EB902BDFC5A0 /* AlertMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB16AAA22CFA257611470B5 /* AlertMatcher.swift */; };
+		90C69E8DD58878B2D33CB160 /* SignalTrail/Features/Hunter/HunterScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B112535C23719BBE7134E392 /* SignalTrail/Features/Hunter/HunterScreen.swift */; };
 		91F98BE1C82E8E3032B30A88 /* System/Library/Frameworks/UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FC1727F809709DA7E3073E6 /* System/Library/Frameworks/UIKit.framework */; };
 		93B342D19AD31AC92E1367D9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A07B2FB684B67EF6D446685 /* Models.swift */; };
+		96A68B1B8D9F2F6BCBC6546C /* SignalTrail/Features/Scan/ScanScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A911CB009F8F680466C6126E /* SignalTrail/Features/Scan/ScanScreen.swift */; };
 		980FB7369DA3C9D0C00A4B45 /* SessionDeviceCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */; };
 		9C46EEE2E4ED4F6EBF834446 /* AlertMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */; };
 		A1044C0197D231DD70557BCE /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AAB452E39A985385FBF6C77 /* NotificationService.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* BluetoothMemberUUIDLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* BluetoothMemberUUIDLookup.swift */; };
+		A8FE80B669B6CA6023002391 /* SignalTrail/Features/Shared/TrailDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A140737A8ABBD8D92A64EF /* SignalTrail/Features/Shared/TrailDesign.swift */; };
 		AB75B3ED9CBE815210B3B4C6 /* SessionsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7860F65CE65EDF9D5AA0F9C8 /* SessionsViewController.swift */; };
 		C507BD781F5F404F802A9684 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4970DEF9EBEB61495D1EAFC2 /* AppTheme.swift */; };
 		C5E554983075C64000950404 /* HunterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = HUNTER000000000000000001 /* HunterViewController.swift */; };
@@ -123,6 +130,7 @@
 		E2E000000000000000000002 /* E2EIntelligenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2E000000000000000000001 /* E2EIntelligenceTests.swift */; };
 		EC8286B238A65D7DC33D36C7 /* LocationProviding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFF20EB8ACF3E3B1E9E5566 /* LocationProviding.swift */; };
 		ED84ABAB8E829780C8723E38 /* CoreLocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901ACF033E726F2FFC8AF5F9 /* CoreLocationProvider.swift */; };
+		EEE2D3918C890D5EAC34F8FD /* SignalTrail/Features/Sessions/SessionsHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 665C7389664814352BE18A1F /* SignalTrail/Features/Sessions/SessionsHostingController.swift */; };
 		F879151D32F3DF2D774F1C08 /* System/Library/Frameworks/CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */; };
 		FB7BAF0B7D626BC93B00B896 /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D544AA7CE1B41AC4A419E64E /* ScanCoordinator.swift */; };
 		FC8C6F02E2E43E7FB3E5BBF5 /* KnownDeviceEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16798DFE297EA7915205C79D /* KnownDeviceEditorViewController.swift */; };
@@ -132,14 +140,6 @@
 		M3GROUP00000000000000002 /* ServiceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */; };
 		M3PERMIT00000000000000002 /* BluetoothPermittedCharacteristicsLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */; };
 		M4DASH00000000000000002 /* ProfileDashboardBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */; };
-		89A419B4ABE2065BE8CF44E4 /* SwiftUIPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3111BFC690C3684FAFFCACE4 /* SwiftUIPresentationTests.swift */; };
-		90C69E8DD58878B2D33CB160 /* HunterScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B112535C23719BBE7134E392 /* HunterScreen.swift */; };
-		8A9BD52CA07DB0F17A26BBA0 /* LibraryHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76107CA69CC93C08EF26C70B /* LibraryHostingController.swift */; };
-		96A68B1B8D9F2F6BCBC6546C /* ScanScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A911CB009F8F680466C6126E /* ScanScreen.swift */; };
-		241BE186D128EB85395A8A49 /* ScanScreenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F61A646433F089649E4AB33 /* ScanScreenModel.swift */; };
-		EEE2D3918C890D5EAC34F8FD /* SessionsHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 665C7389664814352BE18A1F /* SessionsHostingController.swift */; };
-		0464C98A2A1A24E742CFC5CE /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC11FAED86EC21EAEE2932AC /* SettingsScreen.swift */; };
-		A8FE80B669B6CA6023002391 /* TrailDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A140737A8ABBD8D92A64EF /* TrailDesign.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -192,10 +192,12 @@
 		26B73A64E133060BC1BD4254 /* CharacteristicViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicViewController.swift; sourceTree = "<group>"; };
 		2EE0D0A9B97E955EFDF7CE35 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		30C9A6BF53A8639816170002 /* System/Library/Frameworks/CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		3111BFC690C3684FAFFCACE4 /* SignalTrailTests/SwiftUIPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrailTests/SwiftUIPresentationTests.swift; sourceTree = SOURCE_ROOT; };
 		356FBA3E9341CB76EAEE4A16 /* SignalTrail-AppIcon-1024.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "SignalTrail-AppIcon-1024.png"; sourceTree = "<group>"; };
 		370D3344276D5DCA0E4B1575 /* DeviceDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDetailViewController.swift; sourceTree = "<group>"; };
 		3A000BE7FA6F7394B2ACA22A /* System/Library/Frameworks/XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		3A07B2FB684B67EF6D446685 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		3F61A646433F089649E4AB33 /* SignalTrail/Features/Scan/ScanScreenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/Scan/ScanScreenModel.swift; sourceTree = SOURCE_ROOT; };
 		3FC1727F809709DA7E3073E6 /* System/Library/Frameworks/UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		4970DEF9EBEB61495D1EAFC2 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		53CBA177C3C573B57B09002F /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
@@ -203,16 +205,21 @@
 		57C548170A7A9CCC2431219A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		58F510BC9A45766C9BAC4B1E /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		5BF4D7ECEE1A29CCA243FFF7 /* SignalBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalBadgeView.swift; sourceTree = "<group>"; };
+		665C7389664814352BE18A1F /* SignalTrail/Features/Sessions/SessionsHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/Sessions/SessionsHostingController.swift; sourceTree = SOURCE_ROOT; };
 		6C123BD702985C10B91B7D26 /* ObservationAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationAnnotation.swift; sourceTree = "<group>"; };
 		6C393B78E8DC75181D745D0F /* System/Library/Frameworks/CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		6F7A8B9C0D1E2F3041526375 /* company_identifiers.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = company_identifiers.yaml; sourceTree = "<group>"; };
 		727F06E2C087B5C5F443A680 /* System/Library/Frameworks/MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		76107CA69CC93C08EF26C70B /* SignalTrail/Features/KnownDevices/LibraryHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/KnownDevices/LibraryHostingController.swift; sourceTree = SOURCE_ROOT; };
 		77EB3AD38D803EC3C3DF9309 /* SignalTrailTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SignalTrailTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7801BE461E8F249F1D363AFD /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		7860F65CE65EDF9D5AA0F9C8 /* SessionsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionsViewController.swift; sourceTree = "<group>"; };
 		7AAB452E39A985385FBF6C77 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		82A140737A8ABBD8D92A64EF /* SignalTrail/Features/Shared/TrailDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/Shared/TrailDesign.swift; sourceTree = SOURCE_ROOT; };
 		901ACF033E726F2FFC8AF5F9 /* CoreLocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreLocationProvider.swift; sourceTree = "<group>"; };
 		A3CCE2358183C218C7886F75 /* System/Library/Frameworks/UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		A911CB009F8F680466C6126E /* SignalTrail/Features/Scan/ScanScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/Scan/ScanScreen.swift; sourceTree = SOURCE_ROOT; };
+		B112535C23719BBE7134E392 /* SignalTrail/Features/Hunter/HunterScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/Hunter/HunterScreen.swift; sourceTree = SOURCE_ROOT; };
 		B1C2D3E4F5061728394A5B6C /* BluetoothMemberUUIDLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothMemberUUIDLookup.swift; sourceTree = "<group>"; };
 		B46922F384A71DFF31C02BF9 /* KnownDevicesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnownDevicesViewController.swift; sourceTree = "<group>"; };
 		B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertMatcherTests.swift; sourceTree = "<group>"; };
@@ -242,6 +249,7 @@
 		ED16157A68FD7EC7F8FF2BDB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F18538C05A0E717CC3988D19 /* AdvertisementParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementParser.swift; sourceTree = "<group>"; };
 		F51D5965AF835BF2C4D453E6 /* BluetoothCompanyLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCompanyLookup.swift; sourceTree = "<group>"; };
+		FC11FAED86EC21EAEE2932AC /* SignalTrail/Features/Settings/SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalTrail/Features/Settings/SettingsScreen.swift; sourceTree = SOURCE_ROOT; };
 		FCC0D5E606CBA10CE024BCC8 /* LocalStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStoreTests.swift; sourceTree = "<group>"; };
 		FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDeviceCell.swift; sourceTree = "<group>"; };
 		HUNTER000000000000000001 /* HunterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HunterViewController.swift; sourceTree = "<group>"; };
@@ -250,14 +258,6 @@
 		M3GROUP00000000000000001 /* ServiceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDetailViewModel.swift; sourceTree = "<group>"; };
 		M3PERMIT00000000000000001 /* BluetoothPermittedCharacteristicsLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothPermittedCharacteristicsLookup.swift; sourceTree = "<group>"; };
 		M4DASH00000000000000001 /* ProfileDashboardBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDashboardBuilder.swift; sourceTree = "<group>"; };
-		3111BFC690C3684FAFFCACE4 /* SwiftUIPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrailTests/SwiftUIPresentationTests.swift"; sourceTree = SOURCE_ROOT; };
-		B112535C23719BBE7134E392 /* HunterScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Hunter/HunterScreen.swift"; sourceTree = SOURCE_ROOT; };
-		76107CA69CC93C08EF26C70B /* LibraryHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/KnownDevices/LibraryHostingController.swift"; sourceTree = SOURCE_ROOT; };
-		A911CB009F8F680466C6126E /* ScanScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Scan/ScanScreen.swift"; sourceTree = SOURCE_ROOT; };
-		3F61A646433F089649E4AB33 /* ScanScreenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Scan/ScanScreenModel.swift"; sourceTree = SOURCE_ROOT; };
-		665C7389664814352BE18A1F /* SessionsHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Sessions/SessionsHostingController.swift"; sourceTree = SOURCE_ROOT; };
-		FC11FAED86EC21EAEE2932AC /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Settings/SettingsScreen.swift"; sourceTree = SOURCE_ROOT; };
-		82A140737A8ABBD8D92A64EF /* TrailDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SignalTrail/Features/Shared/TrailDesign.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -326,7 +326,7 @@
 		164FED426FDD7F16A0ED422D /* Sessions */ = {
 			isa = PBXGroup;
 			children = (
-				665C7389664814352BE18A1F /* SessionsHostingController.swift */,
+				665C7389664814352BE18A1F /* SignalTrail/Features/Sessions/SessionsHostingController.swift */,
 				6C123BD702985C10B91B7D26 /* ObservationAnnotation.swift */,
 				DDC49AA48921D1182CE2CE91 /* SessionDetailViewController.swift */,
 				FDB56309D38A75CF9318158F /* SessionDeviceCell.swift */,
@@ -378,15 +378,6 @@
 			path = Bluetooth;
 			sourceTree = "<group>";
 		};
-		HUNTER000000000000000005 /* Hunter */ = {
-			isa = PBXGroup;
-			children = (
-				B112535C23719BBE7134E392 /* HunterScreen.swift */,
-				HUNTER000000000000000001 /* HunterViewController.swift */,
-			);
-			path = Hunter;
-			sourceTree = "<group>";
-		};
 		22439119B8550EF45D57C96E /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -406,6 +397,7 @@
 				F465BF3375806184831A4FA4 /* Frameworks */,
 				C5E554D63075C64900950404 /* SignalTrail copy-Info.plist */,
 				1E78B559816E575FC0BDB29C /* Products */,
+				C5E554F53079E7E800950404 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -444,7 +436,7 @@
 		96F1FC8B8EA52C89D0C02C2D /* SignalTrailTests */ = {
 			isa = PBXGroup;
 			children = (
-				3111BFC690C3684FAFFCACE4 /* SwiftUIPresentationTests.swift */,
+				3111BFC690C3684FAFFCACE4 /* SignalTrailTests/SwiftUIPresentationTests.swift */,
 				B58B73CCC41133F4B66C2C72 /* AlertMatcherTests.swift */,
 				M2AUTO000000000000000001 /* AutoProbeQueueTests.swift */,
 				12A4E6B8C0D2F41526374858 /* BluetoothIntelligenceTests.swift */,
@@ -459,7 +451,7 @@
 		98674C16EEF687151DFC10A2 /* KnownDevices */ = {
 			isa = PBXGroup;
 			children = (
-				76107CA69CC93C08EF26C70B /* LibraryHostingController.swift */,
+				76107CA69CC93C08EF26C70B /* SignalTrail/Features/KnownDevices/LibraryHostingController.swift */,
 				1374F492508D18837B723CE0 /* AlertRuleEditorViewController.swift */,
 				0BEF2900C33A76647E22861C /* AlertRulesViewController.swift */,
 				0D2B0A6A9B0B4A1A8D7E0C10 /* BluetoothCompanyPickerViewController.swift */,
@@ -489,7 +481,7 @@
 		B222BF881FF723248ED7BC85 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				FC11FAED86EC21EAEE2932AC /* SettingsScreen.swift */,
+				FC11FAED86EC21EAEE2932AC /* SignalTrail/Features/Settings/SettingsScreen.swift */,
 				7801BE461E8F249F1D363AFD /* SettingsViewController.swift */,
 			);
 			path = Settings;
@@ -515,6 +507,14 @@
 				C5E554F23079E0A300950404 /* WidgetSummaryPublisher.swift */,
 			);
 			path = Persistence;
+			sourceTree = "<group>";
+		};
+		C5E554F53079E7E800950404 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				B112535C23719BBE7134E392 /* SignalTrail/Features/Hunter/HunterScreen.swift */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 		CB29EC954F0556D5BBE73E9E /* Domain */ = {
@@ -543,7 +543,7 @@
 		D8DACD1D75CDA2DCC9570415 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				82A140737A8ABBD8D92A64EF /* TrailDesign.swift */,
+				82A140737A8ABBD8D92A64EF /* SignalTrail/Features/Shared/TrailDesign.swift */,
 				4970DEF9EBEB61495D1EAFC2 /* AppTheme.swift */,
 				53CBA177C3C573B57B09002F /* CardView.swift */,
 				DA54D2402F73B87E1E05112C /* DeviceCell.swift */,
@@ -556,8 +556,8 @@
 		DF9F02E1FCB4B09A45B9E9F4 /* Scan */ = {
 			isa = PBXGroup;
 			children = (
-				3F61A646433F089649E4AB33 /* ScanScreenModel.swift */,
-				A911CB009F8F680466C6126E /* ScanScreen.swift */,
+				3F61A646433F089649E4AB33 /* SignalTrail/Features/Scan/ScanScreenModel.swift */,
+				A911CB009F8F680466C6126E /* SignalTrail/Features/Scan/ScanScreen.swift */,
 				CE53DFD96B51CFA73A666B21 /* ScanStatusCard.swift */,
 				C952E68E615189215E71FBF1 /* ScanViewController.swift */,
 				563E030791557F1C713EC5D9 /* ScanViewModel.swift */,
@@ -752,7 +752,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				89A419B4ABE2065BE8CF44E4 /* SwiftUIPresentationTests.swift in Sources */,
+				89A419B4ABE2065BE8CF44E4 /* SignalTrailTests/SwiftUIPresentationTests.swift in Sources */,
 				9C46EEE2E4ED4F6EBF834446 /* AlertMatcherTests.swift in Sources */,
 				M2AUTO000000000000000002 /* AutoProbeQueueTests.swift in Sources */,
 				12A4E6B8C0D2F41526374859 /* BluetoothIntelligenceTests.swift in Sources */,
@@ -829,13 +829,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A8FE80B669B6CA6023002391 /* TrailDesign.swift in Sources */,
-				0464C98A2A1A24E742CFC5CE /* SettingsScreen.swift in Sources */,
-				EEE2D3918C890D5EAC34F8FD /* SessionsHostingController.swift in Sources */,
-				241BE186D128EB85395A8A49 /* ScanScreenModel.swift in Sources */,
-				96A68B1B8D9F2F6BCBC6546C /* ScanScreen.swift in Sources */,
-				8A9BD52CA07DB0F17A26BBA0 /* LibraryHostingController.swift in Sources */,
-				90C69E8DD58878B2D33CB160 /* HunterScreen.swift in Sources */,
+				A8FE80B669B6CA6023002391 /* SignalTrail/Features/Shared/TrailDesign.swift in Sources */,
+				0464C98A2A1A24E742CFC5CE /* SignalTrail/Features/Settings/SettingsScreen.swift in Sources */,
+				EEE2D3918C890D5EAC34F8FD /* SignalTrail/Features/Sessions/SessionsHostingController.swift in Sources */,
+				241BE186D128EB85395A8A49 /* SignalTrail/Features/Scan/ScanScreenModel.swift in Sources */,
+				96A68B1B8D9F2F6BCBC6546C /* SignalTrail/Features/Scan/ScanScreen.swift in Sources */,
+				8A9BD52CA07DB0F17A26BBA0 /* SignalTrail/Features/KnownDevices/LibraryHostingController.swift in Sources */,
+				90C69E8DD58878B2D33CB160 /* SignalTrail/Features/Hunter/HunterScreen.swift in Sources */,
 				HUNTER000000000000000002 /* HunterViewController.swift in Sources */,
 				88C05BDED24819E9E8CB5C55 /* AppDelegate.swift in Sources */,
 				D7A3C56F583F92F390D2564F /* AppEnvironment.swift in Sources */,
@@ -912,6 +912,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = SignalTrail/SignalTrail.entitlements;
 				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SignalTrail/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GhostHunter;
@@ -996,6 +997,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = SignalTrail/SignalTrail.entitlements;
 				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SignalTrail/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GhostHunter;
@@ -1019,6 +1021,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.SignalTrailTests;
@@ -1097,6 +1100,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SignalTrail copy-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DiscoveraBLE;
@@ -1123,6 +1127,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SignalTrail copy-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DiscoveraBLE;
@@ -1152,6 +1157,7 @@
 				CODE_SIGN_ENTITLEMENTS = SignalTrailWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				ENABLE_APP_SANDBOX = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1206,6 +1212,7 @@
 				CODE_SIGN_ENTITLEMENTS = SignalTrailWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RL73M256K5;
 				ENABLE_APP_SANDBOX = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1247,6 +1254,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = RL73M256K5;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.SignalTrailTests;

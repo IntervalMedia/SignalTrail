@@ -83,6 +83,7 @@ final class LibraryHostingController: UIHostingController<AnyView> {
         )
         do {
             try environment.store.upsertAlertRule(updated)
+            environment.scanCoordinator.refreshAlertRules()
             reload()
         } catch {
             reload()
@@ -102,6 +103,7 @@ final class LibraryHostingController: UIHostingController<AnyView> {
     private func deleteRule(_ rule: AlertRule) {
         do {
             try environment.store.deleteAlertRule(rule)
+            environment.scanCoordinator.refreshAlertRules()
             reload()
         } catch {
             presentError("Unable to delete alert: \(error.localizedDescription)")

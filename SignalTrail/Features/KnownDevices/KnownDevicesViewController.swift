@@ -193,6 +193,7 @@ final class KnownDevicesViewController: UITableViewController {
             let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
                 do {
                     try self?.environment.store.deleteAlertRule(rule)
+                    self?.environment.scanCoordinator.refreshAlertRules()
                     self?.reload()
                     completion(true)
                 } catch {

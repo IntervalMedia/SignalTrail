@@ -1,5 +1,7 @@
 # TEST_READY: SignalTrail Bluetooth SIG Device Intelligence Test Suite
 
+> Historical verification snapshot: this file records the Bluetooth-intelligence suite at delivery time. It is not a claim that the complete current test target passed in the present environment. Use [VALIDATION.md](VALIDATION.md) for current verification guidance and outstanding checks.
+
 ## 1. Readiness Overview
 The complete end-to-end (E2E) test suite for SignalTrail Bluetooth SIG Device Intelligence capabilities (Features F1 through F8) has been designed, implemented, registered in the Xcode project, and verified.
 
