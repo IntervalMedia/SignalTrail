@@ -28,6 +28,7 @@ This document tracks what should be verified for the current SignalTrail impleme
    - first-run onboarding appears on a fresh install
    - Quick Scan starts, counts down, and stops automatically
    - Record Session explains and requests location permission when needed
+   - Record Session uses a seven-second default burst and can independently enable or disable automatic GATT enrichment
    - readiness checklist reflects Bluetooth, Location, and Notification state
    - live-result search, filter chips, sorting, and minimum RSSI update the displayed list
    - recorded sessions appear in the Sessions tab
@@ -44,6 +45,7 @@ This document tracks what should be verified for the current SignalTrail impleme
    - GATT writes appear under Advanced tools and require confirmation
    - JSON and CSV export both succeed from session detail
    - the widget updates after session metadata changes and renders useful empty and recent-session states
+   - Delete all local data requires destructive confirmation, stops active Bluetooth work, removes all user-created local records and settings, clears the widget, and restores only bundled default alerts
 5. Confirm app limits remain accurate:
    - no BLE MAC address is exposed
    - map points represent phone observation locations

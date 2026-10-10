@@ -524,10 +524,10 @@ final class AutoProbeQueueTests: XCTestCase {
     }
 
     // =========================================================================
-    // MARK: - 10. Mode Gating (No Probing in Recording or Idle)
+    // MARK: - 10. Recording Mode Gating
     // =========================================================================
 
-    func testAutoProbeQueueIgnoredDuringRecordingAndIdle() {
+    func testAutoProbeQueueIgnoredDuringIdle() {
         var probeCount = 0
 
         coordinator.probeFactory = { peripheral, scanner, timeout, completion in
@@ -535,21 +535,68 @@ final class AutoProbeQueueTests: XCTestCase {
             return MockBackgroundGATTProbe(peripheral: peripheral, scanner: scanner, timeout: timeout, completion: completion)
         }
 
-        // 1. Idle mode
         XCTAssertEqual(coordinator.state, .idle)
         _ = discoverPeripheral(name: "Device in Idle")
 
         XCTAssertEqual(probeCount, 0, "Must not probe during idle")
         XCTAssertTrue(coordinator.pendingGATTProbeQueue.isEmpty)
+    }
 
-        // 2. Recording mode
+    func testRecordingGATTEnrichmentProcessesQueueWhenEnabled() {
+        var probes: [MockBackgroundGATTProbe] = []
+
+        coordinator.probeFactory = { peripheral, scanner, timeout, completion in
+            let probe = MockBackgroundGATTProbe(
+                peripheral: peripheral,
+                scanner: scanner,
+                timeout: timeout,
+                completion: completion
+            )
+            probes.append(probe)
+            return probe
+        }
+
+        settingsStore.settings.isRecordingGATTEnrichmentEnabled = true
+        coordinator.startRecording()
+        XCTAssertEqual(coordinator.state.mode, .recording)
+
+        let first = discoverPeripheral(name: "First Recording Device")
+        let second = discoverPeripheral(name: "Second Recording Device")
+
+        XCTAssertEqual(probes.count, 1, "Recording must keep only one GATT connection active")
+        XCTAssertEqual(coordinator.currentProbeIdentifier, first.identifier)
+        XCTAssertEqual(coordinator.pendingGATTProbeQueue, [second.identifier])
+
+        var firstEvidence = GATTDeviceEvidence()
+        firstEvidence.identity.deviceName = "Enriched First Device"
+        probes[0].completeWithSuccess(evidence: firstEvidence)
+
+        XCTAssertEqual(probes.count, 2, "Completing a recording probe must advance its queue")
+        XCTAssertEqual(coordinator.currentProbeIdentifier, second.identifier)
+        XCTAssertTrue(coordinator.pendingGATTProbeQueue.isEmpty)
+        XCTAssertEqual(
+            coordinator.device(for: first.identifier)?.gattEvidence?.identity.deviceName,
+            "Enriched First Device"
+        )
+    }
+
+    func testRecordingGATTEnrichmentDoesNotProbeWhenDisabled() {
+        var probeCount = 0
+
+        coordinator.probeFactory = { peripheral, scanner, timeout, completion in
+            probeCount += 1
+            return MockBackgroundGATTProbe(peripheral: peripheral, scanner: scanner, timeout: timeout, completion: completion)
+        }
+
+        settingsStore.settings.isRecordingGATTEnrichmentEnabled = false
         coordinator.startRecording()
         XCTAssertEqual(coordinator.state.mode, .recording)
 
         _ = discoverPeripheral(name: "Device in Recording")
 
-        XCTAssertEqual(probeCount, 0, "Must not probe during recording mode")
+        XCTAssertEqual(probeCount, 0, "Recording GATT enrichment must honor its setting")
         XCTAssertTrue(coordinator.pendingGATTProbeQueue.isEmpty)
+        XCTAssertNil(coordinator.activeGATTProbe)
     }
 
     // =========================================================================

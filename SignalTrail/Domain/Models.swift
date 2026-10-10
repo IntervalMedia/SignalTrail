@@ -620,7 +620,8 @@ struct AlertRule: Codable, Hashable, Identifiable {
 struct AppSettings: Codable, Equatable {
     var activeScanDuration: TimeInterval = 120
     var isAutomaticGATTEnrichmentEnabled: Bool = true
-    var recordingBurstDuration: TimeInterval = 1
+    var isRecordingGATTEnrichmentEnabled: Bool = true
+    var recordingBurstDuration: TimeInterval = 7
     var recordingPauseDuration: TimeInterval = 5
     var minimumRSSI: Int = -100
     var keepScreenAwakeDuringRecording = true
@@ -634,7 +635,8 @@ struct AppSettings: Codable, Equatable {
     init(
         activeScanDuration: TimeInterval = 120,
         isAutomaticGATTEnrichmentEnabled: Bool = true,
-        recordingBurstDuration: TimeInterval = 1,
+        isRecordingGATTEnrichmentEnabled: Bool = true,
+        recordingBurstDuration: TimeInterval = 7,
         recordingPauseDuration: TimeInterval = 5,
         minimumRSSI: Int = -100,
         keepScreenAwakeDuringRecording: Bool = true,
@@ -645,6 +647,7 @@ struct AppSettings: Codable, Equatable {
     ) {
         self.activeScanDuration = activeScanDuration
         self.isAutomaticGATTEnrichmentEnabled = isAutomaticGATTEnrichmentEnabled
+        self.isRecordingGATTEnrichmentEnabled = isRecordingGATTEnrichmentEnabled
         self.recordingBurstDuration = recordingBurstDuration
         self.recordingPauseDuration = recordingPauseDuration
         self.minimumRSSI = minimumRSSI
@@ -659,7 +662,8 @@ struct AppSettings: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         activeScanDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .activeScanDuration) ?? 120
         isAutomaticGATTEnrichmentEnabled = try container.decodeIfPresent(Bool.self, forKey: .isAutomaticGATTEnrichmentEnabled) ?? true
-        recordingBurstDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .recordingBurstDuration) ?? 1
+        isRecordingGATTEnrichmentEnabled = try container.decodeIfPresent(Bool.self, forKey: .isRecordingGATTEnrichmentEnabled) ?? true
+        recordingBurstDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .recordingBurstDuration) ?? 7
         recordingPauseDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .recordingPauseDuration) ?? 5
         minimumRSSI = try container.decodeIfPresent(Int.self, forKey: .minimumRSSI) ?? -100
         keepScreenAwakeDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .keepScreenAwakeDuringRecording) ?? true

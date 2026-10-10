@@ -24,6 +24,12 @@ final class TrailSettingsModel: ObservableObject {
         store.reset()
         refresh()
     }
+
+    func resetAfterDeletingLocalData() {
+        store.reset()
+        UserDefaults.standard.removeObject(forKey: "SignalTrail.ScanOnboardingShown")
+        refresh()
+    }
 }
 
 final class SettingsHostingController: UIHostingController<SettingsScreen> {
@@ -65,6 +71,8 @@ struct SettingsScreen: View {
     let environment: AppEnvironment
     @State private var confirmReset = false
     @State private var confirmClear = false
+    @State private var confirmDeleteAllData = false
+    @State private var deletionError: String?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -91,6 +99,7 @@ struct SettingsScreen: View {
                 }
                 Label("Stored locally on this device", systemImage: "lock.shield")
                 Button("Reset settings", role: .destructive) { confirmReset = true }
+                Button("Delete all local data", role: .destructive) { confirmDeleteAllData = true }
             }
         }
         .tint(TrailTheme.accent)
@@ -102,6 +111,17 @@ struct SettingsScreen: View {
             Button("Clear", role: .destructive) { environment.scanCoordinator.clearResults() }
             Button("Cancel", role: .cancel) {}
         } message: { Text("This clears the current device list. Saved sessions will remain available.") }
+        .alert("Delete all local data?", isPresented: $confirmDeleteAllData) {
+            Button("Delete Everything", role: .destructive, action: deleteAllLocalData)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes recorded sessions and detections, cached device details, saved devices, alert rules, settings, and widget data. Bundled default alerts will be restored. Bluetooth, location, and notification permissions are managed by iOS and will not change.")
+        }
+        .alert("Unable to delete local data", isPresented: deletionErrorBinding) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deletionError ?? "An unknown error occurred.")
+        }
         .onChange(of: scenePhase) { phase in if phase == .active { model.refresh() } }
     }
 
@@ -118,11 +138,14 @@ struct SettingsScreen: View {
 
     private var recording: some View {
         Section {
-            durationPicker("Scan burst", keyPath: \.recordingBurstDuration, options: [1, 2, 3, 5, 8, 10, 15])
+            durationPicker("Scan burst", keyPath: \.recordingBurstDuration, options: [1, 2, 3, 5, 7, 10, 15])
             durationPicker("Pause between bursts", keyPath: \.recordingPauseDuration, options: [5, 10, 12, 15, 30, 60])
+            Toggle("Automatic GATT enrichment", isOn: binding(\.isRecordingGATTEnrichmentEnabled))
             Toggle("Keep screen awake", isOn: binding(\.keepScreenAwakeDuringRecording))
         } header: { Label("Recorded sessions", systemImage: "map") }
-        footer: { Text("Short bursts and pauses reduce battery and storage use while recording observations along your route.") }
+        footer: {
+            Text("Short bursts and pauses reduce battery and storage use. Automatic enrichment connects to available devices to record standard identity and battery information.")
+        }
     }
 
     private var feedback: some View {
@@ -174,5 +197,22 @@ struct SettingsScreen: View {
     private func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
+    }
+
+    private var deletionErrorBinding: Binding<Bool> {
+        Binding(
+            get: { deletionError != nil },
+            set: { if !$0 { deletionError = nil } }
+        )
+    }
+
+    private func deleteAllLocalData() {
+        environment.hunter.stop()
+        do {
+            try environment.scanCoordinator.deleteAllLocalData()
+            model.resetAfterDeletingLocalData()
+        } catch {
+            deletionError = error.localizedDescription
+        }
     }
 }

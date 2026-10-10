@@ -53,8 +53,9 @@ Before every commit, the hook removes personal team, certificate, and provisioni
 - First-run guidance for Quick Scan, Record Session, and location data
 - A readiness checklist for Bluetooth, Location, and Notifications
 - Timed Quick Scans, set to two minutes by default
-- Recorded sessions with configurable scanning and pause intervals
+- Recorded sessions with configurable scanning and pause intervals; scan bursts default to seven seconds
 - Repeated advertisement logging, including the timestamp, RSSI, advertisement fields, and the phone's location
+- Optional bounded, read-only automatic GATT enrichment during recorded sessions
 - Live search, filters, sorting, minimum RSSI thresholds, and signal-strength indicators
 - Session maps with clustered observation markers, the phone's route, timeline scrubbing, and playback
 - Session export in JSON or CSV format
@@ -96,6 +97,7 @@ affect it. Physical-device testing is required.
 - Default alerts for Axon/TASER identifiers and names, Apple Find My Offline Finding-like broadcasts, Flipper Zero service UUIDs, Flock/Penguin battery-like broadcasts, HC-03/HC-05/HC-06 serial-module names, and Meta/Ray-Ban identifiers
 - Alert edits, enable/disable changes, and deletions take effect during an active scan without resetting notification cooldown history
 - Versioned default-alert migrations add new bundled rules without restoring rules the user deleted or overwriting rules the user modified
+- A confirmed **Delete all local data** action removes sessions, detections, cached device details, saved devices, alert rules, settings, onboarding state, and widget data; bundled default alerts are then restored
 
 All data stays on the device. Unit tests cover alert matching and session persistence.
 
@@ -107,7 +109,7 @@ All data stays on the device. Unit tests cover alert matching and session persis
 - The MVP deliberately stops scanning when the app enters the background. This avoids implying reliable continuous monitoring that iOS does not guarantee for an unrestricted device scan.
 - Company identifier and company-name alerts only work when the peripheral includes manufacturer data with a Bluetooth SIG company identifier.
 - Company identifiers, member UUIDs, names, Appearance values, and GATT identity values come from the device or an assigned namespace. They do not prove who made the device or identify its exact product model.
-- Automatic enrichment is limited to Quick Scan, connectable peripherals, one connection at a time, and a per-scan device cap. Recording sessions do not automatically probe GATT devices.
+- Automatic enrichment is available independently for Quick Scan and recorded sessions. It is limited to connectable peripherals, one connection at a time, and a per-scan device cap.
 - Automatic enrichment reads only a limited allowlist of standard readable characteristics and never writes or enables notifications. Manual inspection can read, write, or subscribe when the characteristic supports it.
 - GATT writes can alter device behavior, so characteristic writes are grouped under Advanced tools and require confirmation.
 - A device opened from session replay cannot reconnect from stored data alone. Connection controls become available only after the same peripheral identifier is observed again in a live scan.

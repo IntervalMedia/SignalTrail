@@ -12,6 +12,8 @@ final class BackgroundGATTProbeTests: XCTestCase {
 
         let newSettings = AppSettings()
         XCTAssertTrue(newSettings.isAutomaticGATTEnrichmentEnabled)
+        XCTAssertTrue(newSettings.isRecordingGATTEnrichmentEnabled)
+        XCTAssertEqual(newSettings.recordingBurstDuration, 7)
     }
 
     func testHunterSettingsDefaultsAndBackwardCompatibility() throws {
@@ -38,6 +40,7 @@ final class BackgroundGATTProbeTests: XCTestCase {
     func testAppSettingsCodableRoundTrip() throws {
         var settings = AppSettings()
         settings.isAutomaticGATTEnrichmentEnabled = false
+        settings.isRecordingGATTEnrichmentEnabled = false
         settings.activeScanDuration = 60
         settings.minimumRSSI = -75
         settings.isHunterSoundEnabled = false
@@ -52,6 +55,7 @@ final class BackgroundGATTProbeTests: XCTestCase {
 
         XCTAssertEqual(decoded, settings)
         XCTAssertFalse(decoded.isAutomaticGATTEnrichmentEnabled)
+        XCTAssertFalse(decoded.isRecordingGATTEnrichmentEnabled)
         XCTAssertEqual(decoded.activeScanDuration, 60)
         XCTAssertEqual(decoded.minimumRSSI, -75)
         XCTAssertFalse(decoded.isHunterSoundEnabled)
@@ -76,6 +80,7 @@ final class BackgroundGATTProbeTests: XCTestCase {
         let decoded = try decoder.decode(AppSettings.self, from: legacyJSON)
 
         XCTAssertTrue(decoded.isAutomaticGATTEnrichmentEnabled)
+        XCTAssertTrue(decoded.isRecordingGATTEnrichmentEnabled)
         XCTAssertEqual(decoded.activeScanDuration, 90)
         XCTAssertEqual(decoded.recordingBurstDuration, 2)
         XCTAssertEqual(decoded.recordingPauseDuration, 8)
@@ -97,12 +102,15 @@ final class BackgroundGATTProbeTests: XCTestCase {
 
         var mutated = store.settings
         mutated.isAutomaticGATTEnrichmentEnabled = false
+        mutated.isRecordingGATTEnrichmentEnabled = false
         store.settings = mutated
 
         XCTAssertFalse(store.settings.isAutomaticGATTEnrichmentEnabled)
+        XCTAssertFalse(store.settings.isRecordingGATTEnrichmentEnabled)
 
         store.reset()
         XCTAssertTrue(store.settings.isAutomaticGATTEnrichmentEnabled)
+        XCTAssertTrue(store.settings.isRecordingGATTEnrichmentEnabled)
     }
 
     func testSettingsStoreMigratesLegacyPayloadToVersionedEnvelope() throws {
@@ -140,7 +148,8 @@ final class BackgroundGATTProbeTests: XCTestCase {
         XCTAssertEqual(decoded, AppSettings.default)
         XCTAssertTrue(decoded.isAutomaticGATTEnrichmentEnabled)
         XCTAssertEqual(decoded.activeScanDuration, 120)
-        XCTAssertEqual(decoded.recordingBurstDuration, 1)
+        XCTAssertTrue(decoded.isRecordingGATTEnrichmentEnabled)
+        XCTAssertEqual(decoded.recordingBurstDuration, 7)
         XCTAssertEqual(decoded.recordingPauseDuration, 5)
         XCTAssertEqual(decoded.minimumRSSI, -100)
         XCTAssertTrue(decoded.keepScreenAwakeDuringRecording)

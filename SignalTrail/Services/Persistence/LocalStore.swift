@@ -409,6 +409,26 @@ final class LocalStore {
     }
   }
 
+  // MARK: All local data
+
+  /// Removes every file managed by the local store, then restores the empty
+  /// directory structure and bundled alert-rule defaults expected at runtime.
+  /// Pending asynchronous device-record writes finish before the reset begins.
+  func deleteAllLocalData() throws {
+    try deviceQueue.sync {
+      lock.lock()
+      defer { lock.unlock() }
+
+      if fileManager.fileExists(atPath: rootURL.path) {
+        try fileManager.removeItem(at: rootURL)
+      }
+
+      try createDirectories()
+      try applyDefaultAlertSeedIfNeeded()
+      WidgetSummaryPublisher.publish(sessions: [])
+    }
+  }
+
   // MARK: Helpers
 
   private func publishWidgetSummary() {

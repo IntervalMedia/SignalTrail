@@ -547,6 +547,88 @@ final class LocalStoreTests: XCTestCase {
     XCTAssertEqual(store.loadAllDeviceRecords().count, 0)
   }
 
+  func testDeleteAllLocalDataClearsStoredContentAndRestoresDefaults() throws {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let session = ScanSession(
+      id: UUID(),
+      startedAt: now,
+      endedAt: now,
+      mode: .recording,
+      name: "Delete me",
+      detectionCount: 1,
+      uniqueDeviceCount: 1
+    )
+    try store.createSession(session)
+    try store.appendDetection(BLEDetection(
+      id: UUID(),
+      sessionID: session.id,
+      peripheralIdentifier: UUID(),
+      displayName: "Stored detection",
+      rssi: -60,
+      timestamp: now,
+      latitude: nil,
+      longitude: nil,
+      horizontalAccuracy: nil,
+      locationTimestamp: nil,
+      advertisement: .empty
+    ))
+
+    let deviceID = UUID()
+    try store.saveDeviceRecord(BLEDeviceSnapshot(
+      peripheralIdentifier: deviceID,
+      displayName: "Stored device",
+      latestRSSI: -60,
+      strongestRSSI: -60,
+      firstSeen: now,
+      lastSeen: now,
+      sightingCount: 1,
+      advertisement: .empty
+    ))
+    try store.saveKnownDevices([KnownDevice(
+      id: UUID(),
+      peripheralIdentifier: deviceID,
+      nickname: "Known device",
+      lastKnownName: "Stored device",
+      companyIdentifier: nil,
+      manufacturerPrefixHex: nil,
+      notes: "Delete me",
+      createdAt: now,
+      lastSeenAt: now
+    )])
+    var customisedRules = store.loadAlertRules()
+    customisedRules[0].name = "Custom rule"
+    try store.saveAlertRules(customisedRules)
+
+    try store.deleteAllLocalData()
+
+    XCTAssertEqual(try store.loadSessions(), [])
+    XCTAssertEqual(try store.loadDetections(sessionID: session.id), [])
+    XCTAssertEqual(store.loadAllDeviceRecords(), [:])
+    XCTAssertEqual(store.loadKnownDevices(), [])
+    XCTAssertEqual(store.loadAlertRules().count, 6)
+    XCTAssertFalse(store.loadAlertRules().contains { $0.name == "Custom rule" })
+    XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("sessions").path))
+    XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("devices").path))
+    XCTAssertTrue(FileManager.default.fileExists(
+      atPath: directory.appendingPathComponent("alert-rules-seed-state.json").path
+    ))
+    XCTAssertTrue(FileManager.default.fileExists(
+      atPath: directory.appendingPathComponent("alert-rules-seed-version.txt").path
+    ))
+  }
+
+  func testDeleteAllLocalDataIsIdempotent() throws {
+    try store.deleteAllLocalData()
+    let rulesAfterFirstReset = store.loadAlertRules()
+
+    try store.deleteAllLocalData()
+
+    XCTAssertEqual(try store.loadSessions(), [])
+    XCTAssertEqual(store.loadKnownDevices(), [])
+    XCTAssertEqual(store.loadAllDeviceRecords(), [:])
+    XCTAssertEqual(store.loadAlertRules(), rulesAfterFirstReset)
+  }
+
   func testPresentationNamePrioritizesCustomName() {
     var snapshot = BLEDeviceSnapshot(
       peripheralIdentifier: UUID(),

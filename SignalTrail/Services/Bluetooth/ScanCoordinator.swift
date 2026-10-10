@@ -281,6 +281,15 @@ final class ScanCoordinator {
     notifyDelegate { $0.scanCoordinator(self, didUpdate: []) }
   }
 
+  func deleteAllLocalData() throws {
+    if state.isRunning {
+      stop(reason: .user)
+    }
+    clearResults()
+    deviceCache.removeAll()
+    try store.deleteAllLocalData()
+  }
+
   func peripheral(for identifier: UUID) -> CBPeripheral? {
     scanner.peripheral(for: identifier)
   }
@@ -898,13 +907,23 @@ final class ScanCoordinator {
 
   // MARK: - Background GATT Probing
 
+  private var isAutomaticGATTProbeAllowedForCurrentState: Bool {
+    switch state {
+    case .active:
+      return settingsStore.settings.isAutomaticGATTEnrichmentEnabled
+    case .recording:
+      return settingsStore.settings.isRecordingGATTEnrichmentEnabled
+    default:
+      return false
+    }
+  }
+
   private func enqueueGATTProbeIfEligible(
     snapshotIdentifier: UUID,
     peripheral: CBPeripheral,
     advertisement: BLEAdvertisement
   ) {
-    guard case .active = state else { return }
-    guard settingsStore.settings.isAutomaticGATTEnrichmentEnabled else { return }
+    guard isAutomaticGATTProbeAllowedForCurrentState else { return }
     guard advertisement.isConnectable else { return }
     guard probedPeripheralIdentifiers.count < 20 else { return }
     guard !probedPeripheralIdentifiers.contains(snapshotIdentifier),
@@ -917,7 +936,7 @@ final class ScanCoordinator {
   }
 
   private func processNextGATTProbeQueueItem() {
-    guard case .active = state else { return }
+    guard isAutomaticGATTProbeAllowedForCurrentState else { return }
     guard activeGATTProbe == nil else { return }
     guard probedPeripheralIdentifiers.count < 20 else {
       pendingGATTProbeQueue.removeAll()

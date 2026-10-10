@@ -40,6 +40,7 @@ Owns the scan state machine:
 
 - Quick Scan timer
 - recording burst/pause timer
+- independently configurable automatic GATT enrichment for Quick Scan and recording
 - live-device aggregation
 - location attachment
 - session persistence
@@ -73,7 +74,7 @@ mutually exclusive because they share one `CBCentralManager` scan.
 
 ### `LocalStore`
 
-Provides repository-like methods for sessions, detections, cached device records, known devices, and alert rules. Detection files use JSONL append writes. Launch-time recovery derives interrupted-session counts, unique devices, and end times from valid detection records. Alert defaults use append-only migrations and an offered-rule ledger so user-modified or deleted rules remain user-owned. A future `GRDBStore` should sit behind a repository protocol before replacing these operations.
+Provides repository-like methods for sessions, detections, cached device records, known devices, and alert rules. Detection files use JSONL append writes. Launch-time recovery derives interrupted-session counts, unique devices, and end times from valid detection records. Alert defaults use append-only migrations and an offered-rule ledger so user-modified or deleted rules remain user-owned. Complete local-data deletion drains pending device writes, replaces the store root, restores required directories and bundled defaults, and clears the widget projection. A future `GRDBStore` should sit behind a repository protocol before replacing these operations.
 
 ### `SettingsStore`
 
