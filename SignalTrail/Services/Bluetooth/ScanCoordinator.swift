@@ -91,7 +91,10 @@ final class ScanCoordinator {
   var probeFactory: ((CBPeripheral, BluetoothScanning, TimeInterval, @escaping (Result<GATTDeviceEvidence, Error>) -> Void) -> BackgroundGATTProbe)?
 
   private(set) var state: State = .idle {
-    didSet { notifyDelegate { $0.scanCoordinatorDidChangeState(self) } }
+    didSet {
+      notifyDelegate { $0.scanCoordinatorDidChangeState(self) }
+      NotificationCenter.default.post(name: .ghostBustaScanStateDidChange, object: self)
+    }
   }
 
   var devices: [BLEDeviceSnapshot] {
@@ -1161,4 +1164,9 @@ extension ScanCoordinator: BluetoothScannerDelegate {
     default: return "Bluetooth is not currently available."
     }
   }
+}
+
+
+extension Notification.Name {
+    static let ghostBustaScanStateDidChange = Notification.Name("GhostBusta.ScanStateDidChange")
 }

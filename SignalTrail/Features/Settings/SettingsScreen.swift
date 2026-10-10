@@ -28,12 +28,20 @@ final class TrailSettingsModel: ObservableObject {
 
 final class SettingsHostingController: UIHostingController<SettingsScreen> {
     private let model: TrailSettingsModel
+    private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
         let model = TrailSettingsModel(store: environment.settingsStore)
         self.model = model
+        self.environment = environment
         super.init(rootView: SettingsScreen(model: model, environment: environment))
         title = "Settings"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Intel",
+            style: .plain,
+            target: self,
+            action: #selector(showIntel)
+        )
     }
 
     @available(*, unavailable)
@@ -42,6 +50,13 @@ final class SettingsHostingController: UIHostingController<SettingsScreen> {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         model.refresh()
+    }
+
+    @objc private func showIntel() {
+        navigationController?.pushViewController(
+            IntelViewController(environment: environment),
+            animated: true
+        )
     }
 }
 

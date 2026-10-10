@@ -21,22 +21,31 @@ final class MainTabBarController: UITabBarController {
 
     private func configureAppearance() {
         let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = AppTheme.surface
+        appearance.shadowColor = AppTheme.separator
+        appearance.stackedLayoutAppearance.normal.iconColor = AppTheme.secondaryText
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: AppTheme.secondaryText
+        ]
+        appearance.stackedLayoutAppearance.selected.iconColor = AppTheme.accent
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: AppTheme.accent
+        ]
         tabBar.standardAppearance = appearance
-        if #available(iOS 15.0, *) {
-            tabBar.scrollEdgeAppearance = appearance
-        }
+        tabBar.scrollEdgeAppearance = appearance
+        tabBar.itemPositioning = .fill
     }
 
     private func configureTabs() {
         let scan = ScanHostingController(environment: environment)
         scan.tabBarItem = UITabBarItem(title: "Scan", image: UIImage(systemName: "dot.radiowaves.left.and.right"), tag: 0)
 
-        let sessions = SessionsHostingController(environment: environment)
-        sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 2)
-
         let hunter = HunterHostingController(environment: environment)
         hunter.tabBarItem = UITabBarItem(title: "Hunter", image: UIImage(systemName: "scope"), tag: 1)
+
+        let sessions = SessionsHostingController(environment: environment)
+        sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 2)
 
         let known = LibraryHostingController(environment: environment)
         known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 3)
