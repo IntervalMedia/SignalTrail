@@ -8,7 +8,7 @@ SignalTrail uses a small service-oriented MVVM/coordinator structure:
 SceneDelegate / MainTabBarController
         │
         ▼
-UIKit feature controllers
+SwiftUI hosting controllers / UIKit detail flows
         │
         ├── ScanViewModel
         └── AppEnvironment
@@ -22,6 +22,8 @@ UIKit feature controllers
                ├── LocalStore ── JSON + JSONL files
                └── SettingsStore ── UserDefaults
 ```
+
+The five tab roots are SwiftUI views hosted in the existing UIKit navigation stacks. `ScanScreenModel` adapts `ScanViewModel` delegate updates, `HunterScreenModel` observes the shared Hunter controller, and `TrailSettingsModel` persists edits against the latest settings snapshot. Keeping the navigation stacks preserves device inspection, alert editors, session replay, and the existing Hunter tab handoff. Native iOS 26 Liquid Glass is restricted to fixed action controls; scrolling cards use solid adaptive system colors and older systems use standard button styles.
 
 The UI never writes files or talks directly to `CBCentralManager`. `AppEnvironment` owns the shared services for the app lifetime, and the scene delegate stops any running scan when the app scene enters the background. Domain models remain independent of controllers and persistence details.
 
