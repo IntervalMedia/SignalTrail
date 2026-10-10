@@ -13,7 +13,7 @@ final class KnownDevicesViewController: UITableViewController {
     private let emptyDevicesState = EmptyStateView(
         symbol: "star",
         title: "No saved devices",
-        message: "Save a device from the Scan tab to give it a nickname and create matching alerts."
+        message: "Save a device from GHOSTS to give it a nickname and create matching alerts."
     )
     private let emptyAlertsState = EmptyStateView(
         symbol: "bell",
@@ -35,7 +35,7 @@ final class KnownDevicesViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Library"
+        title = "Known"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         segmentControl.selectedSegmentIndex = 0
         segmentControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
@@ -62,9 +62,10 @@ final class KnownDevicesViewController: UITableViewController {
     }
 
     private func configureNavigation() {
-        navigationItem.rightBarButtonItem = segment == .alerts
+        let addItem = segment == .alerts
             ? UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addAlertTapped))
             : nil
+        installBustAction(environment: environment, additionalItems: [addItem].compactMap { $0 })
     }
 
     private func reload() {

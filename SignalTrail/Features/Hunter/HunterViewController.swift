@@ -255,7 +255,7 @@ final class HunterViewController: UIViewController, HunterControllerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Hunter"
+        title = "Haunts"
         view.backgroundColor = AppTheme.groupedBackground
         let infoItem = UIBarButtonItem(
             image: UIImage(systemName: "info.circle"),
@@ -265,7 +265,7 @@ final class HunterViewController: UIViewController, HunterControllerDelegate {
         )
         infoItem.accessibilityLabel = "About Hunter signal guidance"
         infoItem.accessibilityHint = "Shows more information"
-        navigationItem.rightBarButtonItem = infoItem
+        installBustAction(environment: environment, additionalItems: [infoItem])
         configureUI()
         updateUI()
     }

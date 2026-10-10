@@ -100,15 +100,15 @@ final class ScanStatusCard: CardView {
     ])
 
     updateMetrics(devices: 0, observations: 0)
+    updateAdaptiveLayouts()
+    registerForTraitChanges([UITraitPreferredContentSizeCategory.self]) {
+      (self: Self, _: UITraitCollection) in
+      self.updateAdaptiveLayouts()
+    }
   }
 
   @available(*, unavailable)
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-    super.traitCollectionDidChange(previousTraitCollection)
-    updateAdaptiveLayouts()
-  }
 
   func updateMetrics(devices: Int, observations: Int) {
     deviceCountLabel.text = "\(devices)"
@@ -129,7 +129,7 @@ final class ScanStatusCard: CardView {
 
     var configuration = actionButton.configuration
     configuration?.title =
-      running ? "Stop" : (mode == .active ? "Start Quick Scan" : "Start Recording")
+      running ? "Stop" : (mode == .active ? "BUST" : "Record Trail")
     configuration?.image = UIImage(
       systemName: running ? "stop.fill" : (mode == .active ? "bolt.fill" : "record.circle"))
     configuration?.baseBackgroundColor = running ? .systemRed : AppTheme.accent

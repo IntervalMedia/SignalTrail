@@ -135,6 +135,7 @@ final class LocalStore {
 
     try createDirectories()
     try applyDefaultAlertSeedIfNeeded()
+    publishWidgetSummary()
   }
 
   // MARK: Sessions
@@ -147,6 +148,7 @@ final class LocalStore {
     if !fileManager.fileExists(atPath: detections.path) {
       _ = fileManager.createFile(atPath: detections.path, contents: nil)
     }
+    publishWidgetSummary()
   }
 
   func appendDetection(_ detection: BLEDetection) throws {
@@ -168,6 +170,7 @@ final class LocalStore {
     lock.lock()
     defer { lock.unlock() }
     try write(session, to: metadataURL(for: session.id))
+    publishWidgetSummary()
   }
 
   func loadSessions() throws -> [ScanSession] {
@@ -203,6 +206,7 @@ final class LocalStore {
     where fileManager.fileExists(atPath: url.path) {
       try fileManager.removeItem(at: url)
     }
+    publishWidgetSummary()
   }
 
   // MARK: Known devices
@@ -343,6 +347,11 @@ final class LocalStore {
   }
 
   // MARK: Helpers
+
+  private func publishWidgetSummary() {
+    let sessions = (try? loadSessions()) ?? []
+    WidgetSummaryPublisher.publish(sessions: sessions)
+  }
 
   private func createDirectories() throws {
     do {
