@@ -122,7 +122,7 @@ struct SettingsScreen: View {
         } message: {
             Text(deletionError ?? "An unknown error occurred.")
         }
-        .onChange(of: scenePhase) { phase in if phase == .active { model.refresh() } }
+        .onChange(of: scenePhase) { if scenePhase == .active { model.refresh() } }
     }
 
     private var quickScan: some View {

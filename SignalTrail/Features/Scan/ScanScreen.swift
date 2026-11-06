@@ -22,7 +22,7 @@ struct ScanScreen: View {
             }
         }
         .tint(accent)
-        .onChange(of: scenePhase) { phase in if phase == .active { model.refresh() } }
+        .onChange(of: scenePhase) { if scenePhase == .active { model.refresh() } }
     }
 
     private var content: some View {

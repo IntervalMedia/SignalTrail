@@ -145,7 +145,7 @@ private struct LibraryScreen: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.top, 8)
-                    .onChange(of: model.showAlerts) { _ in segmentChanged() }
+                    .onChange(of: model.showAlerts) { segmentChanged() }
                 }
                 .padding(.vertical, 12)
                 .listRowBackground(Color.clear)
