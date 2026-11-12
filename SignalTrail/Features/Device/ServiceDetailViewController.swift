@@ -25,12 +25,16 @@ final class ServiceDetailViewController: UITableViewController {
         )
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
-        inspector.delegate = self
+        inspector.addObserver(self)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        inspector.delegate = self
+        inspector.addObserver(self)
+    }
+
+    deinit {
+        inspector.removeObserver(self)
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {

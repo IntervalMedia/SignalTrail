@@ -22,5 +22,7 @@ Tests use `XCTest` in `SignalTrailTests/`. Name files `*Tests.swift` and methods
 ## Commit & Pull Request Guidelines
 Use short imperative commit subjects such as `Add manufacturer data parsing test` or `Fix session replay map state`. Keep commits scoped to one change and avoid mixing UI, persistence, and Bluetooth behavior without a clear reason. PRs should summarize user-visible impact, list validation performed (`xcodebuild test`, device checks), link related issues, and include screenshots for UI changes.
 
+Before every commit, run `scripts/sanitize-xcode-signing.sh --stage`. The repository pre-commit hook runs the same command and blocks commits if any `.pbxproj` still contains `DEVELOPMENT_TEAM`, `DevelopmentTeam`, provisioning-profile, or code-signing identity values. Never commit a personal Apple team identifier, certificate identity, or provisioning profile. Configure a new checkout once with `git config core.hooksPath .githooks`; local signing choices may be reselected in Xcode as needed.
+
 ## Security & Configuration Tips
-The app stores data locally in Application Support and `UserDefaults`; do not add secrets or remote credentials. Keep privacy-sensitive changes aligned with the location/Bluetooth disclosures already called out in `README.md`.
+The app stores data locally in Application Support and `UserDefaults`; do not add secrets or remote credentials. Personal Xcode signing values must remain local and are removed by `scripts/sanitize-xcode-signing.sh`. Keep privacy-sensitive changes aligned with the location/Bluetooth disclosures already called out in `README.md`.

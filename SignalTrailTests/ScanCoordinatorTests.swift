@@ -362,6 +362,81 @@ final class ScanCoordinatorTests: XCTestCase {
     XCTAssertEqual(reconciled.values.first?.sightingCount, 2)
   }
 
+  func testReconcileGATTIdentityDuplicatesMergesCorrelatedModelOnlyObservations() {
+    let firstIdentifier = UUID()
+    let secondIdentifier = UUID()
+    let start = Date(timeIntervalSinceReferenceDate: 1_000)
+    var evidence = GATTDeviceEvidence()
+    evidence.identity.manufacturerName = "Apple Inc."
+    evidence.identity.modelNumber = "MacBookPro18,3"
+
+    var firstSnapshot = makeSnapshot(
+      identifier: firstIdentifier,
+      name: "Jm1",
+      lastSeen: start.addingTimeInterval(2),
+      rssi: -46
+    )
+    firstSnapshot.gattEvidence = evidence
+    firstSnapshot.rssiHistory = [
+      DeviceRSSISample(timestamp: start, rssi: -45),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(1), rssi: -47),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(2), rssi: -46),
+    ]
+
+    var secondSnapshot = makeSnapshot(
+      identifier: secondIdentifier,
+      name: "Jm1",
+      lastSeen: start.addingTimeInterval(2.002),
+      rssi: -46
+    )
+    secondSnapshot.gattEvidence = evidence
+    secondSnapshot.rssiHistory = [
+      DeviceRSSISample(timestamp: start.addingTimeInterval(0.002), rssi: -45),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(1.002), rssi: -47),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(2.002), rssi: -46),
+    ]
+
+    let reconciled = ScanCoordinator.reconcileGATTIdentityDuplicates(
+      [firstIdentifier: firstSnapshot, secondIdentifier: secondSnapshot],
+      preferredIdentifier: secondIdentifier
+    )
+
+    XCTAssertEqual(reconciled.count, 1)
+    XCTAssertEqual(reconciled.values.first?.sightingCount, 2)
+  }
+
+  func testReconcileGATTIdentityDuplicatesKeepsUncorrelatedSameModelDevicesSeparate() {
+    let firstIdentifier = UUID()
+    let secondIdentifier = UUID()
+    let start = Date(timeIntervalSinceReferenceDate: 1_000)
+    var evidence = GATTDeviceEvidence()
+    evidence.identity.manufacturerName = "Apple Inc."
+    evidence.identity.modelNumber = "MacBookPro18,3"
+
+    var firstSnapshot = makeSnapshot(identifier: firstIdentifier, name: "Jm1", lastSeen: start, rssi: -45)
+    firstSnapshot.gattEvidence = evidence
+    firstSnapshot.rssiHistory = [
+      DeviceRSSISample(timestamp: start, rssi: -45),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(1), rssi: -46),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(2), rssi: -47),
+    ]
+
+    var secondSnapshot = makeSnapshot(identifier: secondIdentifier, name: "Jm2", lastSeen: start, rssi: -70)
+    secondSnapshot.gattEvidence = evidence
+    secondSnapshot.rssiHistory = [
+      DeviceRSSISample(timestamp: start.addingTimeInterval(0.5), rssi: -70),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(1.5), rssi: -72),
+      DeviceRSSISample(timestamp: start.addingTimeInterval(2.5), rssi: -71),
+    ]
+
+    let reconciled = ScanCoordinator.reconcileGATTIdentityDuplicates(
+      [firstIdentifier: firstSnapshot, secondIdentifier: secondSnapshot],
+      preferredIdentifier: secondIdentifier
+    )
+
+    XCTAssertEqual(reconciled.count, 2)
+  }
+
     func testReconcileGATTIdentityDuplicatesMergesMatchingNamedDevicesWithoutModelNumber() {
         let now = Date()
         let firstIdentifier = UUID()

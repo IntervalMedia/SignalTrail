@@ -70,6 +70,7 @@ final class AlertRulesViewController: UITableViewController {
         let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
             do {
                 try self?.environment.store.deleteAlertRule(rule)
+                self?.environment.scanCoordinator.refreshAlertRules()
                 self?.reload()
                 completion(true)
             } catch {
@@ -108,6 +109,7 @@ final class AlertRulesViewController: UITableViewController {
 
         do {
             try environment.store.upsertAlertRule(rules[index])
+            environment.scanCoordinator.refreshAlertRules()
             tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
         } catch {
             rules[index] = originalRule

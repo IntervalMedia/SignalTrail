@@ -325,6 +325,7 @@ final class AlertRuleEditorViewController: UITableViewController {
 
         do {
             try environment.store.upsertAlertRule(rule)
+            environment.scanCoordinator.refreshAlertRules()
             let shouldRequestPermission = isNewRule
                 && environment.settingsStore.settings.requestNotificationPermissionOnRuleCreation
             let savedRule = rule

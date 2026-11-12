@@ -33,6 +33,8 @@ final class DeviceDetailViewController: UITableViewController {
 
     private var device: BLEDeviceSnapshot
     private let environment: AppEnvironment
+    private let requiresRealtimeObservation: Bool
+    private var observedPeripheral: CBPeripheral?
     private var inspector: PeripheralInspector?
     private var services: [GATTServiceSnapshot] = []
     private var expandedSections = Set<Section>()
@@ -41,9 +43,17 @@ final class DeviceDetailViewController: UITableViewController {
         ProfileDashboardBuilder.buildCards(for: device)
     }
 
-    init(device: BLEDeviceSnapshot, environment: AppEnvironment) {
+    init(
+        device: BLEDeviceSnapshot,
+        environment: AppEnvironment,
+        requiresRealtimeObservation: Bool = false
+    ) {
         self.device = device
         self.environment = environment
+        self.requiresRealtimeObservation = requiresRealtimeObservation
+        self.observedPeripheral = requiresRealtimeObservation
+            ? nil
+            : environment.scanCoordinator.peripheral(for: device.peripheralIdentifier)
         self.services = device.exploredServices
         super.init(style: .insetGrouped)
     }
@@ -56,14 +66,20 @@ final class DeviceDetailViewController: UITableViewController {
         title = device.presentationName
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        environment.bluetoothScanner.addObserver(self)
         configureToolbar()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        inspector?.delegate = self
+        inspector?.addObserver(self)
         configureToolbar()
         tableView.reloadData()
+    }
+
+    deinit {
+        inspector?.removeObserver(self)
+        environment.bluetoothScanner.removeObserver(self)
     }
 
     private func configureToolbar() {
@@ -393,6 +409,9 @@ final class DeviceDetailViewController: UITableViewController {
             content.imageProperties.tintColor = .systemGreen
         case 3:
             content.text = connectionActionTitle
+            if requiresRealtimeObservation, observedPeripheral == nil, inspector == nil {
+                content.secondaryText = "Available after this device is observed in a live scan"
+            }
             content.image = UIImage(systemName: connectionActionSymbol)
             content.imageProperties.tintColor = inspector?.connectionState == .connected ? .systemRed : AppTheme.accent
         case 4:
@@ -468,6 +487,9 @@ final class DeviceDetailViewController: UITableViewController {
     }
 
     private var connectionActionTitle: String {
+        if requiresRealtimeObservation, observedPeripheral == nil, inspector == nil {
+            return "Waiting for live observation"
+        }
         switch inspector?.connectionState ?? .disconnected {
         case .disconnected: return "Connect"
         case .connecting: return "Connecting..."
@@ -489,12 +511,14 @@ final class DeviceDetailViewController: UITableViewController {
             presentError("This advertisement reports that the device is not connectable.")
             return
         }
-        guard let peripheral = environment.scanCoordinator.peripheral(for: device.peripheralIdentifier) else {
+        let peripheral = observedPeripheral
+            ?? (requiresRealtimeObservation ? nil : environment.scanCoordinator.peripheral(for: device.peripheralIdentifier))
+        guard let peripheral else {
             presentError("The peripheral is no longer available. Return to Scan and observe it again.")
             return
         }
         let inspector = PeripheralInspector(scanner: environment.bluetoothScanner, peripheral: peripheral)
-        inspector.delegate = self
+        inspector.addObserver(self)
         self.inspector = inspector
         inspector.connect()
         expandedSections.insert(.services)
@@ -659,5 +683,29 @@ extension DeviceDetailViewController: PeripheralInspectorDelegate {
     func peripheralInspector(_ inspector: PeripheralInspector, didFail message: String) {
         presentError(message)
         tableView.reloadSections(IndexSet([Section.actions.rawValue, Section.services.rawValue]), with: .automatic)
+    }
+}
+
+extension DeviceDetailViewController: BluetoothScannerDelegate {
+    func bluetoothScannerDidChangeState(_ scanner: BluetoothScanner) {}
+
+    func bluetoothScanner(
+        _ scanner: BluetoothScanner,
+        didDiscover peripheral: CBPeripheral,
+        advertisement: BLEAdvertisement,
+        rssi: Int,
+        timestamp: Date
+    ) {
+        guard requiresRealtimeObservation,
+              peripheral.identifier == device.peripheralIdentifier else { return }
+        observedPeripheral = peripheral
+        device.advertisement = advertisement
+        device.latestRSSI = rssi
+        device.strongestRSSI = max(device.strongestRSSI, rssi)
+        device.lastSeen = timestamp
+        tableView.reloadSections(
+            IndexSet([Section.summary.rawValue, Section.actions.rawValue, Section.advertisement.rawValue]),
+            with: .automatic
+        )
     }
 }

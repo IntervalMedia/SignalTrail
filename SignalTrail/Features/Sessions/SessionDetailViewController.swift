@@ -207,7 +207,11 @@ final class SessionDetailViewController: UIViewController {
             guard let self else { return }
             sheet?.dismiss(animated: true) {
                 self.navigationController?.pushViewController(
-                    DeviceDetailViewController(device: snapshot, environment: self.environment),
+                    DeviceDetailViewController(
+                        device: snapshot,
+                        environment: self.environment,
+                        requiresRealtimeObservation: true
+                    ),
                     animated: true
                 )
             }

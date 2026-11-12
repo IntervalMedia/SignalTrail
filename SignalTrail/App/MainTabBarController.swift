@@ -38,44 +38,24 @@ final class MainTabBarController: UITabBarController {
     }
 
     private func configureTabs() {
-        let ghosts = ScanViewController(environment: environment)
-        ghosts.tabBarItem = UITabBarItem(
-            title: "GHOSTS",
-            image: UIImage(systemName: "wave.3.right"),
-            selectedImage: UIImage(systemName: "wave.3.right.circle.fill")
-        )
+        let scan = ScanHostingController(environment: environment)
+        scan.tabBarItem = UITabBarItem(title: "Scan", image: UIImage(systemName: "dot.radiowaves.left.and.right"), tag: 0)
 
-        let known = KnownDevicesViewController(environment: environment)
-        known.tabBarItem = UITabBarItem(
-            title: "KNOWN",
-            image: UIImage(systemName: "checkmark.seal"),
-            selectedImage: UIImage(systemName: "checkmark.seal.fill")
-        )
+        let hunter = HunterHostingController(environment: environment)
+        hunter.tabBarItem = UITabBarItem(title: "Hunter", image: UIImage(systemName: "scope"), tag: 1)
 
-        let haunts = HunterViewController(environment: environment)
-        haunts.tabBarItem = UITabBarItem(
-            title: "HAUNTS",
-            image: UIImage(systemName: "scope"),
-            selectedImage: UIImage(systemName: "scope")
-        )
+        let sessions = SessionsHostingController(environment: environment)
+        sessions.tabBarItem = UITabBarItem(title: "Sessions", image: UIImage(systemName: "map"), tag: 2)
 
-        let trail = SessionsViewController(environment: environment)
-        trail.tabBarItem = UITabBarItem(
-            title: "TRAIL",
-            image: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath"),
-            selectedImage: UIImage(systemName: "point.topleft.down.to.point.bottomright.curvepath")
-        )
+        let known = LibraryHostingController(environment: environment)
+        known.tabBarItem = UITabBarItem(title: "Library", image: UIImage(systemName: "star"), tag: 3)
 
-        let intel = IntelViewController(environment: environment)
-        intel.tabBarItem = UITabBarItem(
-            title: "INTEL",
-            image: UIImage(systemName: "doc.text.magnifyingglass"),
-            selectedImage: UIImage(systemName: "doc.text.magnifyingglass")
-        )
+        let settings = SettingsHostingController(environment: environment)
+        settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gearshape"), tag: 4)
 
-        viewControllers = [ghosts, known, haunts, trail, intel].map {
+        viewControllers = [scan, hunter, sessions, known, settings].map {
             let navigationController = UINavigationController(rootViewController: $0)
-            navigationController.navigationBar.prefersLargeTitles = false
+            navigationController.navigationBar.prefersLargeTitles = true
             return navigationController
         }
     }

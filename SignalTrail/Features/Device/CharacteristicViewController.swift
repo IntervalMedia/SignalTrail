@@ -43,7 +43,11 @@ final class CharacteristicViewController: UITableViewController {
         )?.name ?? "Vendor-specific characteristic"
         navigationItem.largeTitleDisplayMode = .never
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
-        inspector.delegate = self
+        inspector.addObserver(self)
+    }
+
+    deinit {
+        inspector.removeObserver(self)
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int { 3 }
